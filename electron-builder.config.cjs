@@ -29,6 +29,7 @@ module.exports = {
     installerIcon: 'build/icon.ico',
     uninstallerIcon: 'build/icon.ico',
     installerHeaderIcon: 'build/icon.ico',
+    include: 'build/installer.nsh', // beendet eine laufende (erhöhte) Instanz vor Installation/Update
   },
   publish: [{ provider: 'github', owner: 'aspectX101', repo: 'Tests1', releaseType: 'release' }],
 };

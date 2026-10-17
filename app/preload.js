@@ -17,4 +17,6 @@ contextBridge.exposeInMainWorld('tweaker', {
   onUpdate: (cb) => ipcRenderer.on('tweaker:update', (_e, st) => cb(st)),
   checkUpdate: () => ipcRenderer.send('tweaker:update-check'),
   installUpdate: () => ipcRenderer.send('tweaker:update-install'),
+  openUpdateLog: () => ipcRenderer.send('tweaker:update-log'),
+  openReleasePage: () => ipcRenderer.send('tweaker:update-page'),
 });

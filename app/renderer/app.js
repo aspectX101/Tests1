@@ -10,7 +10,7 @@ const bridge = window.tweaker || {
   onSafeMode() {},
   version: async () => 'dev',
   updateState: async () => ({ status: 'unsupported' }),
-  onUpdate() {}, checkUpdate() {}, installUpdate() {},
+  onUpdate() {}, checkUpdate() {}, installUpdate() {}, openUpdateLog() {}, openReleasePage() {},
   minimize() {}, close() {},
   onUsage(cb) {
     let u = { cpu: 9, gpu: 8, ram: 37 };
@@ -452,7 +452,8 @@ function updateText() {
   if (u.status === 'downloading') return st.downloading(u.version || '', u.percent ?? 0);
   if (u.status === 'ready') return st.ready(u.version || '');
   if (u.status === 'error') return st.error(u.error || '');
-  return st[u.status] || st.idle;
+  const base = st[u.status] || st.idle;
+  return u.checkedAt && (u.status === 'latest' || u.status === 'error') ? `${base} · ${t().upChecked(fmtDate(u.checkedAt))}` : base;
 }
 
 function renderSettings() {
@@ -465,6 +466,8 @@ function renderSettings() {
     <div class="settings">
       <div class="card row"><div class="row-body"><div class="row-title">${t().updates} <span class="tag">${esc(t().version(state.version))}</span></div>
         <div class="row-desc">${esc(updateText())}</div></div>${upBtn}</div>
+      ${u.status === 'unsupported' ? '' : `<div class="card row"><div class="row-body"><div class="row-title">${t().upHelp}</div><div class="row-desc">${t().upHelpDesc}</div></div>
+        <button class="pill dark" id="up-log">${t().upLog}</button><button class="pill dark" id="up-page">${t().upPage}</button></div>`}
       <div class="card row"><div class="row-body"><div class="row-title">${t().language}</div><div class="row-desc">${t().languageDesc}</div></div>
         <div class="seg">${langBtn('de', 'Deutsch')}${langBtn('en', 'English')}${langBtn('it', 'Italiano')}</div></div>
       <div class="card row"><div class="row-body"><div class="row-title">${t().backend}</div><div class="row-desc">${t().backendDesc}</div></div>
@@ -729,6 +732,7 @@ function go(route) {
   $('#content').scrollTop = 0;
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
   if (route.page === 'safemode' && !state.safeBusy) safeAction('scan');
+  if (route.page === 'settings') bridge.checkUpdate();
   if (route.page === 'backups' && !state.bkBusy) { state.bkResult = null; state.bkOpen = null; bkList(); }
 }
 
@@ -760,6 +764,8 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'bk-reload') bkList();
   else if (el.id === 'up-check') bridge.checkUpdate();
   else if (el.id === 'up-install') bridge.installUpdate();
+  else if (el.id === 'up-log') bridge.openUpdateLog();
+  else if (el.id === 'up-page') bridge.openReleasePage();
   else if (el.id === 'bk-all') bkRestore(null, true);
   else if (el.dataset.bkPreview) bkTogglePreview(el.dataset.bkPreview);
   else if (el.dataset.bkRestore) bkRestore(el.dataset.bkRestore, false);

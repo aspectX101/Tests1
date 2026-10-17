@@ -1,0 +1,14 @@
+; Eigene Prüfung "läuft die App noch?" für Installer und Deinstaller (ersetzt _CHECK_APP_RUNNING).
+; UND.CC Tweaker läuft mit Adminrechten. Ein Installer ohne Adminrechte kann ihn nicht beenden – der Standard
+; bricht dann mit "kann nicht geschlossen werden" ab. Hier: normal beenden; läuft er danach noch, einmal per
+; UAC-Abfrage beenden lassen. Erfasst auch den alten Prozessnamen "Tweaker.exe" (bis Version 0.4.0).
+; Beim In-App-Update ist die App schon beendet, dann passiert hier nichts.
+;
+; Das PowerShell-Skript steht Base64-kodiert da (-EncodedCommand), damit NSIS/cmd nichts escapen müssen.
+; Klartext siehe build/close-running-app.ps1 – nach Änderungen dort diesen Wert neu erzeugen.
+!macro customCheckAppRunning
+  DetailPrint "Laufenden UND.CC Tweaker beenden ..."
+  nsExec::Exec '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand JABuACAAPQAgACcAVAB3AGUAYQBrAGUAcgAnACwAIAAnAFUATgBEAC4AQwBDACAAVAB3AGUAYQBrAGUAcgAnAAoAaQBmACAAKABHAGUAdAAtAFAAcgBvAGMAZQBzAHMAIAAtAE4AYQBtAGUAIAAkAG4AIAAtAEUAcgByAG8AcgBBAGMAdABpAG8AbgAgAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAKQAgAHsACgAgACAAUwB0AG8AcAAtAFAAcgBvAGMAZQBzAHMAIAAtAE4AYQBtAGUAIAAkAG4AIAAtAEYAbwByAGMAZQAgAC0ARQByAHIAbwByAEEAYwB0AGkAbwBuACAAUwBpAGwAZQBuAHQAbAB5AEMAbwBuAHQAaQBuAHUAZQAKACAAIABTAHQAYQByAHQALQBTAGwAZQBlAHAAIAAtAE0AaQBsAGwAaQBzAGUAYwBvAG4AZABzACAAOAAwADAACgAgACAAaQBmACAAKABHAGUAdAAtAFAAcgBvAGMAZQBzAHMAIAAtAE4AYQBtAGUAIAAkAG4AIAAtAEUAcgByAG8AcgBBAGMAdABpAG8AbgAgAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAKQAgAHsACgAgACAAIAAgAHQAcgB5ACAAewAKACAAIAAgACAAIAAgAFMAdABhAHIAdAAtAFAAcgBvAGMAZQBzAHMAIAAtAEYAaQBsAGUAUABhAHQAaAAgACgASgBvAGkAbgAtAFAAYQB0AGgAIAAkAGUAbgB2ADoAUwB5AHMAdABlAG0AUgBvAG8AdAAgACcAUwB5AHMAdABlAG0AMwAyAFwAdABhAHMAawBrAGkAbABsAC4AZQB4AGUAJwApACAALQBBAHIAZwB1AG0AZQBuAHQATABpAHMAdAAgACcALwBGACAALwBUACAALwBJAE0AIABUAHcAZQBhAGsAZQByAC4AZQB4AGUAIAAvAEkATQAgACIAVQBOAEQALgBDAEMAIABUAHcAZQBhAGsAZQByAC4AZQB4AGUAIgAnACAALQBWAGUAcgBiACAAUgB1AG4AQQBzACAALQBXAGkAbgBkAG8AdwBTAHQAeQBsAGUAIABIAGkAZABkAGUAbgAgAC0AVwBhAGkAdAAKACAAIAAgACAAfQAgAGMAYQB0AGMAaAAgAHsAfQAKACAAIAB9AAoAfQAKAGUAeABpAHQAIAAwAAoA'
+  Pop $0
+  Sleep 1000
+!macroend

@@ -155,6 +155,8 @@ window.I18N = {
     },
     upCheck: 'Nach Updates suchen', upInstall: 'Jetzt neu starten',
     upBanner: (v) => `Update ${v} ist bereit. Es wird beim nächsten Start installiert.`,
+    upChecked: (d) => `zuletzt geprüft ${d}`, upHelp: 'Update-Hilfe', upHelpDesc: 'Protokoll ansehen oder die neueste Version direkt herunterladen',
+    upLog: 'Protokoll öffnen', upPage: 'Download-Seite',
     cats: {
       performance: ['Optimierung', 'CPU, Energie und Systemreaktion'],
       gaming: ['Gaming Tweaks', 'FPS, Input-Lag und Spielprozesse'],
@@ -323,6 +325,8 @@ window.I18N = {
     },
     upCheck: 'Check for updates', upInstall: 'Restart now',
     upBanner: (v) => `Update ${v} is ready. It will be installed on next start.`,
+    upChecked: (d) => `last checked ${d}`, upHelp: 'Update help', upHelpDesc: 'View the log or download the latest version directly',
+    upLog: 'Open log', upPage: 'Download page',
     cats: {
       performance: ['Optimisation', 'CPU, power and responsiveness'],
       gaming: ['Gaming Tweaks', 'FPS, input lag and game processes'],
@@ -491,6 +495,8 @@ window.I18N = {
     },
     upCheck: 'Cerca aggiornamenti', upInstall: 'Riavvia ora',
     upBanner: (v) => `L’aggiornamento ${v} è pronto. Verrà installato al prossimo avvio.`,
+    upChecked: (d) => `ultimo controllo ${d}`, upHelp: 'Aiuto aggiornamenti', upHelpDesc: 'Visualizza il registro o scarica direttamente l’ultima versione',
+    upLog: 'Apri registro', upPage: 'Pagina download',
     cats: {
       performance: ['Ottimizzazione', 'CPU, energia e reattività'],
       gaming: ['Gaming Tweaks', 'FPS, input lag e processi di gioco'],
