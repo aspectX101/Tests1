@@ -14,6 +14,7 @@ app/main.js          rahmenloses Fenster, IPC nur von der eigenen Oberfläche �
 app/preload.js       window.tweaker: call({action,id,lang,backupId,confirmPurge}), mode, exportJson(what, backupId),
                      lastSafeMode, onSafeMode, minimize, close, onUsage
 app/usage.js         Live-CPU/RAM/GPU fürs Dashboard (nur lesend)
+ModManager.ps1       FiveM Mod Manager + Ingame-Auflösung (siehe docs/mods.md)
 app/mock.js          Testdaten im selben JSON-Format (auf macOS/Linux oder mit --mock)
 app/renderer/        index.html, styles.css, i18n.js (de/en/it), app.js
 electron-builder.config.cjs   übernimmt packaging/electron-builder.cjs, ergänzt nur die App-Dateien

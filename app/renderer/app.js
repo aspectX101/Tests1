@@ -6,6 +6,8 @@ const bridge = window.tweaker || {
   call: (request) => window.TweakerMock.call(request),
   mode: async () => 'browser',
   exportJson: async () => ({ ok: true, path: 'tweaker-export.json' }),
+  importMod: (category, kind) => window.TweakerMock.call({ action: 'mods-import', category, modPath: kind === 'folder' ? 'C:\\Mods\\Neuer Ordner' : 'C:\\Downloads\\Neue Mod.zip' }),
+  openModsFolder: async () => ({ ok: true }),
   lastSafeMode: async () => null,
   onSafeMode() {},
   version: async () => 'dev',
@@ -36,6 +38,11 @@ const ICONS = {
   extra: '<path d="M12 4v16M4 12h16"/>',
   cleanup: '<path d="M6 6l12 12M18 6 6 18"/>',
   safemode: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+  mods: '<path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>',
+  graphics: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
+  sound: '<path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>',
+  weapons: '<circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1.5"/>',
+  minimap: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/>',
   backups: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
   mouse: '<rect x="6" y="2" width="12" height="20" rx="6"/><path d="M12 6v4"/>',
@@ -85,7 +92,20 @@ const state = {
   bkResult: null,    // letzte Wiederherstellungs-Antwort mit Einzelergebnissen
   version: '',
   update: { status: 'unsupported' },
+  mods: null,        // letzte mods-list-Antwort
+  modsError: null,
+  modsBusy: null,    // 'list' | 'import' | modId
+  modsTab: 'all',
+  res: null,         // letzte res-get/res-set-Antwort
+  resError: null,
+  resBusy: false,
+  resForm: null,     // { width, height, windowed }
 };
+const MOD_CATS = ['graphics', 'sound', 'weapons', 'minimap', 'other'];
+const RES_PRESETS = [
+  [1920, 1080, '16:9'], [1728, 1080, '16:10 Stretched'], [1680, 1050, '16:10'], [1600, 900, '16:9'],
+  [1440, 1080, '4:3 Stretched'], [1280, 1024, '5:4'], [1280, 960, '4:3'],
+];
 
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -129,6 +149,7 @@ function renderNav() {
     item('collapse', t().collapse, 'data-collapse') +
     item('home', t().home, 'data-go="home"') +
     MAIN_CATS.map((c) => item(c, catName(c), `data-cat="${c}"`)).join('') +
+    item('mods', t().modsPage, 'data-go="mods"') +
     item('cleanup', t().cleanup, 'data-go="cleanup"') +
     item('safemode', t().safemode, 'data-go="safemode"') +
     item('backups', t().backupsPage, 'data-go="backups"') +
@@ -142,7 +163,7 @@ function renderCrumbs() {
   const r = state.route;
   let parts;
   if (r.page === 'cat') parts = r.parent ? [t().extra, catName(r.cat)] : [catName(r.cat)];
-  else parts = [t()[r.page]];
+  else parts = [r.page === 'mods' ? t().modsPage : t()[r.page]];
   $('#crumbs').innerHTML = parts.map(esc).join('<span class="sep">·</span>');
 }
 
@@ -456,6 +477,84 @@ function updateText() {
   return u.checkedAt && (u.status === 'latest' || u.status === 'error') ? `${base} · ${t().upChecked(fmtDate(u.checkedAt))}` : base;
 }
 
+function renderMods() {
+  const d = state.mods;
+  const busy = state.modsBusy;
+  const head = `
+    <div class="card detail-head">
+      <div class="tile-icon">${icon('mods')}</div>
+      <div><h1>${t().modsPage}</h1><p>${t().modsDesc}</p></div>
+    </div>`;
+  let status;
+  if (!d && busy === 'list') status = `<div class="cache-status muted">${t().modsLoading}</div>`;
+  else if (!d) status = `<div class="cache-status">${esc(errorText(state.modsError))}</div><div class="cache-actions"><button class="pill dark" id="mods-reload">${t().reload}</button></div>`;
+  else status = `
+    <div class="cache-total"><b>${d.mods.length}</b><span>${t().modsCount(d.mods.length, d.enabledCount)}</span></div>
+    ${d.root ? `<div class="cache-root" title="${esc(d.root)}">${esc(d.root)}</div>` : ''}
+    ${d.fivemFound ? '' : `<div class="sm-alert">${t().modsNoFivem}</div>`}
+    <p class="cache-note">${esc(d.message || '')}</p>
+    <div class="cache-actions">
+      <button class="pill light" data-mod-import="file" ${busy ? 'disabled' : ''}>${busy === 'import' ? '…' : t().modsImportFile}</button>
+      <button class="pill dark" data-mod-import="folder" ${busy ? 'disabled' : ''}>${t().modsImportFolder}</button>
+      <button class="pill dark" id="mods-open" ${d.fivemFound ? '' : 'disabled'}>${t().modsOpenFolder}</button>
+    </div>`;
+
+  const list = (d?.mods || []).filter((m) => state.modsTab === 'all' || m.category === state.modsTab);
+  const tab = (k) => `<button data-mod-tab="${k}" class="${state.modsTab === k ? 'active' : ''}">${k === 'all' ? t().all : t().modCats[k]}</button>`;
+  const row = (m) => {
+    const mine = busy === m.id;
+    const more = m.fileCount > 1 ? ` +${m.fileCount - 1}` : '';
+    return `
+      <div class="card row mod-row${m.enabled ? ' on' : ''}">
+        <div class="mod-icon">${icon(m.category)}</div>
+        <div class="row-body">
+          <div class="row-title">${esc(m.name)}
+            <span class="tag">${esc(t().modCats[m.category] || m.category)}</span>
+            ${m.skippedCount ? `<span class="tag" title="${esc(t().modsSkippedHint)}">${t().modsSkipped(m.skippedCount)}</span>` : ''}</div>
+          <div class="row-desc">${fmtBytes(m.sizeBytes)} · ${t().modsFiles(m.fileCount)} · <span class="mono">${esc(m.targets[0] || '')}${more}</span></div>
+        </div>
+        <button class="pill dark danger" data-mod-remove="${esc(m.id)}" ${busy ? 'disabled' : ''}>${t().modsRemove}</button>
+        <label class="switch${mine ? ' busy' : ''}">
+          <input type="checkbox" data-mod-toggle="${esc(m.id)}" ${m.enabled ? 'checked' : ''} ${busy ? 'disabled' : ''} aria-label="${esc(m.name)}">
+          <span></span>
+        </label>
+      </div>`;
+  };
+  const mods = d ? `
+    <div class="toolbar"><div class="seg">${['all', ...MOD_CATS].map(tab).join('')}</div></div>
+    <div class="rows">${list.length ? list.map(row).join('') : `<div class="card empty">${t().modsEmpty}</div>`}</div>` : '';
+  return head + `<div class="card cache-card">${status}</div>` + mods + renderResolution();
+}
+
+function renderResolution() {
+  const r = state.res;
+  const f = state.resForm;
+  let body;
+  if (!r && !state.resError) body = `<div class="cache-status muted">${t().modsLoading}</div>`;
+  else if (!r) body = `<div class="cache-status">${esc(errorText(state.resError))}</div><div class="cache-actions"><button class="pill dark" id="res-reload">${t().reload}</button></div>`;
+  else {
+    const mode = (w) => `<button data-res-mode="${w}" class="${f.windowed === w ? 'active' : ''}">${t().resModes[w]}</button>`;
+    const preset = ([w, h, label]) => `<button class="res-preset${f.width === w && f.height === h ? ' active' : ''}" data-res="${w}x${h}"><b>${w} × ${h}</b><span>${label}</span></button>`;
+    const changed = f.width !== r.width || f.height !== r.height || f.windowed !== r.windowed;
+    body = `
+      <div class="res-now"><b>${r.width} × ${r.height}</b><span>${t().resModes[r.windowed] || ''}${r.refreshRate ? ' · ' + r.refreshRate + ' Hz' : ''}</span></div>
+      <div class="cache-root" title="${esc(r.file)}">${esc(r.file)}</div>
+      <div class="res-presets">${RES_PRESETS.map(preset).join('')}</div>
+      <div class="res-custom">
+        <label>${t().resWidth}<input type="number" id="res-w" min="640" max="7680" value="${f.width}"></label>
+        <span class="res-x">×</span>
+        <label>${t().resHeight}<input type="number" id="res-h" min="480" max="4320" value="${f.height}"></label>
+        <div class="seg">${mode(0)}${mode(2)}${mode(1)}</div>
+      </div>
+      <p class="cache-note">${t().resHint}</p>
+      <div class="cache-actions">
+        <button class="pill light" id="res-apply" ${state.resBusy || !changed ? 'disabled' : ''}>${state.resBusy ? '…' : t().resApply}</button>
+        ${r.hasBackup ? `<button class="pill dark" id="res-reset" ${state.resBusy ? 'disabled' : ''}>${t().resReset}</button>` : ''}
+      </div>`;
+  }
+  return `<h3 class="section-title">${t().resTitle}</h3><div class="card cache-card res-card">${body}</div>`;
+}
+
 function renderSettings() {
   const u = state.update || {};
   const upBtn = u.status === 'ready'
@@ -488,7 +587,7 @@ function render() {
   let html = upReady + (state.restartPending
     ? `<div class="restart"><span>${t().needsRestart}</span><button class="pill" id="restart-later">${t().later}</button></div>`
     : '');
-  if (state.loading && !['settings', 'cleanup', 'safemode', 'backups'].includes(r.page)) {
+  if (state.loading && !['settings', 'cleanup', 'safemode', 'backups', 'mods'].includes(r.page)) {
     html += '<div class="rows">' + '<div class="skeleton"></div>'.repeat(5) + '</div>';
   } else if (r.page === 'home') html += renderHome();
   else if (r.page === 'extra') html += renderExtra();
@@ -496,6 +595,7 @@ function render() {
   else if (r.page === 'cleanup') html += renderCleanup();
   else if (r.page === 'safemode') html += renderSafeMode();
   else if (r.page === 'backups') html += renderBackups();
+  else if (r.page === 'mods') html += renderMods();
   else html += renderCategory(r.cat, r.parent);
   const content = $('#content');
   content.innerHTML = html;
@@ -544,6 +644,31 @@ function toast(msg, type = 'info') {
   el.textContent = msg;
   $('#toasts').appendChild(el);
   setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 260); }, type === 'error' ? 6000 : 3000);
+}
+
+// Kategorie für einen Import wählen (wenn im Reiter "Alle" importiert wird).
+function chooseCategory() {
+  return new Promise((resolve) => {
+    const modal = $('#modal');
+    const extra = $('#modal-extra');
+    $('#modal-title').textContent = t().modsChooseTitle;
+    $('#modal-text').textContent = t().modsChooseText;
+    $('#modal-cancel').textContent = t().cancel;
+    $('#modal-ok').classList.add('hidden');
+    extra.innerHTML = MOD_CATS.map((c) => `<button class="pill dark cat-pick" data-pick="${c}">${icon(c)}<span>${t().modCats[c]}</span></button>`).join('');
+    modal.classList.remove('hidden');
+    const done = (v) => {
+      modal.classList.add('hidden');
+      $('#modal-ok').classList.remove('hidden');
+      extra.innerHTML = '';
+      extra.onclick = $('#modal-cancel').onclick = modal.onclick = document.onkeydown = null;
+      resolve(v);
+    };
+    extra.onclick = (e) => { const b = e.target.closest('[data-pick]'); if (b) done(b.dataset.pick); };
+    $('#modal-cancel').onclick = () => done(null);
+    modal.onclick = (e) => { if (e.target === modal) done(null); };
+    document.onkeydown = (e) => { if (e.key === 'Escape') done(null); };
+  });
 }
 
 const confirmRisk = (tw) => confirmDialog(t().riskyTitle(tw.name), `${tw.description} ${t().riskyText}`, t().applyAnyway);
@@ -728,6 +853,69 @@ async function bkExport(id) {
   else if (!res?.ok) toast(errorText(res?.error), 'error');
 }
 
+async function modsLoad() {
+  state.modsBusy = 'list';
+  render();
+  const [list, res] = await Promise.all([call('mods-list'), call('res-get')]);
+  state.modsBusy = null;
+  if (list?.ok) { state.mods = list; state.modsError = null; } else { state.mods = null; state.modsError = list?.error; }
+  setRes(res);
+  if (state.route.page === 'mods') render();
+}
+
+function setRes(res) {
+  if (res?.ok) {
+    state.res = res; state.resError = null;
+    state.resForm = { width: res.width, height: res.height, windowed: res.windowed };
+  } else { state.res = null; state.resError = res?.error; }
+}
+
+async function modImport(kind) {
+  const category = state.modsTab === 'all' ? await chooseCategory() : state.modsTab;
+  if (!category) return;
+  state.modsBusy = 'import';
+  render();
+  let res;
+  try { res = await bridge.importMod(category, kind); } catch (err) { res = { ok: false, error: err.message }; }
+  state.modsBusy = null;
+  if (res?.ok && !res.canceled) toast(t().modsImported(res.mod.name, res.mod.fileCount));
+  else if (!res?.ok) toast(errorText(res?.error), 'error');
+  await modsLoad();
+}
+
+async function modToggle(id, enable) {
+  const m = state.mods?.mods.find((x) => x.id === id);
+  state.modsBusy = id;
+  render();
+  const res = await call(enable ? 'mods-enable' : 'mods-disable', undefined, { modId: id });
+  state.modsBusy = null;
+  if (res?.ok) toast(enable ? t().modsEnabled(m.name) : t().modsDisabled(m.name));
+  else toast(`${m?.name}: ${errorText(res?.error)}`, 'error');
+  await modsLoad();
+}
+
+async function modRemove(id) {
+  const m = state.mods?.mods.find((x) => x.id === id);
+  if (!(await confirmDialog(t().modsRemoveTitle(m.name), t().modsRemoveText, t().modsRemove))) return;
+  state.modsBusy = id;
+  render();
+  const res = await call('mods-remove', undefined, { modId: id });
+  state.modsBusy = null;
+  if (res?.ok) toast(t().modsRemoved(m.name)); else toast(errorText(res?.error), 'error');
+  await modsLoad();
+}
+
+async function resApply(reset) {
+  state.resBusy = true;
+  render();
+  const f = state.resForm;
+  const res = reset ? await call('res-reset') : await call('res-set', undefined, { width: f.width, height: f.height, windowed: f.windowed });
+  state.resBusy = false;
+  if (res?.ok) { setRes(res); toast(reset ? t().resResetDone : t().resApplied(res.width, res.height)); }
+  else toast(errorText(res?.error), 'error');
+  render();
+}
+
 async function load() {
   state.loading = true;
   render();
@@ -750,6 +938,7 @@ function go(route) {
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
   if (route.page === 'safemode' && !state.safeBusy) safeAction('scan');
   if (route.page === 'settings') bridge.checkUpdate();
+  if (route.page === 'mods' && !state.modsBusy) modsLoad();
   if (route.page === 'backups' && !state.bkBusy) { state.bkResult = null; state.bkOpen = null; bkList(); }
 }
 
@@ -771,6 +960,7 @@ document.addEventListener('click', (e) => {
     store.set('lang', state.lang);
     state.cache = null;
     state.bk = null;
+    state.mods = null;
     load();
   } else if (el.id === 'apply-safe') applySafe();
   else if (el.id === 'cache-info') cacheInfo();
@@ -779,6 +969,15 @@ document.addEventListener('click', (e) => {
   else if (el.dataset.purge) cachePurge(el.dataset.purge, el.dataset.date);
   else if (el.id === 'sm-export') safeExport();
   else if (el.id === 'bk-reload') bkList();
+  else if (el.dataset.modTab) { state.modsTab = el.dataset.modTab; render(); }
+  else if (el.dataset.modImport) modImport(el.dataset.modImport);
+  else if (el.dataset.modRemove) modRemove(el.dataset.modRemove);
+  else if (el.id === 'mods-open') bridge.openModsFolder().then((r) => { if (!r?.ok) toast(errorText(r?.error), 'error'); });
+  else if (el.id === 'mods-reload' || el.id === 'res-reload') modsLoad();
+  else if (el.dataset.res) { const [w, h] = el.dataset.res.split('x').map(Number); Object.assign(state.resForm, { width: w, height: h }); render(); }
+  else if (el.dataset.resMode) { state.resForm.windowed = Number(el.dataset.resMode); render(); }
+  else if (el.id === 'res-apply') resApply(false);
+  else if (el.id === 'res-reset') resApply(true);
   else if (el.id === 'up-check') bridge.checkUpdate();
   else if (el.id === 'up-install') bridge.installUpdate();
   else if (el.id === 'up-log') bridge.openUpdateLog();
@@ -792,7 +991,20 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'restart-later') { state.restartPending = false; render(); }
 });
 
+// Eigene Auflösung: Eingaben ohne Neuzeichnen übernehmen, nur den Übernehmen-Knopf aktualisieren.
+document.addEventListener('input', (e) => {
+  if (!['res-w', 'res-h'].includes(e.target.id) || !state.resForm) return;
+  const v = parseInt(e.target.value, 10);
+  if (e.target.id === 'res-w') state.resForm.width = v; else state.resForm.height = v;
+  const r = state.res; const f = state.resForm;
+  const valid = f.width >= 640 && f.width <= 7680 && f.height >= 480 && f.height <= 4320;
+  const changed = f.width !== r.width || f.height !== r.height || f.windowed !== r.windowed;
+  $('#res-apply').disabled = !valid || !changed || state.resBusy;
+  document.querySelectorAll('.res-preset').forEach((b) => b.classList.toggle('active', b.dataset.res === `${f.width}x${f.height}`));
+});
+
 document.addEventListener('change', async (e) => {
+  if (e.target.dataset?.modToggle) { modToggle(e.target.dataset.modToggle, e.target.checked); return; }
   const id = e.target.dataset?.toggle;
   if (!id) return;
   const tw = state.tweaks.find((x) => x.id === id);

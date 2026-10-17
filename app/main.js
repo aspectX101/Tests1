@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs/promises');
 const { pathToFileURL } = require('url');
@@ -74,10 +74,12 @@ ipcMain.handle('tweaker:call', async (e, request) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
   if (!request || typeof request !== 'object') return { ok: false, error: 'invalid_action' };
   // Nur die bekannten Felder weiterreichen; Pfade und Skripte kann die Oberfläche nicht setzen.
-  const { action, id, lang, backupId, confirmPurge } = request;
+  // modPath fehlt bewusst: Mod-Pfade kommen nur aus dem Datei-Dialog (tweaker:mod-import).
+  const { action, id, lang, backupId, confirmPurge, modId, category, width, height, windowed } = request;
+  if (action === 'mods-import') return { ok: false, error: 'invalid_action' };
   if (LANGS.has(lang)) currentLang = lang;
   try {
-    return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true });
+    return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true, modId, category, width, height, windowed });
   } catch (err) {
     return { ok: false, error: err.message };
   }
@@ -111,6 +113,35 @@ ipcMain.on('tweaker:update-check', (e) => trusted(e) && updater.check());
 ipcMain.on('tweaker:update-install', (e) => trusted(e) && updater.install());
 ipcMain.on('tweaker:update-log', (e) => trusted(e) && updater.openLog());
 ipcMain.on('tweaker:update-page', (e) => trusted(e) && updater.openReleases());
+// Mod importieren: Datei oder Ordner im Windows-Dialog wählen, dann ans Backend geben.
+ipcMain.handle('tweaker:mod-import', async (e, category, kind) => {
+  if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
+  const folder = kind === 'folder';
+  const pick = await dialog.showOpenDialog(win, folder
+    ? { properties: ['openDirectory'] }
+    : { properties: ['openFile'], filters: [{ name: 'Mods', extensions: ['zip', 'rpf', 'awc', 'ytd', 'ydr', 'yft', 'gfx', 'meta', 'dat', 'xml'] }, { name: '*', extensions: ['*'] }] });
+  if (pick.canceled || !pick.filePaths[0]) return { ok: true, canceled: true };
+  try {
+    return await backend({ action: 'mods-import', modPath: pick.filePaths[0], category, lang: currentLang });
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// FiveM-Mods-Ordner im Explorer öffnen (Pfad kommt vom Backend, nicht von der Oberfläche).
+ipcMain.handle('tweaker:open-mods-folder', async (e) => {
+  if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
+  try {
+    const list = await backend({ action: 'mods-list', lang: currentLang });
+    if (!list?.ok || !list.root) return { ok: false, error: 'fivem_not_found' };
+    const modsDir = path.join(list.root, 'mods');
+    const err = await shell.openPath(require('fs').existsSync(modsDir) ? modsDir : list.root);
+    return err ? { ok: false, error: err } : { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 ipcMain.handle('tweaker:mode', (e) => (trusted(e) ? (useMock ? 'mock' : 'powershell') : null));
 ipcMain.handle('tweaker:safemode-last', (e) => (trusted(e) ? lastSafeMode : null));
 ipcMain.on('window:minimize', (e) => trusted(e) && win?.minimize());

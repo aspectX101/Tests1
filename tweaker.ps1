@@ -1,14 +1,26 @@
 #requires -Version 5.1
 [CmdletBinding()]
-param([string]$Action, [string]$Id, [string]$Lang='de', [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge)
+param([string]$Action, [string]$Id, [string]$Lang='de', [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge,
+    [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 try {
-    if ($Action -notin @('info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all')) { throw 'invalid_action' }
+    if ($Action -notin @('info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all','mods-list','mods-import','mods-enable','mods-disable','mods-remove','res-get','res-set','res-reset')) { throw 'invalid_action' }
     if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
     Import-Module (Join-Path $PSScriptRoot 'Tweaker.psm1') -Force -WarningAction Stop
+    if ($Action.StartsWith('mods-') -or $Action.StartsWith('res-')) {
+        $result = Invoke-TweakerMods -Action $Action -ModId $ModId -ModPath $ModPath -Category $Category -Name $Name -FiveMPath $FiveMPath -Width $Width -Height $Height -Windowed $Windowed
+        $messages = @{
+            de='Mods werden aus eigenen Dateien importiert und lassen sich jederzeit deaktivieren; ueberschriebene Originaldateien werden gesichert. Manche Server erlauben keine Client-Mods. Ausfuehrbare Dateien werden nie installiert.'
+            en='Mods are imported from your own files and can be disabled at any time; overwritten original files are backed up. Some servers do not allow client mods. Executable files are never installed.'
+            it='Le mod vengono importate dai propri file e si possono disattivare in qualsiasi momento; i file originali sovrascritti vengono salvati. Alcuni server non consentono mod client. I file eseguibili non vengono mai installati.'
+        }
+        $result | Add-Member -NotePropertyName message -NotePropertyValue $messages[$Lang] -Force
+        $result | ConvertTo-Json -Depth 8 -Compress
+        exit 0
+    }
     if ($Action.StartsWith('backup-')) {
         $result=Invoke-TweakerBackup -Action $Action -BackupId $BackupId -FiveMPath $FiveMPath -Confirm:$false
         $messages=@{

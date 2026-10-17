@@ -196,12 +196,70 @@
     return { ...safeReport(lang), repairs };
   }
 
-  async function call({ action, id, lang = 'de', backupId, confirmPurge } = {}) {
+  // Mod-Manager-Testdaten (Format wie ModManager.ps1)
+  const hex12 = () => hex32().slice(0, 12);
+  const now = () => new Date().toISOString();
+  const M = (name, category, sizeBytes, targets, enabled, skippedCount = 0) =>
+    ({ id: hex12(), name, category, enabled, sizeBytes, fileCount: targets.length, skippedCount, importedUtc: now(), enabledUtc: enabled ? now() : null, targets });
+  const mods = [
+    M('NaturalVision Evolved', 'graphics', 1.9 * 1024 * MB, ['mods\\nve_graphics.rpf', 'mods\\nve_timecycle.rpf'], true, 3),
+    M('Glock Sound Pack', 'sound', 84 * MB, ['citizen\\platform\\audio\\sfx\\RESIDENT.awc', 'citizen\\platform\\audio\\sfx\\WEAPONS_PLAYER.awc'], false, 1),
+    M('Gold Weapon Skins', 'weapons', 212 * MB, ['mods\\weapons_gold.rpf'], true),
+    M('Clean Minimap', 'minimap', 6 * MB, ['mods\\minimap.rpf'], false),
+  ];
+  const res = { width: 1920, height: 1080, windowed: 0, refreshRate: 144, original: null };
+  const resOut = () => ({ ok: true, file: 'C:\\Users\\Spieler\\AppData\\Roaming\\CitizenFX\\gta5_settings.xml', width: res.width, height: res.height, windowed: res.windowed, refreshRate: res.refreshRate, hasBackup: !!res.original });
+  const modMsg = {
+    de: 'Mods werden aus eigenen Dateien importiert und lassen sich jederzeit deaktivieren; überschriebene Originaldateien werden gesichert. Manche Server erlauben keine Client-Mods. Ausführbare Dateien werden nie installiert.',
+    en: 'Mods are imported from your own files and can be disabled at any time; overwritten original files are backed up. Some servers do not allow client mods. Executable files are never installed.',
+    it: 'Le mod vengono importate dai propri file e si possono disattivare in qualsiasi momento; i file originali sovrascritti vengono salvati. Alcuni server non consentono mod client. I file eseguibili non vengono mai installati.',
+  };
+  function modsAction(action, { modId, modPath, category, width, height, windowed }, lang) {
+    const message = modMsg[lang];
+    const find = () => mods.find((m) => m.id === modId);
+    if (action === 'mods-list') return { ok: true, fivemFound: true, root: 'C:\\Users\\Spieler\\AppData\\Local\\FiveM\\FiveM.app', mods, enabledCount: mods.filter((m) => m.enabled).length, categories: ['graphics', 'sound', 'weapons', 'minimap', 'other'], message };
+    if (action === 'mods-import') {
+      if (!['graphics', 'sound', 'weapons', 'minimap', 'other'].includes(category)) return { ok: false, error: 'invalid_mod_category' };
+      const file = String(modPath || 'Neue Mod.zip').split(/[\\/]/).pop();
+      const base = file.replace(/\.[^.]+$/, '');
+      if (/\.(rar|7z)$/i.test(file)) return { ok: false, error: 'mod_archive_unsupported' };
+      const m = M(base, category, Math.round((20 + Math.random() * 300) * MB), [`mods\\${base.toLowerCase().replace(/\s+/g, '_')}.rpf`], false, Math.round(Math.random() * 2));
+      mods.unshift(m);
+      return { ok: true, mod: m, message };
+    }
+    if (action.startsWith('res-')) {
+      if (action === 'res-set') {
+        if (!(width >= 640 && width <= 7680 && height >= 480 && height <= 4320 && [0, 1, 2].includes(windowed))) return { ok: false, error: 'invalid_resolution' };
+        if (!res.original) res.original = { width: res.width, height: res.height, windowed: res.windowed };
+        Object.assign(res, { width, height, windowed });
+      }
+      if (action === 'res-reset') {
+        if (!res.original) return { ok: false, error: 'resolution_backup_not_found' };
+        Object.assign(res, res.original); res.original = null;
+      }
+      return { ...resOut(), message };
+    }
+    const m = find();
+    if (!/^[a-f0-9]{12}$/.test(modId || '')) return { ok: false, error: 'invalid_mod_id' };
+    if (!m) return { ok: false, error: 'mod_not_found' };
+    if (action === 'mods-enable') {
+      const clash = mods.some((o) => o.enabled && o.id !== m.id && o.targets.some((t) => m.targets.includes(t)));
+      if (clash) return { ok: false, error: 'mod_conflict' };
+      m.enabled = true; m.enabledUtc = now();
+    }
+    if (action === 'mods-disable') { m.enabled = false; m.enabledUtc = null; }
+    if (action === 'mods-remove') { mods.splice(mods.indexOf(m), 1); return { ok: true, id: modId, message }; }
+    return { ok: true, mod: m, message };
+  }
+
+  async function call(req = {}) {
+    const { action, id, lang = 'de', backupId, confirmPurge } = req;
     await delay();
     if (!['de', 'en', 'it'].includes(lang)) return { ok: false, error: 'invalid_language' };
     if (String(action).startsWith('cache-')) return cache(action, backupId, confirmPurge, lang);
     if (String(action).startsWith('safemode-')) return safemode(action, lang);
     if (String(action).startsWith('backup-')) return backup(action, backupId, lang);
+    if (/^(mods|res)-/.test(String(action))) return modsAction(action, req, lang);
     if (action === 'info') {
       return { ok: true, os: 'Microsoft Windows 11 Home (Mock)', cpu: 'AMD Ryzen 7 7800X3D', gpu: 'NVIDIA GeForce RTX 4070 Ti', ramGB: 32, isAdmin: true };
     }

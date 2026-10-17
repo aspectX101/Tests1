@@ -15,6 +15,6 @@ module.exports = {
   extraResources: [{
     from: path.resolve(__dirname, '..'),
     to: 'backend',
-    filter: ['tweaker.ps1', 'Tweaker.psm1', 'Keyboard.ps1', 'CacheCleaner.ps1', 'SafeMode.ps1', 'Backup.ps1', 'native/Keyboard.cs', 'electron/backend.cjs', 'electron/safemode-monitor.cjs']
+    filter: ['tweaker.ps1', 'Tweaker.psm1', 'Keyboard.ps1', 'CacheCleaner.ps1', 'SafeMode.ps1', 'Backup.ps1', 'ModManager.ps1', 'native/Keyboard.cs', 'electron/backend.cjs', 'electron/safemode-monitor.cjs']
   }]
 };

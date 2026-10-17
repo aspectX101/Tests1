@@ -1,7 +1,7 @@
 {
   "name": "tweaker",
   "productName": "UND.CC Tweaker",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "UND.CC Tweaker",
   "author": "Tweaker",
   "private": true,
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "start:mock": "electron . --mock",
-    "test": "node --test tests/electron-backend.test.cjs",
+    "test": "node --test tests/*.test.cjs",
     "dist": "electron-builder --config electron-builder.config.cjs --win --publish never"
   },
   "devDependencies": {

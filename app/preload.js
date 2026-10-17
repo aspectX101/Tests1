@@ -6,6 +6,9 @@ contextBridge.exposeInMainWorld('tweaker', {
   mode: () => ipcRenderer.invoke('tweaker:mode'),
   // what: 'safemode' | 'backup' (mit backupId) – speichert per Dialog als JSON
   exportJson: (what, backupId) => ipcRenderer.invoke('tweaker:export', what, backupId),
+  // kind: 'file' | 'folder' – öffnet den Windows-Dialog im Hauptprozess
+  importMod: (category, kind) => ipcRenderer.invoke('tweaker:mod-import', category, kind),
+  openModsFolder: () => ipcRenderer.invoke('tweaker:open-mods-folder'),
   lastSafeMode: () => ipcRenderer.invoke('tweaker:safemode-last'),
   onSafeMode: (cb) => ipcRenderer.on('tweaker:safemode', (_e, msg) => cb(msg)),
   minimize: () => ipcRenderer.send('window:minimize'),

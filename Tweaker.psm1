@@ -6,6 +6,7 @@ $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
 . (Join-Path $PSScriptRoot 'CacheCleaner.ps1')
 . (Join-Path $PSScriptRoot 'SafeMode.ps1')
 . (Join-Path $PSScriptRoot 'Backup.ps1')
+. (Join-Path $PSScriptRoot 'ModManager.ps1')
 
 function Get-TweakerCatalog {
     @(
@@ -184,4 +185,4 @@ function Get-TweakerSystemInfo {
     [pscustomobject]@{ok=$true;os=$os.Caption;cpu=$cpu;gpu=$gpu;ramGB=[math]::Round($memory / 1GB, 1);isAdmin=$admin}
 }
 
-Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup
+Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup,Invoke-TweakerMods
