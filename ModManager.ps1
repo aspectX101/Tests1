@@ -3,10 +3,13 @@
 # aktiviert/deaktiviert sie umkehrbar im FiveM-Ordner. Dazu Auflösung/Fenstermodus in den Spieleinstellungen.
 # Bibliothek, Sicherungen und Zustand: %LOCALAPPDATA%\Tweaker\Mods (pro Windows-Benutzer).
 #
-# Zuordnung je Datei (relativer Pfad im Mod):
-#   - enthält einen Ordner "citizen", "mods" oder "plugins"  -> ab dort unter FiveM.app (z. B. Soundpacks)
-#   - .rpf ohne solche Struktur                                -> FiveM.app\mods\<Datei>.rpf (Grafik, Waffen, Minimap)
-#   - enthält "platform" oder "common"                         -> FiveM.app\citizen\<ab dort>
+# Zuordnung je Datei (relativer Pfad im Mod). Ziele mit "gta:" liegen im GTA-V-Ordner, alle anderen unter FiveM.app:
+#   - enthält "x64\audio\…"                                -> gta:x64\audio\… (Original-Sounds, z. B. Soundpacks)
+#   - enthält einen Ordner "citizen", "mods" oder "plugins"  -> ab dort unter FiveM.app
+#   - enthält "audio\sfx\…" (ohne x64)                      -> gta:x64\audio\sfx\…
+#   - .rpf in einer Sound-Mod ohne Struktur                   -> gta:x64\audio\sfx\<Datei>.rpf (RESIDENT.rpf, WEAPONS_PLAYER.rpf …)
+#   - andere .rpf ohne Struktur                               -> FiveM.app\mods\<Datei>.rpf (Grafik/NVE, Waffen, Minimap)
+#   - enthält "platform" oder "common"                        -> FiveM.app\citizen\<ab dort>
 #   - alles andere (Readme, Bilder, …) wird nicht installiert
 # Ausführbarer Code (.exe, .dll, .asi, Skripte) wird nie installiert – Sicherheit und Anticheat.
 
@@ -45,12 +48,23 @@ function Get-ModRelativeParts([string]$Relative) {
 }
 
 # Zielpfad relativ zu FiveM.app (mit "\") oder $null, wenn die Datei nicht installiert wird.
-function Get-ModTarget([string]$Relative) {
+function Get-ModTarget([string]$Relative, [string]$Category) {
     $parts = Get-ModRelativeParts $Relative
     if ($parts.Count -eq 0) { return $null }
     $ext = [IO.Path]::GetExtension($parts[-1]).ToLowerInvariant()
     if ($ext -in $script:ModBlockedExt) { return $null }
     if ($ext -notin $script:ModAssetExt) { return $null }
+    # Original-GTA-Sounds: x64\audio\… bzw. audio\sfx\… im Archiv
+    for ($i = 0; $i -lt $parts.Count - 2; $i++) {
+        if ($parts[$i] -eq 'x64' -and $parts[$i + 1] -eq 'audio') { return 'gta:' + ($parts[$i..($parts.Count - 1)] -join '\') }
+    }
+    $hasCitizen = $parts.Count -gt 1 -and @($parts[0..($parts.Count - 2)] | Where-Object { $_ -in @('citizen', 'mods', 'plugins') }).Count -gt 0
+    if (-not $hasCitizen) {
+        for ($i = 0; $i -lt $parts.Count - 2; $i++) {
+            if ($parts[$i] -eq 'audio' -and $parts[$i + 1] -eq 'sfx') { return 'gta:x64\' + ($parts[$i..($parts.Count - 1)] -join '\') }
+        }
+        if ($ext -eq '.rpf' -and $Category -eq 'sound') { return 'gta:x64\audio\sfx\' + $parts[-1] }
+    }
     for ($i = 0; $i -lt $parts.Count - 1; $i++) {
         if ($parts[$i] -in @('citizen', 'mods', 'plugins')) {
             if ($parts[$i] -eq 'plugins' -and $ext -notin @('.fx', '.fxh', '.ini', '.png', '.dds', '.ttf', '.otf')) { return $null }
@@ -113,7 +127,8 @@ function Get-ModPublic($Mod) {
     [pscustomobject]@{id=$Mod.id; name=$Mod.name; category=$Mod.category; enabled=[bool]$Mod.enabled
         sizeBytes=[long]$Mod.sizeBytes; fileCount=@($Mod.files).Count; skippedCount=[int]$Mod.skippedCount
         importedUtc=$Mod.importedUtc; enabledUtc=$Mod.enabledUtc
-        targets=@(@($Mod.files) | Select-Object -First 4 | ForEach-Object { $_.target })}
+        targets=@(@($Mod.files) | Select-Object -First 4 | ForEach-Object { $_.target })
+        usesGta=(@(@($Mod.files) | Where-Object { $_.target.StartsWith('gta:') }).Count -gt 0)}
 }
 
 function Find-Mod($State, [string]$ModId) {
@@ -148,7 +163,7 @@ function Import-TweakerMod([string]$ModPath, [string]$Category, [string]$Name) {
         $mapped = @(); $skipped = 0; $bytes = [long]0; $seen = @{}
         foreach ($f in @(Get-ChildItem -LiteralPath $base -Recurse -File -Force)) {
             $relative = $f.FullName.Substring($base.Length + 1)
-            $target = Get-ModTarget $relative
+            $target = Get-ModTarget $relative $Category
             if (-not $target -or $seen.ContainsKey($target.ToLowerInvariant())) { $skipped++; continue }
             $seen[$target.ToLowerInvariant()] = $true
             $bytes += $f.Length
@@ -175,10 +190,55 @@ function Get-ModSourceFile($Mod, $Entry) {
     return $path
 }
 
+# GTA-V-Installationsordner finden (für Soundpacks). Reihenfolge: FiveMs CitizenFX.ini (IVPath), Registry
+# (Rockstar, Steam, Epic, Legacy), übliche Pfade. Gültig ist ein Ordner mit x64\audio\sfx.
+$script:GtaRootCache = $null
+function Test-GtaRoot([string]$Path) {
+    if (-not $Path) { return $null }
+    foreach ($p in @($Path, [IO.Path]::GetDirectoryName($Path.TrimEnd('\', '/')))) {
+        if ($p -and (Test-Path -LiteralPath (Join-Path $p 'x64\audio\sfx') -PathType Container)) { return [IO.Path]::GetFullPath($p).TrimEnd('\', '/') }
+    }
+    return $null
+}
+
+function Resolve-GtaRoot([string]$FiveMPath) {
+    if ($script:GtaRootCache) { return $script:GtaRootCache }
+    $candidates = @()
+    try {
+        $ini = Join-Path (Resolve-FiveMRoot $FiveMPath) 'CitizenFX.ini'
+        foreach ($line in @(Get-Content -LiteralPath $ini -ErrorAction Stop)) { if ($line -match '^\s*IVPath\s*=\s*(.+?)\s*$') { $candidates += $Matches[1] } }
+    } catch { }
+    foreach ($key in @('HKLM:\SOFTWARE\WOW6432Node\Rockstar Games\Grand Theft Auto V', 'HKLM:\SOFTWARE\WOW6432Node\Rockstar Games\GTA V Legacy',
+            'HKLM:\SOFTWARE\WOW6432Node\Rockstar Games\GTAV', 'HKLM:\SOFTWARE\Rockstar Games\Grand Theft Auto V')) {
+        $props = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue
+        if ($props) { foreach ($n in 'InstallFolder', 'InstallFolderSteam', 'InstallFolderEpic') { if ($props.PSObject.Properties[$n]) { $candidates += $props.$n } } }
+    }
+    foreach ($pf in @($env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ }) {
+        $candidates += (Join-Path $pf 'Rockstar Games\Grand Theft Auto V Legacy'), (Join-Path $pf 'Rockstar Games\Grand Theft Auto V'),
+            (Join-Path $pf 'Steam\steamapps\common\Grand Theft Auto V Legacy'), (Join-Path $pf 'Steam\steamapps\common\Grand Theft Auto V'),
+            (Join-Path $pf 'Epic Games\GTAV')
+    }
+    foreach ($c in $candidates) { $root = Test-GtaRoot $c; if ($root) { $script:GtaRootCache = $root; return $root } }
+    throw 'gta_not_found'
+}
+
 function Get-ModTargetPath([string]$Root, [string]$Target) {
+    if ($Target.StartsWith('gta:')) {
+        $parts = Get-ModRelativeParts $Target.Substring(4)
+        # Im GTA-Ordner nur Audio-Dateien ersetzen
+        if ($parts.Count -lt 3 -or $parts[0] -ne 'x64' -or $parts[1] -ne 'audio') { throw 'mod_archive_unsafe' }
+        $gta = Resolve-GtaRoot
+        return Assert-CachePath (Join-Path $gta ($parts -join [IO.Path]::DirectorySeparatorChar)) $gta
+    }
     $parts = Get-ModRelativeParts $Target
     if ($parts[0] -notin @('citizen', 'mods', 'plugins')) { throw 'mod_archive_unsafe' }
     return Assert-CachePath (Join-Path $Root ($parts -join [IO.Path]::DirectorySeparatorChar)) $Root
+}
+
+# Sicherungsort einer überschriebenen Originaldatei (GTA-Ziele getrennt unter "gta\")
+function Get-ModBackupPath([string]$ModId, [string]$Target) {
+    $rel = if ($Target.StartsWith('gta:')) { 'gta\' + $Target.Substring(4) } else { $Target }
+    return Join-Path (Get-ModStorePath (Join-Path 'backup' $ModId)) ($rel -replace '\\', [IO.Path]::DirectorySeparatorChar)
 }
 
 function Enable-TweakerMod([string]$ModId, [string]$FiveMPath) {
@@ -199,7 +259,7 @@ function Enable-TweakerMod([string]$ModId, [string]$FiveMPath) {
             $src = Get-ModSourceFile $mod $e
             $dst = Get-ModTargetPath $root $e.target
             if (Test-Path -LiteralPath $dst -PathType Leaf) {
-                $saved = Join-Path $backupDir ($e.target -replace '\\', [IO.Path]::DirectorySeparatorChar)
+                $saved = Get-ModBackupPath $mod.id $e.target
                 $null = New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($saved)) -Force
                 Copy-Item -LiteralPath $dst -Destination $saved -Force
                 $backups += $e.target
@@ -224,7 +284,7 @@ function Restore-ModTarget([string]$Root, [string]$ModId, [string]$Target, [bool
     $dst = Get-ModTargetPath $Root $Target
     if (Test-Path -LiteralPath $dst -PathType Leaf) { Remove-Item -LiteralPath $dst -Force }
     if ($HasBackup) {
-        $saved = Join-Path (Get-ModStorePath (Join-Path 'backup' $ModId)) ($Target -replace '\\', [IO.Path]::DirectorySeparatorChar)
+        $saved = Get-ModBackupPath $ModId $Target
         if (Test-Path -LiteralPath $saved -PathType Leaf) {
             $null = New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($dst)) -Force
             Move-Item -LiteralPath $saved -Destination $dst -Force
@@ -323,7 +383,8 @@ function Invoke-TweakerMods {
             $root = $null; $found = $true
             try { $root = Resolve-FiveMRoot $FiveMPath } catch { $found = $false }
             $mods = @($state.mods | ForEach-Object { Get-ModPublic $_ })
-            return [pscustomobject]@{ok=$true; fivemFound=$found; root=$root; mods=$mods
+            $gta = $null; try { $gta = Resolve-GtaRoot $FiveMPath } catch { }
+            return [pscustomobject]@{ok=$true; fivemFound=$found; root=$root; gtaRoot=$gta; mods=$mods
                 enabledCount=@($mods | Where-Object enabled).Count; categories=$script:ModCategories}
         }
         'mods-import' { return [pscustomobject]@{ok=$true; mod=(Get-ModPublic (Import-TweakerMod $ModPath $Category $Name))} }

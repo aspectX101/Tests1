@@ -14,6 +14,13 @@ $module = Get-Module Tweaker
     $null = New-Item -ItemType Directory -Path (Join-Path $fivem 'data'), (Join-Path $fivem 'citizen/platform/audio/sfx') -Force
     Set-Content -LiteralPath (Join-Path $fivem 'citizen/platform/audio/sfx/RESIDENT.awc') -Value 'ORIGINAL'
     $script:ModStore = Join-Path $work 'store'
+    # nachgebaute GTA-V-Installation mit Original-Sounddateien
+    $gta = Join-Path $work 'Grand Theft Auto V Legacy'
+    $sfx = Join-Path $gta 'x64/audio/sfx'
+    $null = New-Item -ItemType Directory -Path $sfx -Force
+    Set-Content -LiteralPath (Join-Path $sfx 'RESIDENT.rpf') -Value 'GTA-ORIGINAL'
+    Set-Content -LiteralPath (Join-Path $sfx 'WEAPONS_PLAYER.rpf') -Value 'GTA-WEAPONS'
+    $script:GtaRootCache = $gta
     $script:gameRunning = $false
     function Resolve-FiveMRoot([string]$FiveMPath) { return $fivem }
     function Assert-FiveMClosed { if ($script:gameRunning) { throw 'close_fivem_first' } }
@@ -35,7 +42,8 @@ $module = Get-Module Tweaker
         $r = Invoke-TweakerMods -Action mods-import -ModPath $sound -Category sound
         $m1 = $r.mod
         Assert ($m1.fileCount -eq 2 -and $m1.skippedCount -eq 2) 'import zip: 2 Dateien installierbar, dll + txt übersprungen'
-        Assert (@($m1.targets) -contains 'citizen\platform\audio\sfx\RESIDENT.awc' -and @($m1.targets) -contains 'mods\weapons.rpf') 'import zip: Zielpfade richtig zugeordnet'
+        Assert (@($m1.targets) -contains 'citizen\platform\audio\sfx\RESIDENT.awc' -and @($m1.targets) -contains 'gta:x64\audio\sfx\weapons.rpf') 'import zip: citizen bleibt FiveM, lose rpf im Soundpack -> GTA sfx'
+        Assert ($m1.usesGta) 'import zip: usesGta gesetzt'
         Assert ($m1.name -eq 'soundpack' -and $m1.category -eq 'sound' -and -not $m1.enabled) 'import zip: Name, Kategorie, inaktiv'
 
         # 2) ZIP mit Pfad-Trick wird abgelehnt und hinterlässt nichts
@@ -60,7 +68,7 @@ $module = Get-Module Tweaker
         $null = Invoke-TweakerMods -Action mods-enable -ModId $m1.id
         $awc = Join-Path $fivem 'citizen/platform/audio/sfx/RESIDENT.awc'
         Assert ((Get-Content $awc -Raw).Trim() -eq 'NEWSOUND') 'aktivieren: Sounddatei ersetzt'
-        Assert (Test-Path (Join-Path $fivem 'mods/weapons.rpf')) 'aktivieren: rpf in mods\'
+        Assert (Test-Path (Join-Path $sfx 'weapons.rpf')) 'aktivieren: Sound-rpf im GTA-Ordner'
         Assert ((Invoke-TweakerMods -Action mods-list).enabledCount -eq 1) 'liste: 1 aktiv'
 
         # 5) Konflikt mit gleicher Zieldatei
@@ -72,7 +80,28 @@ $module = Get-Module Tweaker
         # 6) Deaktivieren: Original zurück, eigene Dateien weg
         $null = Invoke-TweakerMods -Action mods-disable -ModId $m1.id
         Assert ((Get-Content $awc -Raw).Trim() -eq 'ORIGINAL') 'deaktivieren: Original wiederhergestellt'
-        Assert (-not (Test-Path (Join-Path $fivem 'mods/weapons.rpf'))) 'deaktivieren: rpf entfernt'
+        Assert (-not (Test-Path (Join-Path $sfx 'weapons.rpf'))) 'deaktivieren: neue Datei im GTA-Ordner entfernt'
+
+        # 6b) Typisches Soundpack: RESIDENT.rpf + WEAPONS_PLAYER.rpf lose bzw. als x64\audio\sfx im ZIP
+        $res = Join-Path $work 'RESIDENT.rpf'; Set-Content -LiteralPath $res -Value 'PACK-RESIDENT'
+        $ms = (Invoke-TweakerMods -Action mods-import -ModPath $res -Category sound).mod
+        Assert (@($ms.targets)[0] -eq 'gta:x64\audio\sfx\RESIDENT.rpf') 'sound-rpf -> gta:x64\audio\sfx'
+        $zip2 = Join-Path $work 'gunsounds.zip'
+        New-TestZip $zip2 @{ 'Gun Sounds/x64/audio/sfx/WEAPONS_PLAYER.rpf' = 'PACK-WEAPONS'; 'Gun Sounds/Install.txt' = 'kopieren nach GTA' }
+        $mw = (Invoke-TweakerMods -Action mods-import -ModPath $zip2 -Category weapons).mod
+        Assert (@($mw.targets)[0] -eq 'gta:x64\audio\sfx\WEAPONS_PLAYER.rpf') 'x64\audio-Struktur -> GTA, auch in anderer Kategorie'
+        $null = Invoke-TweakerMods -Action mods-enable -ModId $ms.id
+        $null = Invoke-TweakerMods -Action mods-enable -ModId $mw.id
+        Assert ((Get-Content (Join-Path $sfx 'RESIDENT.rpf') -Raw).Trim() -eq 'PACK-RESIDENT' -and (Get-Content (Join-Path $sfx 'WEAPONS_PLAYER.rpf') -Raw).Trim() -eq 'PACK-WEAPONS') 'soundpack aktiv: GTA-Originale ersetzt'
+        $null = Invoke-TweakerMods -Action mods-disable -ModId $ms.id
+        $null = Invoke-TweakerMods -Action mods-disable -ModId $mw.id
+        Assert ((Get-Content (Join-Path $sfx 'RESIDENT.rpf') -Raw).Trim() -eq 'GTA-ORIGINAL' -and (Get-Content (Join-Path $sfx 'WEAPONS_PLAYER.rpf') -Raw).Trim() -eq 'GTA-WEAPONS') 'soundpack aus: GTA-Originale zurück'
+        $script:GtaRootCache = $null
+        function Resolve-GtaRoot { throw 'gta_not_found' }
+        Expect-Error { Invoke-TweakerMods -Action mods-enable -ModId $ms.id } 'gta_not_found' 'GTA-Ordner nicht gefunden'
+        Assert ((Get-Content (Join-Path $sfx 'RESIDENT.rpf') -Raw).Trim() -eq 'GTA-ORIGINAL') 'fehlgeschlagenes Aktivieren ändert nichts'
+        Remove-Item Function:\Resolve-GtaRoot
+        $script:GtaRootCache = $gta
 
         # 7) Entfernen (auch wenn aktiv)
         $null = Invoke-TweakerMods -Action mods-enable -ModId $m2.id

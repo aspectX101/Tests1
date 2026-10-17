@@ -14,10 +14,13 @@ Mods werden aus eigenen Dateien des Nutzers importiert – es gibt keinen Downlo
 
 ## Zuordnung beim Import
 
-| Datei im Mod | Ziel unter `FiveM.app` |
+| Datei im Mod | Ziel |
 | --- | --- |
-| Pfad enthält Ordner `citizen`, `mods` oder `plugins` | ab diesem Ordner (z. B. Soundpacks `citizen\platform\audio\sfx\…`) |
-| `.rpf` ohne solche Struktur | `mods\<Datei>.rpf` (Grafik/NVE, Waffen-Skins, Minimaps) |
+| Pfad enthält `x64\audio\…` | GTA-V-Ordner `x64\audio\…` (intern `gta:x64\audio\…`) |
+| Pfad enthält Ordner `citizen`, `mods` oder `plugins` | `FiveM.app\` ab diesem Ordner |
+| Pfad enthält `audio\sfx\…` (ohne x64) | GTA-V-Ordner `x64\audio\sfx\…` |
+| `.rpf` in einer **Sound**-Mod ohne Struktur | GTA-V-Ordner `x64\audio\sfx\<Datei>.rpf` (RESIDENT.rpf, WEAPONS_PLAYER.rpf …) |
+| andere `.rpf` ohne Struktur | `FiveM.app\mods\<Datei>.rpf` (Grafik/NVE, Waffen-Skins, Minimaps) |
 | Pfad enthält `platform` oder `common` | `citizen\<ab dort>` |
 | alles andere | wird nicht installiert (zählt als „übersprungen“) |
 
@@ -25,6 +28,11 @@ Nur Asset-Dateien (`.rpf .ytd .ydr .yft .awc .dat .meta .xml .gfx …`) werden i
 (`.exe .dll .asi`, Skripte) wird nie installiert – Sicherheit und Anticheat. Unter `plugins` nur ReShade-Dateien (`.fx .ini .png …`).
 ZIPs werden Eintrag für Eintrag entpackt: absolute Pfade und `..` werden abgelehnt (`mod_archive_unsafe`), Limit 16 GB / 20.000 Dateien.
 RAR/7z/OIV werden nicht unterstützt (`mod_archive_unsupported`) – entpacken und den Ordner importieren.
+
+GTA-V-Ordner (für Soundpacks): `IVPath` aus `FiveM.app\CitizenFX.ini`, sonst Registry (Rockstar/Steam/Epic, auch „GTA V Legacy“),
+sonst übliche Pfade wie `Program Files\Rockstar Games\Grand Theft Auto V Legacy`. Gültig ist ein Ordner mit `x64\audio\sfx`
+(`gta_not_found` sonst). Im GTA-Ordner werden nur Dateien unter `x64\audio\` ersetzt; Sicherungen liegen unter `backup\<modId>\gta\`.
+Hinweis: Eine Dateiprüfung im Rockstar-Launcher/Steam kann ersetzte Sounddateien zurücksetzen.
 
 ## Aktivieren / Deaktivieren
 

@@ -203,7 +203,7 @@
     ({ id: hex12(), name, category, enabled, sizeBytes, fileCount: targets.length, skippedCount, importedUtc: now(), enabledUtc: enabled ? now() : null, targets });
   const mods = [
     M('NaturalVision Evolved', 'graphics', 1.9 * 1024 * MB, ['mods\\nve_graphics.rpf', 'mods\\nve_timecycle.rpf'], true, 3),
-    M('Glock Sound Pack', 'sound', 84 * MB, ['citizen\\platform\\audio\\sfx\\RESIDENT.awc', 'citizen\\platform\\audio\\sfx\\WEAPONS_PLAYER.awc'], false, 1),
+    M('Glock Sound Pack', 'sound', 84 * MB, ['gta:x64\\audio\\sfx\\RESIDENT.rpf', 'gta:x64\\audio\\sfx\\WEAPONS_PLAYER.rpf'], false, 1),
     M('Gold Weapon Skins', 'weapons', 212 * MB, ['mods\\weapons_gold.rpf'], true),
     M('Clean Minimap', 'minimap', 6 * MB, ['mods\\minimap.rpf'], false),
   ];
@@ -217,13 +217,13 @@
   function modsAction(action, { modId, modPath, category, width, height, windowed }, lang) {
     const message = modMsg[lang];
     const find = () => mods.find((m) => m.id === modId);
-    if (action === 'mods-list') return { ok: true, fivemFound: true, root: 'C:\\Users\\Spieler\\AppData\\Local\\FiveM\\FiveM.app', mods, enabledCount: mods.filter((m) => m.enabled).length, categories: ['graphics', 'sound', 'weapons', 'minimap', 'other'], message };
+    if (action === 'mods-list') return { ok: true, fivemFound: true, root: 'C:\\Users\\Spieler\\AppData\\Local\\FiveM\\FiveM.app', gtaRoot: 'C:\\Program Files\\Rockstar Games\\Grand Theft Auto V Legacy', mods, enabledCount: mods.filter((m) => m.enabled).length, categories: ['graphics', 'sound', 'weapons', 'minimap', 'other'], message };
     if (action === 'mods-import') {
       if (!['graphics', 'sound', 'weapons', 'minimap', 'other'].includes(category)) return { ok: false, error: 'invalid_mod_category' };
       const file = String(modPath || 'Neue Mod.zip').split(/[\\/]/).pop();
       const base = file.replace(/\.[^.]+$/, '');
       if (/\.(rar|7z)$/i.test(file)) return { ok: false, error: 'mod_archive_unsupported' };
-      const m = M(base, category, Math.round((20 + Math.random() * 300) * MB), [`mods\\${base.toLowerCase().replace(/\s+/g, '_')}.rpf`], false, Math.round(Math.random() * 2));
+      const m = M(base, category, Math.round((20 + Math.random() * 300) * MB), [category === 'sound' ? 'gta:x64\\audio\\sfx\\RESIDENT.rpf' : `mods\\${base.toLowerCase().replace(/\s+/g, '_')}.rpf`], false, Math.round(Math.random() * 2));
       mods.unshift(m);
       return { ok: true, mod: m, message };
     }

@@ -485,3 +485,4 @@ body::before { animation: smoke 26s ease-in-out infinite alternate; }
 .nav { scrollbar-width: none; }
 .nav::-webkit-scrollbar { width: 0; height: 0; }
 .nav-item { height: 35px; }
+.cache-root + .cache-root { margin-top: -12px; }

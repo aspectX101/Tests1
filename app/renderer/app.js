@@ -477,6 +477,9 @@ function updateText() {
   return u.checkedAt && (u.status === 'latest' || u.status === 'error') ? `${base} · ${t().upChecked(fmtDate(u.checkedAt))}` : base;
 }
 
+// "gta:x64\audio\…" liegt im GTA-V-Ordner, alles andere unter FiveM.app
+const showTarget = (t) => (t.startsWith('gta:') ? 'GTA V\\' + t.slice(4) : 'FiveM\\' + t);
+
 function renderMods() {
   const d = state.mods;
   const busy = state.modsBusy;
@@ -490,7 +493,8 @@ function renderMods() {
   else if (!d) status = `<div class="cache-status">${esc(errorText(state.modsError))}</div><div class="cache-actions"><button class="pill dark" id="mods-reload">${t().reload}</button></div>`;
   else status = `
     <div class="cache-total"><b>${d.mods.length}</b><span>${t().modsCount(d.mods.length, d.enabledCount)}</span></div>
-    ${d.root ? `<div class="cache-root" title="${esc(d.root)}">${esc(d.root)}</div>` : ''}
+    ${d.root ? `<div class="cache-root" title="${esc(d.root)}">FiveM: ${esc(d.root)}</div>` : ''}
+    <div class="cache-root" title="${esc(d.gtaRoot || '')}">GTA V: ${d.gtaRoot ? esc(d.gtaRoot) : t().modsNoGta}</div>
     ${d.fivemFound ? '' : `<div class="sm-alert">${t().modsNoFivem}</div>`}
     <p class="cache-note">${esc(d.message || '')}</p>
     <div class="cache-actions">
@@ -511,7 +515,7 @@ function renderMods() {
           <div class="row-title">${esc(m.name)}
             <span class="tag">${esc(t().modCats[m.category] || m.category)}</span>
             ${m.skippedCount ? `<span class="tag" title="${esc(t().modsSkippedHint)}">${t().modsSkipped(m.skippedCount)}</span>` : ''}</div>
-          <div class="row-desc">${fmtBytes(m.sizeBytes)} · ${t().modsFiles(m.fileCount)} · <span class="mono">${esc(m.targets[0] || '')}${more}</span></div>
+          <div class="row-desc">${fmtBytes(m.sizeBytes)} · ${t().modsFiles(m.fileCount)} · <span class="mono">${esc(showTarget(m.targets[0] || ''))}${more}</span></div>
         </div>
         <button class="pill dark danger" data-mod-remove="${esc(m.id)}" ${busy ? 'disabled' : ''}>${t().modsRemove}</button>
         <label class="switch${mine ? ' busy' : ''}">
@@ -522,6 +526,7 @@ function renderMods() {
   };
   const mods = d ? `
     <div class="toolbar"><div class="seg">${['all', ...MOD_CATS].map(tab).join('')}</div></div>
+    ${state.modsTab === 'sound' ? `<p class="hint">${t().modsSoundHint}</p>` : ''}
     <div class="rows">${list.length ? list.map(row).join('') : `<div class="card empty">${t().modsEmpty}</div>`}</div>` : '';
   return head + `<div class="card cache-card">${status}</div>` + mods + renderResolution();
 }

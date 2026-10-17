@@ -29,6 +29,7 @@ window.I18N = {
     working: 'Wird angewendet … (Wiederherstellungspunkt wird erstellt)',
     statusMsg: { unchanged: 'war bereits aktiv', no_change: 'kein laufender FiveM-Prozess gefunden' },
     errors: {
+      gta_not_found: 'GTA V wurde nicht gefunden. Starte FiveM einmal, damit der GTA-Pfad bekannt ist.',
       mod_source_not_found: 'Die gewählte Datei wurde nicht gefunden.',
       mod_archive_unsupported: 'RAR/7z/OIV werden nicht unterstützt. Bitte entpacken und den Ordner importieren.',
       mod_archive_unsafe: 'Das Archiv enthält unsichere Pfade und wurde abgelehnt.',
@@ -174,6 +175,7 @@ window.I18N = {
     modsLoading: 'Wird geladen …',
     modsCount: (n, a) => `Mod(s) · ${a} aktiv`,
     modsNoFivem: 'FiveM wurde nicht gefunden. Mods lassen sich importieren, aber erst aktivieren, wenn FiveM installiert ist.',
+    modsNoGta: 'nicht gefunden – nötig für Soundpacks', modsSoundHint: 'Soundpacks (z. B. RESIDENT.rpf, WEAPONS_PLAYER.rpf) ersetzen die Original-Sounds im GTA-V-Ordner unter x64\\audio\\sfx. Die Originale werden gesichert und beim Ausschalten zurückgespielt.',
     modsImportFile: 'Datei importieren', modsImportFolder: 'Ordner importieren', modsOpenFolder: 'Mods-Ordner öffnen',
     modsEmpty: 'Noch keine Mods in dieser Kategorie. Importiere eine ZIP, RPF-Datei oder einen Ordner.',
     modsFiles: (n) => `${n} Datei${n === 1 ? '' : 'en'}`,
@@ -233,6 +235,7 @@ window.I18N = {
     working: 'Applying … (creating restore point)',
     statusMsg: { unchanged: 'was already active', no_change: 'no running FiveM process found' },
     errors: {
+      gta_not_found: 'GTA V was not found. Start FiveM once so the GTA path is known.',
       mod_source_not_found: 'The selected file was not found.',
       mod_archive_unsupported: 'RAR/7z/OIV are not supported. Please extract and import the folder.',
       mod_archive_unsafe: 'The archive contains unsafe paths and was rejected.',
@@ -378,6 +381,7 @@ window.I18N = {
     modsLoading: 'Loading …',
     modsCount: (n, a) => `mod(s) · ${a} active`,
     modsNoFivem: 'FiveM was not found. Mods can be imported but only enabled once FiveM is installed.',
+    modsNoGta: 'not found – required for sound packs', modsSoundHint: 'Sound packs (e.g. RESIDENT.rpf, WEAPONS_PLAYER.rpf) replace the original sounds in the GTA V folder under x64\\audio\\sfx. Originals are backed up and restored when switched off.',
     modsImportFile: 'Import file', modsImportFolder: 'Import folder', modsOpenFolder: 'Open mods folder',
     modsEmpty: 'No mods in this category yet. Import a ZIP, RPF file or folder.',
     modsFiles: (n) => `${n} file${n === 1 ? '' : 's'}`,
@@ -437,6 +441,7 @@ window.I18N = {
     working: 'Applicazione … (creazione punto di ripristino)',
     statusMsg: { unchanged: 'era già attivo', no_change: 'nessun processo FiveM attivo' },
     errors: {
+      gta_not_found: 'GTA V non trovato. Avvia FiveM una volta per registrare il percorso di GTA.',
       mod_source_not_found: 'Il file selezionato non è stato trovato.',
       mod_archive_unsupported: 'RAR/7z/OIV non sono supportati. Estrai e importa la cartella.',
       mod_archive_unsafe: 'L’archivio contiene percorsi non sicuri ed è stato rifiutato.',
@@ -582,6 +587,7 @@ window.I18N = {
     modsLoading: 'Caricamento …',
     modsCount: (n, a) => `mod · ${a} attive`,
     modsNoFivem: 'FiveM non trovato. Le mod si possono importare, ma attivare solo con FiveM installato.',
+    modsNoGta: 'non trovato – necessario per i sound pack', modsSoundHint: 'I sound pack (es. RESIDENT.rpf, WEAPONS_PLAYER.rpf) sostituiscono i suoni originali nella cartella di GTA V in x64\\audio\\sfx. Gli originali vengono salvati e ripristinati alla disattivazione.',
     modsImportFile: 'Importa file', modsImportFolder: 'Importa cartella', modsOpenFolder: 'Apri cartella mods',
     modsEmpty: 'Ancora nessuna mod in questa categoria. Importa uno ZIP, un file RPF o una cartella.',
     modsFiles: (n) => `${n} file`,
