@@ -1,14 +1,25 @@
 #requires -Version 5.1
 [CmdletBinding()]
-param([string]$Action, [string]$Id, [string]$Lang='de')
+param([string]$Action, [string]$Id, [string]$Lang='de', [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 try {
-    if ($Action -notin @('info','list','status','apply','revert')) { throw 'invalid_action' }
+    if ($Action -notin @('info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge')) { throw 'invalid_action' }
     if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
     Import-Module (Join-Path $PSScriptRoot 'Tweaker.psm1') -Force -WarningAction Stop
+    if ($Action.StartsWith('cache-')) {
+        $result = Invoke-TweakerCache -Action $Action -FiveMPath $FiveMPath -BackupId $BackupId -ConfirmPurge:$ConfirmPurge -Confirm:$false
+        $messages = @{
+            de='Cache-Daten werden beim naechsten Serverbeitritt erneut geladen. Sichern und bereinigen gibt noch keinen Speicher frei; erst das endgueltige Loeschen der Sicherung. Einstellungen, Mods, Keybinds und Spielassets bleiben erhalten.'
+            en='Cache data is downloaded again on the next server join. Quarantine does not free disk space; permanently purge the backup to reclaim space. Settings, mods, keybinds and game assets are preserved.'
+            it='I dati cache vengono scaricati di nuovo al prossimo accesso al server. Lo spostamento nella copia di sicurezza non libera spazio; eliminarla definitivamente per recuperarlo. Impostazioni, mod, comandi e risorse di gioco vengono conservati.'
+        }
+        $result | Add-Member -NotePropertyName message -NotePropertyValue $messages[$Lang]
+        $result | ConvertTo-Json -Depth 12 -Compress
+        exit 0
+    }
     $catalog = @(Get-TweakerCatalog)
     if ($Action -in @('status','apply','revert') -and $Id -notin @($catalog.id)) { throw 'invalid_tweak_id' }
     function Test-Applied([string]$TweakId, $Live) {

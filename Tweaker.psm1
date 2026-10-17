@@ -3,6 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
 . (Join-Path $PSScriptRoot 'Keyboard.ps1')
+. (Join-Path $PSScriptRoot 'CacheCleaner.ps1')
 
 function Get-TweakerCatalog {
     @(
@@ -71,12 +72,19 @@ function New-TweakerRestorePoint {
 }
 
 function Save-Journal($State, [string]$Path) {
-    $temporary = $Path + '.' + [guid]::NewGuid().ToString('N') + '.tmp'
+    $temporary = Join-Path ([IO.Path]::GetDirectoryName($Path)) ([guid]::NewGuid().ToString('N').Substring(0, 8) + '.tmp')
+    $created = $false
     try {
-        [IO.File]::WriteAllText($temporary, ($State | ConvertTo-Json -Depth 10), [Text.UTF8Encoding]::new($false))
+        $stream = [IO.File]::Open($temporary, 'CreateNew', 'Write', 'None')
+        $created = $true
+        try {
+            $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($State | ConvertTo-Json -Depth 10))
+            $stream.Write($bytes, 0, $bytes.Length)
+            $stream.Flush($true)
+        } finally { $stream.Dispose() }
         if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($temporary, $Path, ($Path + '.previous')) }
         else { [IO.File]::Move($temporary, $Path) }
-    } finally { if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary } }
+    } finally { if ($created -and (Test-Path -LiteralPath $temporary)) { Remove-Item -LiteralPath $temporary } }
 }
 
 function Get-TweakerStatus {
@@ -166,4 +174,4 @@ function Get-TweakerSystemInfo {
     [pscustomobject]@{ok=$true;os=$os.Caption;cpu=$cpu;gpu=$gpu;ramGB=[math]::Round($memory / 1GB, 1);isAdmin=$admin}
 }
 
-Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied
+Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Invoke-TweakerCache

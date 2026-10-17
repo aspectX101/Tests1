@@ -1,4 +1,4 @@
-# Read-only smoke tests against real Windows APIs. No valid apply/revert is invoked.
+# Read-only Windows API checks and cache operations on a disposable fixture only.
 $ErrorActionPreference = 'Stop'
 $entry = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../tweaker.ps1'))
 if ($entry.Contains('"')) { throw 'Invalid test path' }
@@ -47,8 +47,32 @@ foreach ($case in @(
     @{arguments='-Action apply -Id unknown';error='invalid_tweak_id'},
     @{arguments='-Action invalid';error='invalid_action'},
     @{arguments='-Action list -Lang unknown';error='invalid_language'}
+    @{arguments='-Action cache-info -FiveMPath relative';error='local_absolute_fivem_path_required'}
 )) {
     $result = Invoke-JsonCli $case.arguments 1
     if ($result.ok -or $result.error -ne $case.error) { throw 'Invalid error contract' }
 }
-Write-Output 'PASS: JSON/UTF-8 contract, three languages, five catalog entries, live keyboard status and invalid-input errors'
+$fixtureParent = [IO.Path]::GetFullPath((Join-Path (Get-Location) 'work'))
+$fixture = Join-Path $fixtureParent ('json-' + [guid]::NewGuid().ToString('N').Substring(0,8))
+try {
+    $null = New-Item -ItemType Directory -Path (Join-Path $fixture 'data\server-cache') -Force
+    [IO.File]::WriteAllText((Join-Path $fixture 'CitizenFX.ini'), 'fixture')
+    [IO.File]::WriteAllText((Join-Path $fixture 'data\server-cache\file.bin'), '12345')
+    $pathArgument = ' -FiveMPath "' + $fixture + '"'
+    $preview = Invoke-JsonCli ('-Action cache-info' + $pathArgument) 0
+    if ($preview.totalBytes -ne 5) { throw 'Invalid cache preview JSON' }
+    $cleaned = Invoke-JsonCli ('-Action cache-clean' + $pathArgument) 0
+    if ($cleaned.status -ne 'cleaned' -or $cleaned.freedBytes -ne 0 -or -not $cleaned.backupId) { throw 'Invalid clean JSON' }
+    $restored = Invoke-JsonCli ('-Action cache-restore -BackupId ' + $cleaned.backupId + $pathArgument) 0
+    if ($restored.status -ne 'restored') { throw 'Invalid restore JSON' }
+    $cleaned = Invoke-JsonCli ('-Action cache-clean -Lang it' + $pathArgument) 0
+    $failure = Invoke-JsonCli ('-Action cache-purge -BackupId ' + $cleaned.backupId + $pathArgument) 1
+    if ($failure.error -ne 'explicit_purge_confirmation_required') { throw 'Missing purge confirmation check' }
+    $purged = Invoke-JsonCli ('-Action cache-purge -ConfirmPurge -BackupId ' + $cleaned.backupId + $pathArgument) 0
+    if ($purged.freedBytes -ne 5 -or $purged.status -ne 'purged') { throw 'Invalid purge JSON' }
+} finally {
+    $absolute = [IO.Path]::GetFullPath($fixture)
+    if (-not $absolute.StartsWith($fixtureParent + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe fixture path' }
+    if (Test-Path -LiteralPath $absolute) { Remove-Item -LiteralPath $absolute -Recurse -Force }
+}
+Write-Output 'PASS: JSON/UTF-8 contract, three languages, five tweaks, live keyboard status, invalid inputs and fixture cache preview/clean/restore/purge'

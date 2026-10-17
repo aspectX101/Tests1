@@ -1,4 +1,4 @@
-# Tweaker performance and keyboard backend
+# Tweaker performance, keyboard and FiveM cache backend
 
 UI-independent Windows backend for the shared Tweaker project. First implementation; Windows 10/11, Windows PowerShell 5.1 or PowerShell 7. UI belongs to Claude and can consume the JSON CLI. No external packages.
 
@@ -10,6 +10,7 @@ UI-independent Windows backend for the shared Tweaker project. First implementat
 - `keyboard.filterkeys.off`: disables Filter Keys and its right-Shift activation hotkey. Keeps the availability flag, other preferences and all Filter Keys timing parameters. Only useful if this accessibility feature or its hotkey interferes with input; users who need it should keep it enabled.
 - `keyboard.stickykeys.off`: disables Sticky Keys and its five-Shift activation hotkey. Preserves the other persistent preferences. Does not attempt to save/restore transient held/latched modifier state.
 - Catalog includes German, English and Italian names/descriptions. IDs and status codes are language-neutral. UI translates errors and displays warnings before applying.
+- FiveM Cache Cleaner is a separate utility with preview, reversible quarantine, restore and explicit permanent purge. See below. Windows EXE packaging and main-process integration for Claude's Electron UI are provided in [packaging/README.md](../packaging/README.md) and [electron/backend.cjs](../electron/backend.cjs).
 
 ## UI integration
 
@@ -45,6 +46,8 @@ No FPS improvement is promised. High performance may increase heat and power use
 pwsh -NoProfile -File tests/Performance.Tests.ps1
 pwsh -NoProfile -File tests/Keyboard.Tests.ps1
 pwsh -NoProfile -File tests/Contract.Tests.ps1
+pwsh -NoProfile -File tests/CacheCleaner.Tests.ps1
+node --test tests/electron-backend.test.cjs
 ```
 
 Tests replace all Windows mutation adapters with in-memory fakes. They verify journaling and recovery without changing this PC. These tests pass on Windows PowerShell 5.1 and PowerShell 7. The JSON CLI list/status/info/error responses are also checked with Windows PowerShell 5.1. The Electron invocation may use the agreed process-local `-ExecutionPolicy Bypass`; do not change the machine execution policy. Real power-plan changes, restore points and FiveM process behavior still require manual checks on a disposable Windows gaming test system, including denied-access cases. This is an initial backend implementation, not a validated FPS optimization release.
@@ -56,3 +59,27 @@ Test-environment limitation: CIM access is denied in the current sandbox. `info`
 Keyboard validation: journal/restore, privilege and checkpoint failures, disk failure, partial apply/restore recovery, external-change detection, backup validation and operation locking are tested with simulated setters. Read-only CLI tests exercise the real native getters and JSON contract. Native keyboard setters and actual persistence after sign-out still need manual verification on a disposable test account; no real keyboard settings were changed during development. Queue-size registry edits, key remapping, macros and latency/FPS promises are intentionally excluded.
 
 Keyboard references: [SystemParametersInfo](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow), [Filter Keys](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-filterkeys), [Sticky Keys](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-stickykeys).
+
+## FiveM Cache Cleaner
+
+The utility accepts the normal installation `%LOCALAPPDATA%\FiveM\FiveM.app`, or an explicit local absolute `-FiveMPath` pointing to application data. It requires `CitizenFX.ini` and `data` as installation markers. Unsupported/absent installations return an error and are not guessed from broad disk searches.
+
+```powershell
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tweaker.ps1 -Action cache-info -Lang de
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tweaker.ps1 -Action cache-clean -Lang de
+# Use the backupId returned by clean/info (32 hexadecimal characters):
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tweaker.ps1 -Action cache-restore -BackupId <backupId>
+# Alternative to restore: irreversible removal, after a separate UI confirmation:
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tweaker.ps1 -Action cache-purge -BackupId <backupId> -ConfirmPurge
+```
+
+- `cache-info` returns `{ok, root, candidates:[{relative, bytes, fileCount}], totalBytes, backups:[{backupId,status,createdUtc}], requiresClosedGame, message}` without writing anything. Preview can run while the game is open; mutation cannot. `cache-clean` rescans so the displayed estimate may change if FiveM has written new files since preview.
+- `cache-clean` moves only children of `data/cache` (except `game`), `data/server-cache` and `data/server-cache-priv` into `.tweaker-cache-backups/<backupId>/payload` in the same install. It returns `status`, `backupId`, `removedFromActiveCacheBytes`, `freedBytes:0` and a localized message. Cached server downloads must be fetched again when needed. This repairs active cache state without claiming to free disk space while a backup still exists.
+- `cache-restore` restores the selected backup, never overwriting regenerated cache paths. A conflict requires the user to decide which cache data to keep. Interrupted moves are recorded before the first mutation and can be recovered using `cache-info` and `cache-restore`.
+- `cache-purge` requires `-ConfirmPurge` and permanently removes only the selected backup's whitelisted payload paths. Afterwards restore is unavailable. `freedBytes` counts the logical file lengths removed in that call, not measured physical disk-space change; sparse/compressed/hard-linked files may differ. Retrying a partially completed purge counts only files remaining at retry. A `purging` journal cannot be restored because it may already be incomplete.
+
+FiveM/related GTA client processes must be closed. Reparse points/junctions in selected trees or ancestors are rejected; operations are serialized. Settings, keybind/config files, local citizen mods, `data/game-storage`, `data/nui-storage`, legacy `data/cache/game`, logs outside the selected cache, and crash dumps are not selected. There is no automatic startup cleaning. The GUI should show the selection/estimate, explain backup disk usage, and offer restore or a separately confirmed permanent purge. Cache actions are not included in `list` as reversible tweak toggles.
+
+Cache tests use disposable fake installations, including real file moves, restore and purge. They check running-game rejection, preserved files, byte counts, partial clean recovery, conflicts and invalid manifests. The sandbox denies physical junction creation, so reparse-point rejection is tested with simulated metadata; physical junction handling still requires a Windows test account. Actual FiveM installation behavior, concurrent external filesystem replacement, long-path edge cases on Windows PowerShell 5.1, and EXE launch remain release checks. Errors leave recoverable backups where possible; do not manually alter manifests/payloads. The cleaner is not designed to defend against a malicious process racing filesystem changes in an elevated session.
+
+FiveM source context: [client cache layout](https://github.com/citizenfx/fivem/blob/master/code/client/launcher/Main.cpp), [client storage paths](https://github.com/citizenfx/fivem/blob/master/code/client/shared/Utils.Win32.cpp).
