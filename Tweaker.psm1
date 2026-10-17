@@ -2,6 +2,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
+. (Join-Path $PSScriptRoot 'Keyboard.ps1')
 
 function Get-TweakerCatalog {
     @(
@@ -11,6 +12,15 @@ function Get-TweakerCatalog {
         [pscustomobject]@{ id='fivem.priority.high'; scope='session'; requiresAdmin=$false; restart=$false
             name=@{de='FiveM-Prozessprioritaet';en='FiveM process priority';it='Priorita del processo FiveM'}
             description=@{de='Setzt laufende FiveM-Spielprozesse auf Hoch. Kann andere Anwendungen verlangsamen. Endet mit dem Spielprozess; kein garantierter FPS-Gewinn.';en='Sets running FiveM game processes to High. May slow other applications. Ends with the game process; no guaranteed FPS gain.';it='Imposta su Alta i processi di gioco FiveM attivi. Puo rallentare altre applicazioni. Termina con il processo; nessun aumento FPS garantito.'} }
+        [pscustomobject]@{ id='keyboard.repeat.fast'; scope='user'; requiresAdmin=$true; restart=$false
+            name=@{de='WASD: schnelle Tastenwiederholung';en='WASD: fast key repeat';it='WASD: ripetizione rapida dei tasti'}
+            description=@{de='Setzt die Windows-Wiederholverzoegerung auf die kuerzeste Stufe (ca. 250 ms) und die Wiederholrate auf die hoechste Stufe (ca. 30/s). Betrifft gehaltene Tasten und auch Texteingaben, nicht die Latenz des ersten Tastendrucks. Kein garantierter Vorteil in Spielen.';en='Sets Windows repeat delay to the shortest level (about 250 ms) and repeat rate to the highest level (about 30/s). Affects held keys including text input, not first-press latency. No guaranteed game benefit.';it='Imposta il ritardo di ripetizione Windows al minimo (circa 250 ms) e la velocita al massimo (circa 30/s). Riguarda i tasti tenuti premuti, anche nel testo, non la latenza della prima pressione. Nessun vantaggio garantito nei giochi.'} }
+        [pscustomobject]@{ id='keyboard.filterkeys.off'; scope='user'; requiresAdmin=$true; restart=$false
+            name=@{de='Filtertasten deaktivieren';en='Disable Filter Keys';it='Disattiva Filtro tasti'}
+            description=@{de='Deaktiviert Filtertasten und die Aktivierung durch langes Halten der rechten Umschalttaste. Kann aktive Eingabefilter beseitigen. Veraendert eine Bedienungshilfe fuer alle Anwendungen; nur deaktivieren, wenn sie nicht benoetigt wird.';en='Disables Filter Keys and its right-Shift activation shortcut. Can remove active input filtering. Changes an accessibility feature for all applications; disable only if you do not need it.';it='Disattiva Filtro tasti e la scorciatoia con Maiusc destro tenuto premuto. Puo eliminare filtri di input attivi. Modifica una funzione di accessibilita per tutte le app; disattivala solo se non serve.'} }
+        [pscustomobject]@{ id='keyboard.stickykeys.off'; scope='user'; requiresAdmin=$true; restart=$false
+            name=@{de='Einrastfunktion deaktivieren';en='Disable Sticky Keys';it='Disattiva Tasti permanenti'}
+            description=@{de='Deaktiviert die Einrastfunktion und die Aktivierung durch fuenfmaliges Druecken der Umschalttaste. Verhindert versehentliches Einschalten beim Spielen. Veraendert eine Bedienungshilfe fuer alle Anwendungen; senkt nicht die Hardware-Latenz.';en='Disables Sticky Keys and its five-Shift activation shortcut. Prevents accidental activation while gaming. Changes an accessibility feature for all applications; does not reduce hardware latency.';it='Disattiva Tasti permanenti e la scorciatoia con cinque pressioni di Maiusc. Evita attivazioni accidentali durante il gioco. Modifica una funzione di accessibilita per tutte le app; non riduce la latenza hardware.'} }
     )
 }
 
@@ -77,10 +87,11 @@ function Invoke-TweakerPerformance {
     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
     param(
         [Parameter(Mandatory)][ValidateSet('apply','restore')][string]$Action,
-        [Parameter(Mandatory)][ValidateSet('windows.power.high','fivem.priority.high')][string]$Id,
+        [Parameter(Mandatory)][ValidateSet('windows.power.high','fivem.priority.high','keyboard.repeat.fast','keyboard.filterkeys.off','keyboard.stickykeys.off')][string]$Id,
         [string]$StateDirectory = (Join-Path $env:LOCALAPPDATA 'Tweaker\Performance')
     )
     if (-not $PSCmdlet.ShouldProcess($Id, $Action)) { return }
+    if ($Id.StartsWith('keyboard.')) { return Invoke-TweakerKeyboard $Action $Id $StateDirectory }
     # Separate journal per Windows user; UI must elevate as the same user.
     $null = New-Item -ItemType Directory -Path $StateDirectory -Force
     $path = Join-Path $StateDirectory ($Id + '.json')
@@ -155,4 +166,4 @@ function Get-TweakerSystemInfo {
     [pscustomobject]@{ok=$true;os=$os.Caption;cpu=$cpu;gpu=$gpu;ramGB=[math]::Round($memory / 1GB, 1);isAdmin=$admin}
 }
 
-Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance
+Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied

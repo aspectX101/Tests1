@@ -12,6 +12,7 @@ try {
     $catalog = @(Get-TweakerCatalog)
     if ($Action -in @('status','apply','revert') -and $Id -notin @($catalog.id)) { throw 'invalid_tweak_id' }
     function Test-Applied([string]$TweakId, $Live) {
+        if ($TweakId.StartsWith('keyboard.')) { return Test-TweakerKeyboardApplied $TweakId }
         if ($TweakId -eq 'windows.power.high') { return $Live.powerScheme -eq '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c' }
         return @($Live.fiveMProcesses).Count -gt 0 -and @($Live.fiveMProcesses | Where-Object { $_.priority -ne 'High' }).Count -eq 0
     }
@@ -27,7 +28,10 @@ try {
             })
             @{ok=$true;tweaks=$items}
         }
-        'status' { @{ok=$true;id=$Id;applied=(Test-Applied $Id (Get-TweakerStatus))} }
+        'status' {
+            $live = if ($Id.StartsWith('keyboard.')) { $null } else { Get-TweakerStatus }
+            @{ok=$true;id=$Id;applied=(Test-Applied $Id $live)}
+        }
         default {
             $operation = if ($Action -eq 'revert') {'restore'} else {'apply'}
             $change = Invoke-TweakerPerformance -Action $operation -Id $Id -Confirm:$false
@@ -37,7 +41,8 @@ try {
                 unchanged=@{de='Einstellung bereits aktiv.';en='Setting already active.';it='Impostazione gia attiva.'}
                 no_change=@{de='Kein geeigneter laufender FiveM-Spielprozess gefunden.';en='No eligible running FiveM game process found.';it='Nessun processo di gioco FiveM idoneo attivo.'}
             }
-            @{ok=$true;id=$Id;applied=(Test-Applied $Id (Get-TweakerStatus));restartRequired=$false
+            $live = if ($Id.StartsWith('keyboard.')) { $null } else { Get-TweakerStatus }
+            @{ok=$true;id=$Id;applied=(Test-Applied $Id $live);restartRequired=$false
                 message=$messages[$change.status][$Lang];status=$change.status}
         }
     }
