@@ -21,7 +21,11 @@ module.exports = {
   nsis: {
     artifactName: 'UNDCC-Tweaker-Setup-${version}.exe',
     oneClick: true,
-    perMachine: false, // pro Benutzer: Updates laufen ohne zusätzliche UAC-Abfrage
+    // Für alle Benutzer (Program Files) – der Installer läuft dadurch mit Adminrechten. Nötig, weil die App selbst
+    // mit Adminrechten läuft: Ein Installer ohne Adminrechte (bis 0.5.1) konnte sie nicht beenden, und auch das
+    // Deinstallationsprogramm der alten Version scheiterte daran. Eine alte Installation pro Benutzer wird dabei
+    // automatisch mit entfernt. In-App-Updates laufen ohne zusätzliche Abfrage, weil die App schon erhöht ist.
+    perMachine: true,
     runAfterFinish: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
