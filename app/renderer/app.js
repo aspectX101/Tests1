@@ -168,9 +168,13 @@ function renderHome() {
   const adminTxt = i.isAdmin === false ? t().noAdmin : i.isAdmin ? t().admin : '';
 
   return `
-    <div class="welcome">
-      <h1>${t().welcome}</h1>
-      <p>${esc([i.os, adminTxt].filter(Boolean).join(' · '))}</p>
+    <div class="card hero">
+      <img src="assets/logo.png" alt="">
+      <div>
+        <h1>${t().welcome}<span>.</span></h1>
+        <p>${esc([i.os, adminTxt].filter(Boolean).join(' · '))}</p>
+      </div>
+      <span class="badge">UND.CC</span>
     </div>
     <div class="rings">${ring('cpu', t().cpu)}${ring('gpu', t().gpu)}${ring('ram', t().ram)}</div>
     <div class="home-row">
@@ -183,7 +187,7 @@ function renderHome() {
           <div class="chart-y"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
           <svg viewBox="0 0 600 200" preserveAspectRatio="none">
             <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+              <stop offset="0" stop-color="#e3112b" stop-opacity=".35"/><stop offset="1" stop-color="#e3112b" stop-opacity="0"/>
             </linearGradient></defs>
             ${[0, 40, 80, 120, 160].map((y) => `<line class="grid" x1="0" x2="600" y1="${y}" y2="${y}"/>`).join('')}
             <path class="area" data-area/><path class="line" data-line/>
@@ -191,7 +195,7 @@ function renderHome() {
         </div>
       </div>
       <div class="card status-card">
-        <h3>Tweaker</h3>
+        <h3>UND.CC Tweaker</h3>
         <div><div class="stat-big">${pct}%</div><div class="stat-sub">${t().optimized} · ${t().tweaksActive(on, total)}</div></div>
         <div class="kv">
           <div><span>${t().processor}</span><b title="${esc(i.cpu)}">${esc(i.cpu || '—')}</b></div>

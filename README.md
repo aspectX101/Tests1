@@ -25,7 +25,7 @@ npm install
 npm start            # echtes Backend (Windows, als Administrator)
 npm run start:mock   # Testdaten, läuft auch auf macOS
 npm test             # Tests für electron/backend.cjs
-npm run dist         # dist/Tweaker-Setup-<version>.exe + latest.yml (Installer mit Auto-Update)
+npm run dist         # dist/UNDCC-Tweaker-Setup-<version>.exe + latest.yml (Installer mit Auto-Update)
 ```
 
 Die Exe ist nicht signiert, deshalb warnt Windows SmartScreen beim ersten Start („Weitere Informationen“ → „Trotzdem ausführen“).
@@ -40,6 +40,6 @@ lädt neue Versionen im Hintergrund und installiert sie beim Beenden oder über 
 2. `npm run dist`
 3. Release mit allen drei Dateien anlegen, sonst findet der Updater nichts:
    ```
-   gh release create v0.4.1 dist/Tweaker-Setup-0.4.1.exe dist/Tweaker-Setup-0.4.1.exe.blockmap dist/latest.yml --target codex/performance-backend --title "Tweaker 0.4.1"
+   gh release create v0.4.1 dist/UNDCC-Tweaker-Setup-0.4.1.exe dist/UNDCC-Tweaker-Setup-0.4.1.exe.blockmap dist/latest.yml --target codex/performance-backend --title "UND.CC Tweaker 0.4.1"
    ```
    Das Release darf kein Entwurf und keine Vorabversion sein.

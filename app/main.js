@@ -48,7 +48,9 @@ function createWindow() {
     minHeight: 580,
     frame: false,
     backgroundColor: '#000000',
-    title: 'Tweaker',
+    title: 'UND.CC Tweaker',
+    // Fenster-/Taskleisten-Icon zur Laufzeit; das Exe-Icon selbst lässt sich ohne Windows-Build nicht setzen.
+    icon: path.join(__dirname, 'assets', 'icon.ico'),
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

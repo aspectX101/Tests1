@@ -7,23 +7,28 @@ const base = require('./packaging/electron-builder.cjs');
 
 module.exports = {
   ...base,
+  productName: 'UND.CC Tweaker',
   directories: { output: 'dist' },
   files: ['package.json', 'app/**/*'],
   win: {
     ...base.win,
     target: [{ target: 'nsis', arch: ['x64'] }],
+    icon: 'build/icon.ico',
     // Ohne Wine (Build auf macOS/Linux) kann electron-builder die Exe-Ressourcen nicht bearbeiten.
     // Adminrechte holt sich die App dann beim Start selbst (app/elevate.js).
     signAndEditExecutable: process.platform === 'win32',
   },
   nsis: {
-    artifactName: 'Tweaker-Setup-${version}.exe',
+    artifactName: 'UNDCC-Tweaker-Setup-${version}.exe',
     oneClick: true,
     perMachine: false, // pro Benutzer: Updates laufen ohne zusätzliche UAC-Abfrage
     runAfterFinish: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: 'Tweaker',
+    shortcutName: 'UND.CC Tweaker',
+    installerIcon: 'build/icon.ico',
+    uninstallerIcon: 'build/icon.ico',
+    installerHeaderIcon: 'build/icon.ico',
   },
   publish: [{ provider: 'github', owner: 'aspectX101', repo: 'Tests1', releaseType: 'release' }],
 };
