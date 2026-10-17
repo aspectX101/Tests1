@@ -10,6 +10,7 @@ UI-independent Windows backend for the shared Tweaker project. First implementat
 - `keyboard.filterkeys.off`: disables Filter Keys and its right-Shift activation hotkey. Keeps the availability flag, other preferences and all Filter Keys timing parameters. Only useful if this accessibility feature or its hotkey interferes with input; users who need it should keep it enabled.
 - `keyboard.stickykeys.off`: disables Sticky Keys and its five-Shift activation hotkey. Preserves the other persistent preferences. Does not attempt to save/restore transient held/latched modifier state.
 - Catalog includes German, English and Italian names/descriptions. IDs and status codes are language-neutral. UI translates errors and displays warnings before applying.
+- SafeMode audits 22 named services and repairs the enabled/running policy for 15 core/essential services. Its Electron watchdog runs while the app is open. See [SafeMode contract](safemode.md) for scope, reports and UI integration.
 - FiveM Cache Cleaner is a separate utility with preview, reversible quarantine, restore and explicit permanent purge. See below. Windows EXE packaging and main-process integration for Claude's Electron UI are provided in [packaging/README.md](../packaging/README.md) and [electron/backend.cjs](../electron/backend.cjs).
 
 ## UI integration
@@ -47,7 +48,9 @@ pwsh -NoProfile -File tests/Performance.Tests.ps1
 pwsh -NoProfile -File tests/Keyboard.Tests.ps1
 pwsh -NoProfile -File tests/Contract.Tests.ps1
 pwsh -NoProfile -File tests/CacheCleaner.Tests.ps1
+pwsh -NoProfile -File tests/SafeMode.Tests.ps1
 node --test tests/electron-backend.test.cjs
+node --test tests/safemode-monitor.test.cjs
 ```
 
 Tests replace all Windows mutation adapters with in-memory fakes. They verify journaling and recovery without changing this PC. These tests pass on Windows PowerShell 5.1 and PowerShell 7. The JSON CLI list/status/info/error responses are also checked with Windows PowerShell 5.1. The Electron invocation may use the agreed process-local `-ExecutionPolicy Bypass`; do not change the machine execution policy. Real power-plan changes, restore points and FiveM process behavior still require manual checks on a disposable Windows gaming test system, including denied-access cases. This is an initial backend implementation, not a validated FPS optimization release.
@@ -83,3 +86,9 @@ FiveM/related GTA client processes must be closed. Reparse points/junctions in s
 Cache tests use disposable fake installations, including real file moves, restore and purge. They check running-game rejection, preserved files, byte counts, partial clean recovery, conflicts and invalid manifests. The sandbox denies physical junction creation, so reparse-point rejection is tested with simulated metadata; physical junction handling still requires a Windows test account. Actual FiveM installation behavior, concurrent external filesystem replacement, long-path edge cases on Windows PowerShell 5.1, and EXE launch remain release checks. Errors leave recoverable backups where possible; do not manually alter manifests/payloads. The cleaner is not designed to defend against a malicious process racing filesystem changes in an elevated session.
 
 FiveM source context: [client cache layout](https://github.com/citizenfx/fivem/blob/master/code/client/launcher/Main.cpp), [client storage paths](https://github.com/citizenfx/fivem/blob/master/code/client/shared/Utils.Win32.cpp).
+
+## Tweak categories and risk
+
+`list` uses explicit per-tweak metadata, including the new `keyboard` category. `windows.power.high`: performance/low; `keyboard.repeat.fast`: keyboard/low; `fivem.priority.high`: gaming/medium; Filter Keys and Sticky Keys: keyboard/medium. There are no high-risk tweaks in the current catalog. Risk is relative impact, not a guarantee of safety or performance benefit.
+
+The additional boolean `bulkSafe` is true only for the energy plan and keyboard repeat preset. Use `risk === 'low' && bulkSafe === true` as eligibility for a user-requested bulk action, show descriptions first, and handle failures per item. Never automatically batch-disable accessibility features. These flags do not implement a new bulk endpoint or bypass restore-point checks; individual persistent changes still require their own successful checkpoint, and Windows may block a subsequent checkpoint within 24 hours.

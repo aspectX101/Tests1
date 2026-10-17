@@ -6,7 +6,7 @@ The repository currently contains no Electron package.json, main process or UI. 
 
 ## Integrate into the Electron app
 
-1. Keep the backend files together in the repository root. `packaging/electron-builder.cjs` copies the required scripts and native source outside ASAR to `resources/backend`.
+1. Keep the backend files together in the repository root. `packaging/electron-builder.cjs` copies the required scripts, native source and Electron adapters outside ASAR to `resources/backend`.
 2. In the Electron main process, import `createBackendClient` from `electron/backend.cjs`. Instantiate it with Electron's `app` and call it with a validated request object. The development path expects the helper in this repository; the packaged path is `process.resourcesPath/backend`.
 3. Connect your existing preload/IPC to this main-process function. Validate the sending frame against the app's own loaded UI; do not register an IPC handler accessible to remote pages. Use contextIsolation, sandboxing and no renderer Node integration. Never expose child_process, script paths, arbitrary PowerShell arguments or raw command execution to renderer content.
 4. From the directory containing your Electron package.json and existing UI/main entry, install Electron and electron-builder as project dev dependencies with a lockfile. Build with `npx electron-builder --config <absolute-repository-path>/packaging/electron-builder.cjs --win`. If you already have a builder configuration, merge this configuration's extraResources and Windows target instead of replacing your app configuration.
@@ -16,8 +16,13 @@ Example main-process requests:
 
 ```js
 const { app } = require('electron');
-const { createBackendClient } = require('../electron/backend.cjs'); // adapt to your main entry location
-const backend = createBackendClient(app);
+const path = require('node:path');
+// Development example assumes this main entry is in the repository root.
+const helperPath = app.isPackaged
+  ? path.join(process.resourcesPath, 'backend', 'electron', 'backend.cjs')
+  : path.join(__dirname, 'electron', 'backend.cjs');
+const { createBackendClient } = require(helperPath);
+const backend = createBackendClient(app); // one instance: also attaches SafeMode monitoring
 const preview = await backend({ action: 'cache-info', lang: 'de' });
 // After the user chooses clean:
 const cleaned = await backend({ action: 'cache-clean', lang: 'de' });
@@ -34,3 +39,5 @@ Restore and purge above are alternatives. Cache operations are utilities, not pe
 Build after the UI lands. Launch the actual EXE on a Windows test account without Node installed, check the UAC prompt, all three languages, bundled backend resource paths, hidden PowerShell windows and JSON handling. Test cache clean/restore/purge with a disposable fake FiveM folder before a real install. Verify the installed UI never enables accessibility changes automatically. Configure Windows code signing when releasing; this change does not provide a signing identity or claim a signed EXE.
 
 References: [electron-builder Windows targets](https://www.electron.build/docs/win/), [portable target](https://www.electron.build/docs/nsis/).
+
+SafeMode adds a fixed service policy, exportable audit JSON and a monitor while the app is open; see [SafeMode integration](../docs/safemode.md). Pass onSafeModeReport/onSafeModeError/getLanguage to the backend client so protection health and failures appear in the UI. The monitor resumes the persisted preference at startup; there is no background Windows service after the app exits. Package `SafeMode.ps1` and both Electron adapters. Verify real admin storage ACLs and actual service repair on a disposable Windows test account before release.

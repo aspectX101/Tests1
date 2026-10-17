@@ -1,9 +1,10 @@
 'use strict';
 const path = require('node:path');
 const { execFile } = require('node:child_process');
+const { createSafeModeMonitor } = require('./safemode-monitor.cjs');
 
 const tweakIds = new Set(['windows.power.high', 'fivem.priority.high', 'keyboard.repeat.fast', 'keyboard.filterkeys.off', 'keyboard.stickykeys.off']);
-const actions = new Set(['info', 'list', 'status', 'apply', 'revert', 'cache-info', 'cache-clean', 'cache-restore', 'cache-purge']);
+const actions = new Set(['info', 'list', 'status', 'apply', 'revert', 'cache-info', 'cache-clean', 'cache-restore', 'cache-purge', 'safemode-scan', 'safemode-report', 'safemode-enable', 'safemode-disable', 'safemode-enforce']);
 
 // Main-process code only. Do not give the renderer access to execFile or arbitrary paths.
 function createBackendClient(app, options = {}) {
@@ -15,7 +16,7 @@ function createBackendClient(app, options = {}) {
   if (!windowsRoot || !path.win32.isAbsolute(windowsRoot)) throw new Error('Windows runtime required');
   const powershell = path.win32.join(windowsRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
 
-  return function invokeBackend(request) {
+  const invokeBackend = function (request) {
     if (!request || typeof request !== 'object' || !actions.has(request.action)) return Promise.reject(new Error('invalid_action'));
     const { action, id, lang = 'de', fiveMPath, backupId, confirmPurge = false } = request;
     if (!['de', 'en', 'it'].includes(lang)) return Promise.reject(new Error('invalid_language'));
@@ -50,6 +51,21 @@ function createBackendClient(app, options = {}) {
       });
     });
   };
+  // A real Electron app automatically resumes monitoring at startup. Minimal test
+  // app objects without lifecycle APIs can still use this client directly.
+  if (typeof app.whenReady === 'function' && typeof app.once === 'function') {
+    const monitor = createSafeModeMonitor(invokeBackend, {
+      onReport: options.onSafeModeReport,
+      onError: options.onSafeModeError,
+      getLanguage: options.getLanguage
+    });
+    let quitting = false;
+    app.once('before-quit', () => { quitting = true; monitor.stop(); });
+    void app.whenReady().then(() => { if (!quitting) return monitor.start(); }).catch(error => {
+      if (options.onSafeModeError) { try { options.onSafeModeError(error); } catch { /* UI callback is isolated. */ } }
+    });
+  }
+  return invokeBackend;
 }
 
 module.exports = { createBackendClient };

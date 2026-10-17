@@ -57,5 +57,12 @@ test('EXE packaging includes all backend dependencies outside ASAR', () => {
   assert.equal(config.win.requestedExecutionLevel, 'requireAdministrator');
   const shipped = config.extraResources[0];
   assert.equal(shipped.to, 'backend');
-  for (const file of ['tweaker.ps1', 'Tweaker.psm1', 'Keyboard.ps1', 'CacheCleaner.ps1', 'native/Keyboard.cs']) assert.ok(shipped.filter.includes(file));
+  for (const file of ['tweaker.ps1', 'Tweaker.psm1', 'Keyboard.ps1', 'CacheCleaner.ps1', 'SafeMode.ps1', 'native/Keyboard.cs', 'electron/backend.cjs', 'electron/safemode-monitor.cjs']) assert.ok(shipped.filter.includes(file));
+});
+test('SafeMode actions use the same allowlisted JSON backend', async () => {
+  const backend = client((exe, args, options, done) => {
+    assert.ok(args.includes('safemode-enable'));
+    done(null, '{"ok":true,"enabled":true,"health":"green"}', '');
+  });
+  assert.equal((await backend({ action: 'safemode-enable', lang: 'it' })).enabled, true);
 });

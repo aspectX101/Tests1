@@ -6,9 +6,20 @@ $ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 try {
-    if ($Action -notin @('info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge')) { throw 'invalid_action' }
+    if ($Action -notin @('info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce')) { throw 'invalid_action' }
     if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
     Import-Module (Join-Path $PSScriptRoot 'Tweaker.psm1') -Force -WarningAction Stop
+    if ($Action.StartsWith('safemode-')) {
+        $result = Invoke-TweakerSafeMode -Action $Action -Confirm:$false
+        $messages = @{
+            de='SafeMode prueft wichtige Dienste. Der App-Monitor prueft alle 30 Sekunden bei geoeffneter Anwendung. Bedarfsdienste duerfen inaktiv sein. Ausschalten beendet den Schutz, laesst reparierte Dienste aber aktiv. Dies ist kein Windows-Werksreset.'
+            en='SafeMode checks important services. The app monitor checks every 30 seconds while the application is open. On-demand services may be inactive. Disabling protection leaves repaired services enabled. This is not a Windows factory reset.'
+            it='SafeMode controlla i servizi importanti ogni 30 secondi mentre il monitor della app e aperto. I servizi su richiesta possono essere inattivi. Disattivare la protezione lascia abilitati i servizi riparati. Non e un ripristino di fabbrica di Windows.'
+        }
+        $result | Add-Member -NotePropertyName message -NotePropertyValue $messages[$Lang]
+        $result | ConvertTo-Json -Depth 12 -Compress
+        exit 0
+    }
     if ($Action.StartsWith('cache-')) {
         $result = Invoke-TweakerCache -Action $Action -FiveMPath $FiveMPath -BackupId $BackupId -ConfirmPurge:$ConfirmPurge -Confirm:$false
         $messages = @{
@@ -33,8 +44,8 @@ try {
             $live = Get-TweakerStatus
             $items = @($catalog | ForEach-Object {
                 [pscustomobject]@{id=$_.id;name=$_.name[$Lang];description=$_.description[$Lang]
-                    category=$(if ($_.scope -eq 'system') {'performance'} else {'gaming'})
-                    risk='medium';requiresRestart=$false;reversible=$true;requiresAdmin=$_.requiresAdmin
+                    category=$_.category;risk=$_.risk;bulkSafe=$_.bulkSafe
+                    requiresRestart=$false;reversible=$true;requiresAdmin=$_.requiresAdmin
                     applied=(Test-Applied $_.id $live)}
             })
             @{ok=$true;tweaks=$items}

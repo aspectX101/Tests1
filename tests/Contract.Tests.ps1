@@ -37,8 +37,14 @@ foreach ($language in @('de','en','it')) {
             if ($tweak.PSObject.Properties.Name -notcontains $property) { throw "Missing $property" }
         }
         if ($tweak.applied -isnot [bool]) { throw 'applied must be boolean' }
+        $expectedRisk = if ($tweak.id -in @('windows.power.high','keyboard.repeat.fast')) {'low'} else {'medium'}
+        if ($tweak.risk -ne $expectedRisk) { throw 'Incorrect per-tweak risk' }
+        if ($tweak.id.StartsWith('keyboard.') -and $tweak.category -ne 'keyboard') { throw 'Keyboard category required' }
+        if ($tweak.id -in @('keyboard.filterkeys.off','keyboard.stickykeys.off') -and $tweak.bulkSafe) { throw 'Accessibility tweaks require individual choice' }
     }
 }
+$safeReport = Invoke-JsonCli '-Action safemode-scan -Lang en' 0
+if ($safeReport.monitorScope -ne 'while_app_running' -or @($safeReport.services).Count -ne 22 -or $safeReport.health -notin @('green','yellow','red')) { throw 'Invalid SafeMode report contract' }
 foreach ($id in @('keyboard.repeat.fast','keyboard.filterkeys.off','keyboard.stickykeys.off')) {
     $result = Invoke-JsonCli "-Action status -Id $id" 0
     if (-not $result.ok -or $result.id -ne $id -or $result.applied -isnot [bool]) { throw 'Invalid status' }
