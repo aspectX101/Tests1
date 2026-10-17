@@ -5,6 +5,9 @@
 const bridge = window.tweaker || {
   call: (request) => window.TweakerMock.call(request),
   mode: async () => 'browser',
+  exportReport: async () => ({ ok: true, path: 'tweaker-safemode.json' }),
+  lastSafeMode: async () => null,
+  onSafeMode() {},
   minimize() {}, close() {},
   onUsage(cb) {
     let u = { cpu: 9, gpu: 8, ram: 37 };
@@ -29,6 +32,7 @@ const ICONS = {
   visuals: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   extra: '<path d="M12 4v16M4 12h16"/>',
   cleanup: '<path d="M6 6l12 12M18 6 6 18"/>',
+  safemode: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
   mouse: '<rect x="6" y="2" width="12" height="20" rx="6"/><path d="M12 6v4"/>',
   keyboard: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/>',
@@ -65,18 +69,19 @@ const state = {
   cache: null,       // letzte cache-info-Antwort
   cacheError: null,
   cacheBusy: null,   // 'info' | 'clean' | backupId
+  safe: null,        // letzter SafeMode-Bericht (scan/enable/enforce/Monitor)
+  safeError: null,
+  safeBusy: null,    // 'scan' | 'enable' | 'disable' | 'enforce' | 'export'
+  safeMonitorError: null,
 };
 
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const t = () => window.I18N[state.lang];
 
-// Kategorie für die Anzeige. Tastatur-Tweaks liefert das Backend aktuell unter "gaming".
-function catOf(tw) {
-  if (tw.id.startsWith('keyboard.')) return 'keyboard';
-  if (tw.id.startsWith('mouse.')) return 'mouse';
-  return tw.category || 'other';
-}
+const catOf = (tw) => tw.category || 'other';
+// Sammelaktion nur für Tweaks, die das Backend ausdrücklich freigibt (nie Bedienungshilfen).
+const bulkOk = (tw) => tw.risk === 'low' && tw.bulkSafe === true;
 const catName = (c) => t().cats[c]?.[0] || c;
 const catDesc = (c) => t().cats[c]?.[1] || '';
 const tweaksIn = (c) => state.tweaks.filter((tw) => catOf(tw) === c);
@@ -113,6 +118,7 @@ function renderNav() {
     item('home', t().home, 'data-go="home"') +
     MAIN_CATS.map((c) => item(c, catName(c), `data-cat="${c}"`)).join('') +
     item('cleanup', t().cleanup, 'data-go="cleanup"') +
+    item('safemode', t().safemode, 'data-go="safemode"') +
     item('extra', t().extra, 'data-go="extra"') +
     '<div class="nav-spacer"></div>' +
     item('settings', t().settings, 'data-go="settings"');
@@ -223,7 +229,7 @@ function renderCategory(c, parent) {
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);
   if (state.filter === 'off') list = list.filter((x) => !x.applied);
-  const safeOpen = all.some((x) => x.risk === 'low' && !x.applied);
+  const safeOpen = all.some((x) => bulkOk(x) && !x.applied);
   const chip = (k) => `<button data-filter="${k}" class="${state.filter === k ? 'active' : ''}">${t()[k]}</button>`;
 
   return `
@@ -293,6 +299,57 @@ function renderCleanup() {
       <div class="rows">${backups.length ? backups.map(backupRow).join('') : `<div class="card empty">${t().noBackups}</div>`}</div>` : ''}`;
 }
 
+function renderSafeMode() {
+  const r = state.safe;
+  const busy = state.safeBusy;
+  const btn = (id, label, cls = 'dark', disabled = false) =>
+    `<button class="pill ${cls}" id="${id}" ${busy || disabled ? 'disabled' : ''}>${busy === id.slice(3) ? '…' : label}</button>`;
+  let body;
+  if (!r && busy === 'scan') body = `<div class="cache-status muted">${t().smScanning}</div>`;
+  else if (!r) body = `<div class="cache-status">${esc(errorText(state.safeError))}</div><div class="cache-actions">${btn('sm-scan', t().smScan)}</div>`;
+  else {
+    const failed = (r.repairs || []).filter((x) => !x.ok);
+    const unsupported = r.platform && r.platform.supported === false;
+    body = `
+      <div class="sm-top">
+        <span class="health-dot ${esc(r.health)}"></span>
+        <div class="sm-title"><b>${esc(t().smHealth[r.health] || r.health)}</b>
+          <span>${r.enabled ? t().smOn : t().smOff} · ${esc(t().smChecked(fmtDate(r.checkedUtc)))}</span></div>
+      </div>
+      ${state.safeMonitorError ? `<div class="sm-alert">${t().smMonitorError}: ${esc(errorText(state.safeMonitorError))}</div>` : ''}
+      ${unsupported ? `<div class="sm-alert">${t().smUnsupported}</div>` : ''}
+      ${failed.length ? `<div class="sm-alert"><b>${t().smRepairFailed(failed.length)}</b>
+        ${failed.map((x) => `<div>${esc(x.name)}: ${esc(errorText(x.error))}</div>`).join('')}</div>` : ''}
+      <p class="cache-note">${esc(r.message || '')}</p>
+      <p class="cache-note strong">${t().smMonitor}</p>
+      <div class="cache-actions">
+        ${r.enabled ? btn('sm-disable', t().smDisable) : btn('sm-enable', t().smEnable, 'light', unsupported)}
+        ${btn('sm-scan', t().smScan)}
+        ${r.enabled ? btn('sm-enforce', t().smRepair, 'dark', unsupported) : ''}
+        ${btn('sm-export', t().smExport)}
+      </div>`;
+  }
+  const order = { red: 0, yellow: 1, green: 2 };
+  const rows = (r?.services || []).slice().sort((a, b) => (order[a.health] ?? 3) - (order[b.health] ?? 3));
+  const svc = (x) => `
+    <div class="card row sm-row">
+      <span class="health-dot small ${esc(x.health)}"></span>
+      <div class="row-body">
+        <div class="row-title">${esc(x.displayName || x.name)} <span class="muted sm-name">${esc(x.name)}</span>
+          ${x.mustRun ? `<span class="tag">${t().smMust}</span>` : !x.autoRepair ? `<span class="tag">${t().smAudit}</span>` : ''}</div>
+        <div class="row-desc">${esc(t().states[x.state] || x.state)} · ${esc(t().modes2[x.startMode] || x.startMode)} · ${esc(t().smReason[x.reason] || x.reason)}</div>
+      </div>
+    </div>`;
+
+  return `
+    <div class="card detail-head">
+      <div class="tile-icon">${icon('safemode')}</div>
+      <div><h1>${t().safemode}</h1><p>${t().smDesc}</p></div>
+    </div>
+    <div class="card cache-card">${body}</div>
+    ${rows.length ? `<h3 class="section-title">${t().smServices}</h3><div class="rows">${rows.map(svc).join('')}</div>` : ''}`;
+}
+
 function renderSettings() {
   const langBtn = (l, label) => `<button data-lang="${l}" class="${state.lang === l ? 'active' : ''}">${label}</button>`;
   return `
@@ -314,12 +371,13 @@ function render() {
   let html = state.restartPending
     ? `<div class="restart"><span>${t().needsRestart}</span><button class="pill" id="restart-later">${t().later}</button></div>`
     : '';
-  if (state.loading && r.page !== 'settings' && r.page !== 'cleanup') {
+  if (state.loading && !['settings', 'cleanup', 'safemode'].includes(r.page)) {
     html += '<div class="rows">' + '<div class="skeleton"></div>'.repeat(5) + '</div>';
   } else if (r.page === 'home') html += renderHome();
   else if (r.page === 'extra') html += renderExtra();
   else if (r.page === 'settings') html += renderSettings();
   else if (r.page === 'cleanup') html += renderCleanup();
+  else if (r.page === 'safemode') html += renderSafeMode();
   else html += renderCategory(r.cat, r.parent);
   $('#content').innerHTML = html;
   if (r.page === 'home') paintUsage();
@@ -409,7 +467,7 @@ async function setTweak(id, apply, { quiet = false } = {}) {
 }
 
 async function applySafe() {
-  const list = tweaksIn(state.route.cat).filter((x) => x.risk === 'low' && !x.applied);
+  const list = tweaksIn(state.route.cat).filter((x) => bulkOk(x) && !x.applied);
   let ok = 0;
   for (const x of list) if (await setTweak(x.id, true, { quiet: true })) ok++;
   toast(t().safeDone(ok, list.length), ok === list.length ? 'info' : 'error');
@@ -448,6 +506,39 @@ async function cachePurge(backupId, date) {
   cacheOp(backupId, 'cache-purge', { backupId, confirmPurge: true }, (r) => toast(t().purgedMsg(fmtBytes(r.freedBytes || 0))));
 }
 
+async function safeAction(kind) {
+  if (kind === 'enable' && !(await confirmDialog(t().smEnableTitle, t().smEnableText, t().smEnableOk))) return;
+  state.safeBusy = kind;
+  render();
+  const res = await call(`safemode-${kind}`);
+  state.safeBusy = null;
+  if (res?.ok) {
+    state.safe = res;
+    state.safeError = null;
+    const failed = (res.repairs || []).filter((x) => !x.ok).length;
+    const fixed = (res.repairs || []).length - failed;
+    if (kind === 'enable') toast(t().smEnabled);
+    if (kind === 'disable') toast(t().smDisabled);
+    if (failed) toast(t().smRepairFailed(failed), 'error');
+    else if (fixed && kind !== 'scan') toast(t().smRepaired(fixed));
+  } else {
+    if (kind === 'scan') state.safeError = res?.error;
+    toast(errorText(res?.error), 'error');
+  }
+  if (state.route.page === 'safemode') render();
+}
+
+async function safeExport() {
+  state.safeBusy = 'export';
+  render();
+  let res;
+  try { res = await bridge.exportReport(); } catch (err) { res = { ok: false, error: err.message }; }
+  state.safeBusy = null;
+  if (res?.ok && !res.canceled) toast(t().smExported);
+  else if (!res?.ok) toast(errorText(res?.error), 'error');
+  render();
+}
+
 async function load() {
   state.loading = true;
   render();
@@ -465,6 +556,7 @@ function go(route) {
   render();
   $('#content').scrollTop = 0;
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
+  if (route.page === 'safemode' && !state.safeBusy) safeAction('scan');
 }
 
 // ---------- Events ----------
@@ -490,6 +582,8 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'cache-clean') cacheClean();
   else if (el.dataset.restore) cacheRestore(el.dataset.restore);
   else if (el.dataset.purge) cachePurge(el.dataset.purge, el.dataset.date);
+  else if (el.id === 'sm-export') safeExport();
+  else if (el.id.startsWith('sm-')) safeAction(el.id.slice(3));
   else if (el.id === 'reload') load();
   else if (el.id === 'restart-later') { state.restartPending = false; render(); }
 });
@@ -515,6 +609,16 @@ bridge.onUsage((u) => {
   }
   if (state.route.page === 'home' && !state.loading) paintUsage();
 });
+
+// Meldungen des SafeMode-Monitors (alle 30 s im Hauptprozess, solange die App offen ist).
+function onSafeMode(msg) {
+  if (!msg) return;
+  if (msg.report) { state.safe = msg.report; state.safeMonitorError = null; }
+  if (msg.error) state.safeMonitorError = msg.error;
+  if (state.route.page === 'safemode' && !state.safeBusy) render();
+}
+bridge.onSafeMode(onSafeMode);
+bridge.lastSafeMode().then(onSafeMode);
 
 bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings') render(); });
 load();

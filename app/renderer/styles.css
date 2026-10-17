@@ -222,3 +222,18 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .cache-actions { display: flex; gap: 10px; margin-top: 18px; }
 .section-title { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin: 0 0 10px 2px; }
 .pill.danger:hover { background: var(--danger); color: #fff; }
+
+/* ---------- SafeMode ---------- */
+:root { --ok: #34c759; --warn: #ffcc00; }
+.health-dot { width: 14px; height: 14px; border-radius: 50%; flex: none; background: var(--dim); }
+.health-dot.green { background: var(--ok); box-shadow: 0 0 12px rgba(52,199,89,.5); }
+.health-dot.yellow { background: var(--warn); box-shadow: 0 0 12px rgba(255,204,0,.45); }
+.health-dot.red { background: var(--danger); box-shadow: 0 0 12px rgba(232,17,35,.5); }
+.health-dot.small { width: 9px; height: 9px; box-shadow: none; }
+.sm-top { display: flex; align-items: center; gap: 16px; }
+.sm-title { display: flex; flex-direction: column; }
+.sm-title b { font-size: 26px; }
+.sm-title span { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.sm-alert { margin-top: 14px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(232,17,35,.5); background: rgba(232,17,35,.08); font-size: 12.5px; display: grid; gap: 3px; }
+.sm-row { padding: 12px 18px; gap: 14px; }
+.sm-name { font-weight: 400; font-size: 12px; }

@@ -4,19 +4,19 @@
 (function (root) {
   const L = (de, en, it) => ({ de, en, it });
   const T = (id, category, risk, name, description, extra = {}) =>
-    ({ id, category, risk, name, description, requiresRestart: false, reversible: true, requiresAdmin: true, applied: false, ...extra });
+    ({ id, category, risk, bulkSafe: risk === 'low', name, description, requiresRestart: false, reversible: true, requiresAdmin: true, applied: false, ...extra });
 
   const catalog = [
-    // Echte Backend-Tweaks (Stand codex/performance-backend)
-    T('windows.power.high', 'performance', 'medium', L('Hohe Leistung', 'High performance', 'Prestazioni elevate'),
+    // Echte Backend-Tweaks (Kategorie/Risiko/bulkSafe wie Tweaker.psm1)
+    T('windows.power.high', 'performance', 'low', L('Hohe Leistung', 'High performance', 'Prestazioni elevate'),
       L('Aktiviert den vorhandenen Windows-Energieplan Hohe Leistung. Kein garantierter FPS-Gewinn.', 'Activates the existing Windows High performance plan. No guaranteed FPS gain.', 'Attiva il piano Windows Prestazioni elevate esistente. Nessun aumento FPS garantito.')),
     T('fivem.priority.high', 'gaming', 'medium', L('FiveM-Prozesspriorität', 'FiveM process priority', 'Priorità del processo FiveM'),
       L('Setzt laufende FiveM-Spielprozesse auf Hoch. Endet mit dem Spielprozess.', 'Sets running FiveM game processes to High. Ends with the game process.', 'Imposta su Alta i processi di gioco FiveM attivi. Termina con il processo.'), { requiresAdmin: false }),
-    T('keyboard.repeat.fast', 'gaming', 'medium', L('WASD: schnelle Tastenwiederholung', 'WASD: fast key repeat', 'WASD: ripetizione rapida dei tasti'),
+    T('keyboard.repeat.fast', 'keyboard', 'low', L('WASD: schnelle Tastenwiederholung', 'WASD: fast key repeat', 'WASD: ripetizione rapida dei tasti'),
       L('Kürzeste Wiederholverzögerung (ca. 250 ms) und höchste Wiederholrate (ca. 30/s).', 'Shortest repeat delay (about 250 ms) and highest repeat rate (about 30/s).', 'Ritardo minimo (circa 250 ms) e velocità massima (circa 30/s).')),
-    T('keyboard.filterkeys.off', 'gaming', 'medium', L('Filtertasten deaktivieren', 'Disable Filter Keys', 'Disattiva Filtro tasti'),
+    T('keyboard.filterkeys.off', 'keyboard', 'medium', L('Filtertasten deaktivieren', 'Disable Filter Keys', 'Disattiva Filtro tasti'),
       L('Deaktiviert Filtertasten und die Aktivierung über die rechte Umschalttaste.', 'Disables Filter Keys and its right-Shift activation shortcut.', 'Disattiva Filtro tasti e la scorciatoia con Maiusc destro.')),
-    T('keyboard.stickykeys.off', 'gaming', 'medium', L('Einrastfunktion deaktivieren', 'Disable Sticky Keys', 'Disattiva Tasti permanenti'),
+    T('keyboard.stickykeys.off', 'keyboard', 'medium', L('Einrastfunktion deaktivieren', 'Disable Sticky Keys', 'Disattiva Tasti permanenti'),
       L('Deaktiviert die Einrastfunktion und die Aktivierung durch 5× Umschalt.', 'Disables Sticky Keys and its five-Shift shortcut.', 'Disattiva Tasti permanenti e la scorciatoia con 5× Maiusc.')),
 
     // Platzhalter (noch nicht im Backend)
@@ -87,10 +87,61 @@
     return { ok: false, error: 'invalid_action' };
   }
 
+  // SafeMode-Testdaten (Format wie SafeMode.ps1)
+  const S = (name, displayName, state, startMode, mustRun, autoRepair = true) => ({ name, displayName, state, startMode, mustRun, autoRepair });
+  const services = [
+    S('RpcSs', 'Remoteprozeduraufruf (RPC)', 'Running', 'Automatic', true),
+    S('EventLog', 'Windows-Ereignisprotokoll', 'Running', 'Automatic', true),
+    S('Schedule', 'Aufgabenplanung', 'Running', 'Automatic', true),
+    S('Winmgmt', 'Windows-Verwaltungsinstrumentation', 'Running', 'Automatic', true),
+    S('MpsSvc', 'Windows Defender Firewall', 'Running', 'Automatic', true),
+    S('Dnscache', 'DNS-Client', 'Running', 'Automatic', true),
+    S('Dhcp', 'DHCP-Client', 'Stopped', 'Disabled', true),
+    S('wuauserv', 'Windows Update', 'Stopped', 'Manual', false),
+    S('BITS', 'Intelligenter Hintergrundübertragungsdienst', 'Stopped', 'Manual', false),
+    S('SysMain', 'SysMain', 'Stopped', 'Disabled', false, false),
+    S('WinDefend', 'Microsoft Defender Antivirus', 'Running', 'Automatic', false, false),
+  ];
+  const safe = { enabled: false, lastCheckUtc: null };
+  const safeMsg = {
+    de: 'SafeMode prüft wichtige Dienste. Der App-Monitor prüft alle 30 Sekunden bei geöffneter Anwendung. Bedarfsdienste dürfen inaktiv sein. Ausschalten beendet den Schutz, lässt reparierte Dienste aber aktiv. Dies ist kein Windows-Werksreset.',
+    en: 'SafeMode checks important services. The app monitor checks every 30 seconds while the application is open. On-demand services may be inactive. Disabling protection leaves repaired services enabled. This is not a Windows factory reset.',
+    it: 'SafeMode controlla i servizi importanti ogni 30 secondi mentre la app è aperta. I servizi su richiesta possono essere inattivi. Disattivare la protezione lascia abilitati i servizi riparati. Non è un ripristino di fabbrica di Windows.',
+  };
+  function safeReport(lang) {
+    const rows = services.map((sv) => {
+      let health = 'green', reason = 'available';
+      if (sv.startMode === 'Disabled') { health = sv.autoRepair ? 'red' : 'yellow'; reason = 'service_disabled'; }
+      else if (sv.mustRun && sv.state !== 'Running') { health = 'red'; reason = 'required_service_not_running'; }
+      else if (sv.state !== 'Running') reason = 'on_demand_or_inactive';
+      return { ...sv, exists: true, delayedAutoStart: false, health, reason, protected: true };
+    });
+    const health = rows.some((r) => r.health === 'red') ? 'red' : rows.some((r) => r.health === 'yellow') ? 'yellow' : 'green';
+    return { ok: true, enabled: safe.enabled, health, checkedUtc: new Date().toISOString(), platform: { build: 26100, supported: true },
+      services: rows, monitorScope: 'while_app_running', intervalSeconds: 30, lastCheckUtc: safe.lastCheckUtc,
+      changedServices: [], affectedTweaks: [], baseline: 'keep_enabled_policy_not_factory_defaults', message: safeMsg[lang] };
+  }
+  function safemode(action, lang) {
+    if (action === 'safemode-scan' || action === 'safemode-report') return safeReport(lang);
+    if (action === 'safemode-disable') { safe.enabled = false; return safeReport(lang); }
+    if (action === 'safemode-enforce' && !safe.enabled) return safeReport(lang);
+    safe.enabled = true;
+    const repairs = [];
+    for (const sv of services.filter((x) => x.autoRepair)) {
+      if (sv.startMode === 'Disabled') sv.startMode = 'Automatic';
+      if (sv.mustRun && sv.state !== 'Running') sv.state = 'Running';
+      else continue;
+      repairs.push({ name: sv.name, ok: true });
+    }
+    safe.lastCheckUtc = new Date().toISOString();
+    return { ...safeReport(lang), repairs };
+  }
+
   async function call({ action, id, lang = 'de', backupId, confirmPurge } = {}) {
     await delay();
     if (!['de', 'en', 'it'].includes(lang)) return { ok: false, error: 'invalid_language' };
     if (String(action).startsWith('cache-')) return cache(action, backupId, confirmPurge, lang);
+    if (String(action).startsWith('safemode-')) return safemode(action, lang);
     if (action === 'info') {
       return { ok: true, os: 'Microsoft Windows 11 Home (Mock)', cpu: 'AMD Ryzen 7 7800X3D', gpu: 'NVIDIA GeForce RTX 4070 Ti', ramGB: 32, isAdmin: true };
     }
