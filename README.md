@@ -25,29 +25,22 @@ npm install
 npm start            # echtes Backend (Windows, als Administrator)
 npm run start:mock   # Testdaten, läuft auch auf macOS
 npm test             # Tests für electron/backend.cjs
-npm run dist         # dist/UNDCC-Tweaker-Setup-<version>.exe + latest.yml (Installer mit Auto-Update)
+npm run dist         # dist/UNDCC-Tweaker-<version>.exe (eine portable Exe, kein Installer)
 ```
 
 Die Exe ist nicht signiert, deshalb warnt Windows SmartScreen beim ersten Start („Weitere Informationen“ → „Trotzdem ausführen“).
-Der Installer installiert pro Benutzer ohne Admin. Die App fragt beim Start selbst per UAC nach Adminrechten (`app/elevate.js`).
+Sie fordert beim Start Adminrechte an. Kein Installer: einfach die Exe irgendwo ablegen und starten.
 
 ### Neue Version veröffentlichen (Auto-Update)
 
-Die installierte App prüft beim Start und alle 2 Stunden die GitHub-Releases dieses Repos (`app/updater.js`),
-lädt neue Versionen im Hintergrund und installiert sie beim Beenden oder über „Jetzt neu starten“.
+`app/updater.js` fragt beim Start, beim Öffnen der Einstellungen und alle 2 Stunden die GitHub-API nach dem neuesten
+Release, lädt `UNDCC-Tweaker-<version>.exe` neben die laufende Exe, prüft Größe und SHA-256 und ersetzt die Exe beim
+Neustart („Jetzt neu starten“) oder beim Beenden. Protokoll: Einstellungen → Update-Hilfe → Protokoll öffnen.
 
-1. `version` in `package.json` erhöhen (z. B. 0.4.0 → 0.4.1). Ohne höhere Version gibt es kein Update.
+1. `version` in `package.json` erhöhen (z. B. 0.6.0 → 0.6.1). Ohne höhere Version gibt es kein Update.
 2. `npm run dist`
-3. Release mit allen drei Dateien anlegen, sonst findet der Updater nichts:
+3. Release mit der Exe anlegen (der Dateiname muss `UNDCC-Tweaker-<version>.exe` bleiben):
    ```
-   gh release create v0.4.1 dist/UNDCC-Tweaker-Setup-0.4.1.exe dist/UNDCC-Tweaker-Setup-0.4.1.exe.blockmap dist/latest.yml --target codex/performance-backend --title "UND.CC Tweaker 0.4.1"
+   gh release create v0.6.1 dist/UNDCC-Tweaker-0.6.1.exe --target codex/performance-backend --title "UND.CC Tweaker 0.6.1"
    ```
    Das Release darf kein Entwurf und keine Vorabversion sein.
-
-### Installer-Anpassungen (`build/`)
-
-- `installer.nsh` hängt sich in die NSIS-Prüfung „App läuft noch?“ ein (läuft direkt vor dem Entfernen der alten Version).
-- `cleanup-old-install.ps1` (nur Installer): entfernt eine alte Installation pro Benutzer (bis 0.5.1) selbst –
-  Prozesse, Ordner unter `%LOCALAPPDATA%\Programs`, Verknüpfungen und Registry-Einträge mit der App-GUID.
-  Protokoll: `%TEMP%\undcc-tweaker-setup.log`.
-- `close-running-app.ps1` (nur Deinstaller): beendet die laufende App, notfalls per UAC.
