@@ -1,10 +1,10 @@
 // Eigener Updater für die portable Exe (ab 0.6.0, ohne Installer).
 // 1. fragt die GitHub-API nach dem neuesten Release (aspectX101/Tests1)
 // 2. lädt UNDCC-Tweaker-<version>.exe neben die laufende Exe (…exe.new) und prüft Größe + SHA-256
-// 3. ersetzt beim Neustart (oder Beenden) die alte Exe per kleinem PowerShell-Skript und startet sie neu
+// 3. ersetzt beim Neustart (oder Beenden) die alte Exe per PowerShell-Skript (über WMI gestartet) und startet sie neu
 // Sucht beim Start, beim Öffnen der Einstellungen und alle 2 Stunden. Protokoll: %APPDATA%\<App>\logs\updater.log
 const { app, shell, net } = require('electron');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const crypto = require('crypto');
 const https = require('https');
 const fs = require('fs');
@@ -144,23 +144,53 @@ async function download(asset, target) {
 }
 
 // Ersetzt die Exe, sobald sie frei ist (der portable Starter beendet sich mit der App), und startet sie neu.
-const APPLY_SCRIPT = `
-$src = $env:UNDCC_NEW; $dst = $env:UNDCC_EXE
-for ($i = 0; $i -lt 120; $i++) {
-  try { Move-Item -LiteralPath $src -Destination $dst -Force -ErrorAction Stop; $ok = $true; break } catch { Start-Sleep -Milliseconds 500 }
+// Tausch-Skript: wartet auf das Ende der App, ersetzt die Exe (sobald der portable Starter sie freigibt) und startet
+// neu. Klappt der Tausch nicht, wird wenigstens die alte Exe wieder gestartet. Jeder Schritt: logs\updater-swap.log
+const SWAP_SCRIPT = `param([string]$Src, [string]$Dst, [string]$Log, [int]$Relaunch, [int]$WaitPid)
+function L($m) { try { Add-Content -LiteralPath $Log -Value ('{0} {1}' -f (Get-Date -Format o), $m) } catch {} }
+L "swap start pid=$PID src=$Src dst=$Dst relaunch=$Relaunch waitPid=$WaitPid"
+try { Wait-Process -Id $WaitPid -Timeout 60 -ErrorAction Stop; L 'app exited' } catch { L "wait: $($_.Exception.Message)" }
+$ok = $false
+for ($i = 1; $i -le 180; $i++) {
+  try { Move-Item -LiteralPath $Src -Destination $Dst -Force -ErrorAction Stop; $ok = $true; L "replaced after $($i) tries"; break }
+  catch { if ($i -eq 1 -or $i % 20 -eq 0) { L "try $($i): $($_.Exception.Message)" }; Start-Sleep -Milliseconds 500 }
 }
-if ($ok -and $env:UNDCC_RELAUNCH -eq '1') { Start-Process -FilePath $dst }`;
+if (-not $ok) { L 'FAILED: exe not replaced, starting old version' }
+if ($Relaunch -eq 1 -or -not $ok) {
+  try { Start-Process -FilePath $Dst; L 'relaunched' } catch { L "relaunch failed: $($_.Exception.Message)" }
+}
+L 'swap done'
+`;
 
+// Startet das Tausch-Skript über WMI (Win32_Process.Create). Dadurch ist es kein Kindprozess der App und hängt
+// an keinem ihrer Jobs – es überlebt das Beenden sicher. Fallback: normal abgekoppelt starten.
 function apply(relaunch) {
   if (!pending || applying) return;
   applying = true;
   const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
-  log('info', `apply ${pending.version} relaunch=${relaunch}`);
-  spawn(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden',
-    '-EncodedCommand', Buffer.from(APPLY_SCRIPT, 'utf16le').toString('base64')], {
-    detached: true, stdio: 'ignore', windowsHide: true,
-    env: { ...process.env, UNDCC_NEW: pending.file, UNDCC_EXE: exePath, UNDCC_RELAUNCH: relaunch ? '1' : '0' },
-  }).unref();
+  const script = path.join(app.getPath('temp'), 'undcc-tweaker-swap.ps1');
+  const swapLog = path.join(path.dirname(logFile), 'updater-swap.log');
+  try {
+    fs.writeFileSync(script, '\ufeff' + SWAP_SCRIPT, 'utf8');
+  } catch (err) {
+    log('error', `swap script not written: ${err.message}`);
+    applying = false;
+    return;
+  }
+  const cmd = `"${ps}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"` +
+    ` -Src "${pending.file}" -Dst "${exePath}" -Log "${swapLog}" -Relaunch ${relaunch ? 1 : 0} -WaitPid ${process.pid}`;
+  log('info', `apply ${pending.version} relaunch=${relaunch} cmd=${cmd}`);
+  const launcher = "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $env:UNDCC_CMD }; [Console]::Out.Write(\"$($r.ReturnValue) $($r.ProcessId)\")";
+  const res = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(launcher, 'utf16le').toString('base64')],
+    { env: { ...process.env, UNDCC_CMD: cmd }, windowsHide: true, encoding: 'utf8', timeout: 30000 });
+  const [code, pid] = String(res.stdout || '').trim().split(' ');
+  log('info', `wmi create -> code=${code} pid=${pid} err=${String(res.stderr || res.error || '').trim().slice(0, 300)}`);
+  if (code !== '0') {
+    log('warn', 'wmi failed, falling back to detached spawn');
+    spawn(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script,
+      '-Src', pending.file, '-Dst', exePath, '-Log', swapLog, '-Relaunch', relaunch ? '1' : '0', '-WaitPid', String(process.pid)],
+    { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(exePath) }).unref();
+  }
 }
 
 function install() {
@@ -169,7 +199,8 @@ function install() {
   app.quit();
 }
 
-const openLog = () => logFile && shell.openPath(logFile);
+// Öffnet den Protokoll-Ordner: updater.log (Suche/Download) und updater-swap.log (Austausch der Exe).
+const openLog = () => logFile && shell.openPath(path.dirname(logFile));
 const openReleases = () => shell.openExternal(RELEASES_URL);
 
-module.exports = { start, check, install, openLog, openReleases, getState: () => state, _test: { newer, pickAsset, download, APPLY_SCRIPT } };
+module.exports = { start, check, install, openLog, openReleases, getState: () => state, _test: { newer, pickAsset, download, SWAP_SCRIPT } };
