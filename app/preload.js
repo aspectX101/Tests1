@@ -11,4 +11,10 @@ contextBridge.exposeInMainWorld('tweaker', {
   minimize: () => ipcRenderer.send('window:minimize'),
   close: () => ipcRenderer.send('window:close'),
   onUsage: (cb) => ipcRenderer.on('tweaker:usage', (_e, u) => cb(u)),
+  // Updates (GitHub-Releases)
+  version: () => ipcRenderer.invoke('tweaker:version'),
+  updateState: () => ipcRenderer.invoke('tweaker:update-state'),
+  onUpdate: (cb) => ipcRenderer.on('tweaker:update', (_e, st) => cb(st)),
+  checkUpdate: () => ipcRenderer.send('tweaker:update-check'),
+  installUpdate: () => ipcRenderer.send('tweaker:update-install'),
 });

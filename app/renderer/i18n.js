@@ -146,6 +146,15 @@ window.I18N = {
     bkSummary: (r, s, f) => `${r} wiederhergestellt · ${s} übersprungen · ${f} fehlgeschlagen`,
     bkDone: 'Wiederherstellung abgeschlossen', bkPartial: 'Nur teilweise wiederhergestellt. Details siehe unten.',
     bkWarnings: 'Warnungen im Sicherungs-Katalog', bkExported: 'Sicherung exportiert',
+    updates: 'Updates', version: (v) => `Version ${v}`,
+    upStatus: {
+      unsupported: 'Automatische Updates gibt es nur in der installierten Windows-App.',
+      idle: 'Bereit', checking: 'Suche nach Updates …', latest: 'Du hast die neueste Version.',
+      downloading: (v, p) => `Update ${v} wird geladen … ${p}%`, ready: (v) => `Update ${v} ist bereit.`,
+      error: (e) => `Update-Prüfung fehlgeschlagen: ${e}`,
+    },
+    upCheck: 'Nach Updates suchen', upInstall: 'Jetzt neu starten',
+    upBanner: (v) => `Update ${v} ist bereit. Es wird beim nächsten Start installiert.`,
     cats: {
       performance: ['Optimierung', 'CPU, Energie und Systemreaktion'],
       gaming: ['Gaming Tweaks', 'FPS, Input-Lag und Spielprozesse'],
@@ -305,6 +314,15 @@ window.I18N = {
     bkSummary: (r, s, f) => `${r} restored · ${s} skipped · ${f} failed`,
     bkDone: 'Restore completed', bkPartial: 'Only partially restored. See details below.',
     bkWarnings: 'Warnings in the backup catalog', bkExported: 'Backup exported',
+    updates: 'Updates', version: (v) => `Version ${v}`,
+    upStatus: {
+      unsupported: 'Automatic updates are only available in the installed Windows app.',
+      idle: 'Ready', checking: 'Checking for updates …', latest: 'You have the latest version.',
+      downloading: (v, p) => `Downloading update ${v} … ${p}%`, ready: (v) => `Update ${v} is ready.`,
+      error: (e) => `Update check failed: ${e}`,
+    },
+    upCheck: 'Check for updates', upInstall: 'Restart now',
+    upBanner: (v) => `Update ${v} is ready. It will be installed on next start.`,
     cats: {
       performance: ['Optimisation', 'CPU, power and responsiveness'],
       gaming: ['Gaming Tweaks', 'FPS, input lag and game processes'],
@@ -464,6 +482,15 @@ window.I18N = {
     bkSummary: (r, s, f) => `${r} ripristinati · ${s} saltati · ${f} non riusciti`,
     bkDone: 'Ripristino completato', bkPartial: 'Ripristino solo parziale. Vedi dettagli sotto.',
     bkWarnings: 'Avvisi nel catalogo dei backup', bkExported: 'Backup esportato',
+    updates: 'Aggiornamenti', version: (v) => `Versione ${v}`,
+    upStatus: {
+      unsupported: 'Gli aggiornamenti automatici sono disponibili solo nella app Windows installata.',
+      idle: 'Pronto', checking: 'Ricerca aggiornamenti …', latest: 'Hai la versione più recente.',
+      downloading: (v, p) => `Download aggiornamento ${v} … ${p}%`, ready: (v) => `L’aggiornamento ${v} è pronto.`,
+      error: (e) => `Controllo aggiornamenti non riuscito: ${e}`,
+    },
+    upCheck: 'Cerca aggiornamenti', upInstall: 'Riavvia ora',
+    upBanner: (v) => `L’aggiornamento ${v} è pronto. Verrà installato al prossimo avvio.`,
     cats: {
       performance: ['Ottimizzazione', 'CPU, energia e reattività'],
       gaming: ['Gaming Tweaks', 'FPS, input lag e processi di gioco'],

@@ -3,6 +3,12 @@ const path = require('path');
 const fs = require('fs/promises');
 const { pathToFileURL } = require('url');
 const usage = require('./usage');
+const updater = require('./updater');
+const { relaunchElevated } = require('./elevate');
+
+// Installierte Windows-App: ohne Adminrechte gestartet → einmal mit UAC neu starten und diese Instanz beenden.
+const relaunched = app.isPackaged && relaunchElevated();
+if (relaunched) app.exit(0);
 
 const INDEX = path.join(__dirname, 'renderer', 'index.html');
 const INDEX_URL = pathToFileURL(INDEX).href;
@@ -18,7 +24,9 @@ const sendToUi = (channel, payload) => win && !win.isDestroyed() && win.webConte
 // Eine einzige Instanz: sie startet auch den SafeMode-Monitor (alle 30 s, nur solange die App offen ist).
 const useMock = process.argv.includes('--mock') || process.platform !== 'win32';
 let backend;
-if (useMock) {
+if (relaunched) {
+  backend = async () => ({ ok: false, error: 'relaunching' });
+} else if (useMock) {
   const mock = require('./mock');
   backend = (req) => mock.call(req);
 } else {
@@ -54,6 +62,7 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.loadFile(INDEX);
   usage.start((u) => sendToUi('tweaker:usage', u));
+  win.webContents.once('did-finish-load', () => updater.start((st) => sendToUi('tweaker:update', st)));
 }
 
 // Nur Anfragen aus unserer eigenen, lokal geladenen Oberfläche annehmen.
@@ -94,12 +103,16 @@ ipcMain.handle('tweaker:export', async (e, what, backupId) => {
   return { ok: true, path: filePath };
 });
 
+ipcMain.handle('tweaker:version', (e) => (trusted(e) ? app.getVersion() : null));
+ipcMain.handle('tweaker:update-state', (e) => (trusted(e) ? updater.getState() : null));
+ipcMain.on('tweaker:update-check', (e) => trusted(e) && updater.check());
+ipcMain.on('tweaker:update-install', (e) => trusted(e) && updater.install());
 ipcMain.handle('tweaker:mode', (e) => (trusted(e) ? (useMock ? 'mock' : 'powershell') : null));
 ipcMain.handle('tweaker:safemode-last', (e) => (trusted(e) ? lastSafeMode : null));
 ipcMain.on('window:minimize', (e) => trusted(e) && win?.minimize());
 ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 
-app.whenReady().then(createWindow);
+if (!relaunched) app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
   usage.stop();
   app.quit();

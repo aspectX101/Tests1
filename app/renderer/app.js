@@ -8,6 +8,9 @@ const bridge = window.tweaker || {
   exportJson: async () => ({ ok: true, path: 'tweaker-export.json' }),
   lastSafeMode: async () => null,
   onSafeMode() {},
+  version: async () => 'dev',
+  updateState: async () => ({ status: 'unsupported' }),
+  onUpdate() {}, checkUpdate() {}, installUpdate() {},
   minimize() {}, close() {},
   onUsage(cb) {
     let u = { cpu: 9, gpu: 8, ram: 37 };
@@ -80,6 +83,8 @@ const state = {
   bkOpen: null,      // backupId mit geöffneter Vorschau
   bkPreview: {},     // backupId -> backup-preview-Antwort
   bkResult: null,    // letzte Wiederherstellungs-Antwort mit Einzelergebnissen
+  version: '',
+  update: { status: 'unsupported' },
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -437,10 +442,25 @@ function backupHead() {
     </div>`;
 }
 
+function updateText() {
+  const u = state.update || {};
+  const st = t().upStatus;
+  if (u.status === 'downloading') return st.downloading(u.version || '', u.percent ?? 0);
+  if (u.status === 'ready') return st.ready(u.version || '');
+  if (u.status === 'error') return st.error(u.error || '');
+  return st[u.status] || st.idle;
+}
+
 function renderSettings() {
+  const u = state.update || {};
+  const upBtn = u.status === 'ready'
+    ? `<button class="pill light" id="up-install">${t().upInstall}</button>`
+    : u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-check" ${u.status === 'checking' || u.status === 'downloading' ? 'disabled' : ''}>${t().upCheck}</button>`;
   const langBtn = (l, label) => `<button data-lang="${l}" class="${state.lang === l ? 'active' : ''}">${label}</button>`;
   return `
     <div class="settings">
+      <div class="card row"><div class="row-body"><div class="row-title">${t().updates} <span class="tag">${esc(t().version(state.version))}</span></div>
+        <div class="row-desc">${esc(updateText())}</div></div>${upBtn}</div>
       <div class="card row"><div class="row-body"><div class="row-title">${t().language}</div><div class="row-desc">${t().languageDesc}</div></div>
         <div class="seg">${langBtn('de', 'Deutsch')}${langBtn('en', 'English')}${langBtn('it', 'Italiano')}</div></div>
       <div class="card row"><div class="row-body"><div class="row-title">${t().backend}</div><div class="row-desc">${t().backendDesc}</div></div>
@@ -455,9 +475,12 @@ function render() {
   renderNav();
   renderCrumbs();
   const r = state.route;
-  let html = state.restartPending
-    ? `<div class="restart"><span>${t().needsRestart}</span><button class="pill" id="restart-later">${t().later}</button></div>`
+  const upReady = state.update?.status === 'ready'
+    ? `<div class="restart"><span>${esc(t().upBanner(state.update.version || ''))}</span><button class="pill" id="up-install">${t().upInstall}</button></div>`
     : '';
+  let html = upReady + (state.restartPending
+    ? `<div class="restart"><span>${t().needsRestart}</span><button class="pill" id="restart-later">${t().later}</button></div>`
+    : '');
   if (state.loading && !['settings', 'cleanup', 'safemode', 'backups'].includes(r.page)) {
     html += '<div class="rows">' + '<div class="skeleton"></div>'.repeat(5) + '</div>';
   } else if (r.page === 'home') html += renderHome();
@@ -731,6 +754,8 @@ document.addEventListener('click', (e) => {
   else if (el.dataset.purge) cachePurge(el.dataset.purge, el.dataset.date);
   else if (el.id === 'sm-export') safeExport();
   else if (el.id === 'bk-reload') bkList();
+  else if (el.id === 'up-check') bridge.checkUpdate();
+  else if (el.id === 'up-install') bridge.installUpdate();
   else if (el.id === 'bk-all') bkRestore(null, true);
   else if (el.dataset.bkPreview) bkTogglePreview(el.dataset.bkPreview);
   else if (el.dataset.bkRestore) bkRestore(el.dataset.bkRestore, false);
@@ -771,6 +796,19 @@ function onSafeMode(msg) {
 }
 bridge.onSafeMode(onSafeMode);
 bridge.lastSafeMode().then(onSafeMode);
+
+function onUpdate(st) {
+  if (!st) return;
+  state.update = st;
+  // Nur neu zeichnen, wenn es sichtbar ist – sonst würde der Download-Fortschritt ständig die Seite neu bauen.
+  if (st.status === 'ready' || st.status === 'error' || state.route.page === 'settings') render();
+}
+bridge.onUpdate(onUpdate);
+bridge.updateState().then(onUpdate);
+bridge.version().then((v) => {
+  state.version = v;
+  document.querySelector('.brand-ver').textContent = `V${v}`;
+});
 
 bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings') render(); });
 load();

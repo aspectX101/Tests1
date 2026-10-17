@@ -10,10 +10,13 @@
     "start": "electron .",
     "start:mock": "electron . --mock",
     "test": "node --test tests/electron-backend.test.cjs",
-    "dist": "electron-builder --config electron-builder.config.cjs --win"
+    "dist": "electron-builder --config electron-builder.config.cjs --win --publish never"
   },
   "devDependencies": {
     "electron": "33.2.0",
     "electron-builder": "25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "6.6.2"
   }
 }
