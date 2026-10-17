@@ -1,8 +1,8 @@
 {
   "name": "tweaker",
   "productName": "UND.CC Tweaker",
-  "version": "0.6.3",
-  "description": "Windows gaming utility for FiveM and Fortnite",
+  "version": "0.7.0",
+  "description": "UND.CC Tweaker",
   "author": "Tweaker",
   "private": true,
   "main": "app/main.js",
@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "electron": "33.2.0",
-    "electron-builder": "25.1.8"
+    "electron-builder": "25.1.8",
+    "resedit": "3.1.0"
   }
 }

@@ -169,7 +169,7 @@ function renderHome() {
 
   return `
     <div class="card hero">
-      <img src="assets/logo.png" alt="">
+      <img src="assets/logo-icon.png" alt="">
       <div>
         <h1>${t().welcome}<span>.</span></h1>
         <p>${esc([i.os, adminTxt].filter(Boolean).join(' · '))}</p>
@@ -497,8 +497,22 @@ function render() {
   else if (r.page === 'safemode') html += renderSafeMode();
   else if (r.page === 'backups') html += renderBackups();
   else html += renderCategory(r.cat, r.parent);
-  $('#content').innerHTML = html;
-  if (r.page === 'home') paintUsage();
+  const content = $('#content');
+  content.innerHTML = html;
+  // Seitenwechsel: Inhalte gestaffelt hereingleiten lassen (nicht bei jedem Neuzeichnen, z. B. Schalter)
+  if (state.enter) {
+    state.enter = false;
+    content.classList.remove('enter');
+    void content.offsetWidth; // Animation neu starten
+    content.classList.add('enter');
+    const stagger = (els) => els.forEach((el, i) => el.style.setProperty('--i', Math.min(i, 14)));
+    stagger([...content.children]);
+    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings').forEach((g) => stagger([...g.children]));
+    clearTimeout(state.enterTimer);
+    state.enterTimer = setTimeout(() => content.classList.remove('enter'), 1600);
+  }
+  // Ringe erst im nächsten Frame setzen, damit sie sichtbar von 0 aus hochlaufen
+  if (r.page === 'home') requestAnimationFrame(paintUsage);
 }
 
 // Live-Werte nur im DOM nachziehen, damit die Seite nicht jede Sekunde neu gebaut wird.
@@ -722,12 +736,15 @@ async function load() {
   if (info?.ok) state.info = info;
   if (list?.ok) state.tweaks = list.tweaks || [];
   else toast(`${t().loadFailed}: ${errorText(list?.error)}`, 'error');
+  state.enter = true;
   render();
+  hideSplash();
 }
 
 function go(route) {
   state.route = route;
   state.filter = 'all';
+  state.enter = true;
   render();
   $('#content').scrollTop = 0;
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
@@ -819,6 +836,25 @@ bridge.version().then((v) => {
   state.version = v;
   document.querySelector('.brand-ver').textContent = `V${v}`;
 });
+
+// Start-Animation: mindestens so lange zeigen, bis sie einmal durchgelaufen ist; spätestens nach 6 s weg.
+const SPLASH_MIN = 2200;
+const splashStart = performance.now();
+let splashDone = false;
+function hideSplash() {
+  if (splashDone) return;
+  splashDone = true;
+  const wait = Math.max(0, SPLASH_MIN - (performance.now() - splashStart));
+  setTimeout(() => {
+    const el = $('#splash');
+    el.classList.add('out');
+    document.body.classList.remove('booting');
+    state.enter = true;
+    render();
+    setTimeout(() => el.remove(), 800);
+  }, wait);
+}
+setTimeout(hideSplash, 6000);
 
 bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings') render(); });
 load();

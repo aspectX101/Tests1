@@ -23,6 +23,8 @@ module.exports = {
     // Der Starter fordert Adminrechte an; die App darin läuft dann erhöht.
     requestExecutionLevel: 'admin',
   },
+  // Icon + Versionsinfos der inneren App-Exe setzen (geht ohne Windows/Wine, siehe build/after-pack.cjs)
+  afterPack: './build/after-pack.cjs',
   // Keine latest.yml/app-update.yml mehr – app/updater.js fragt die GitHub-API direkt.
   publish: null,
 };
