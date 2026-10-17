@@ -34,6 +34,62 @@
       L('Entfernt hiberfil.sys und gibt Speicher frei', 'Removes hiberfil.sys and frees disk space', 'Rimuove hiberfil.sys e libera spazio')),
   ];
 
+  // Gemeinsamer Wiederherstellungs-Katalog (Format wie Backup.ps1). Jede Änderung legt automatisch einen Eintrag an.
+  const recovery = [];
+  const hex32 = () => Array.from({ length: 32 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
+  function register(kind, tweakId, payload) {
+    // Neuere Sicherung desselben Tweaks verdrängt ältere (backup_superseded).
+    if (kind === 'tweak') recovery.filter((r) => r.tweakId === tweakId && r.status === 'applied').forEach((r) => { r.status = 'superseded'; });
+    const r = { backupId: hex32(), kind, tweakId, createdUtc: new Date().toISOString(), status: kind === 'services' ? 'evidence' : kind === 'cache' ? 'cleaned' : 'applied', payload };
+    recovery.unshift(r);
+    return r;
+  }
+  const reasonOf = (r) => ({ superseded: 'backup_superseded', evidence: 'service_evidence_only', restored: 'already_restored', purged: 'cache_backup_purged' }[r.status] || '');
+  const pub = (r) => ({ backupId: r.backupId, kind: r.kind, tweakId: r.tweakId, createdUtc: r.createdUtc, status: r.status, canRestore: !reasonOf(r), reason: reasonOf(r) });
+  const backupMsg = {
+    de: 'Wiederherstellung nutzt die Originalwerte des jeweiligen Vorgangs. Konflikte werden gemeldet; Dienstsicherungen bleiben aus Sicherheitsgründen Nachweise. Bei Teilerfolg Details prüfen.',
+    en: 'Recovery uses the original values saved for each operation. Conflicts are reported; service snapshots remain evidence for safety. Check item details after partial recovery.',
+    it: 'Il ripristino usa i valori originali di ogni operazione. I conflitti vengono segnalati; le copie dei servizi restano prove per sicurezza. Controllare i dettagli in caso di risultato parziale.',
+  };
+  function restoreOne(r) {
+    const reason = reasonOf(r);
+    if (reason) throw new Error(reason);
+    if (r.kind === 'tweak') { const tw = catalog.find((x) => x.id === r.tweakId); if (tw) tw.applied = false; }
+    if (r.kind === 'cache') {
+      if (candidates.length) throw new Error('cache_restore_conflict');
+      const b = backups.find((x) => x.backupId === r.payload.id);
+      if (b) { b.status = 'restored'; candidates = b.entries; }
+    }
+    r.status = 'restored';
+  }
+  function backup(action, backupId, lang) {
+    const message = backupMsg[lang];
+    if (action === 'backup-list') return { ok: true, backups: recovery.map(pub), warnings: [], message };
+    if (action === 'backup-restore-all') {
+      const results = recovery.map((r) => {
+        const reason = reasonOf(r);
+        if (reason) return { backupId: r.backupId, status: 'skipped', reason };
+        try { restoreOne(r); return { backupId: r.backupId, status: 'restored', reason: '' }; }
+        catch (e) { return { backupId: r.backupId, status: 'failed', reason: e.message }; }
+      });
+      const failed = results.some((x) => x.status === 'failed');
+      return { ok: !failed, status: failed ? 'partial' : 'completed', results, warnings: [], restartRequired: false, message, ...(failed ? { error: 'restore_incomplete' } : {}) };
+    }
+    if (!/^[a-f0-9]{32}$/.test(backupId || '')) return { ok: false, error: 'invalid_backup_id' };
+    const r = recovery.find((x) => x.backupId === backupId);
+    if (!r) return { ok: false, error: 'backup_not_found' };
+    if (action === 'backup-preview') return { ok: true, backup: pub(r), snapshot: r.payload, warnings: [], message };
+    if (action === 'backup-export') return { ok: true, format: 'tweaker-recovery-export-v1', record: { ...pub(r), payload: r.payload }, importSupported: false };
+    if (action === 'backup-restore') {
+      let item;
+      try { restoreOne(r); item = { backupId, status: 'restored', reason: '' }; }
+      catch (e) { item = { backupId, status: 'failed', reason: e.message }; }
+      const ok = item.status === 'restored';
+      return { ok, status: ok ? 'completed' : 'partial', results: [item], warnings: [], restartRequired: false, message, ...(ok ? {} : { error: 'restore_incomplete' }) };
+    }
+    return { ok: false, error: 'invalid_action' };
+  }
+
   const delay = () => new Promise((r) => setTimeout(r, 250 + Math.random() * 600));
 
   // FiveM-Cache-Testdaten (Format wie CacheCleaner.ps1)
@@ -64,6 +120,7 @@
       if (!candidates.length) return { ok: true, status: 'unchanged', freedBytes: 0, removedFromActiveCacheBytes: 0, backupId: null, message };
       const b = { backupId: hex(), status: 'cleaned', createdUtc: new Date().toISOString(), entries: candidates };
       backups.unshift(b);
+      register('cache', null, { id: b.backupId, root: 'C:\\Users\\Spieler\\AppData\\Local\\FiveM\\FiveM.app', entries: candidates.map((c) => c.relative) });
       const bytes = sum(candidates);
       candidates = [];
       return { ok: true, status: 'cleaned', backupId: b.backupId, removedFromActiveCacheBytes: bytes, freedBytes: 0, message };
@@ -82,6 +139,7 @@
       if (confirmPurge !== true) return { ok: false, error: 'explicit_purge_confirmation_required' };
       if (b.status === 'restored') return { ok: false, error: 'cache_backup_already_restored' };
       b.status = 'purged';
+      recovery.filter((x) => x.kind === 'cache' && x.payload.id === backupId).forEach((x) => { x.status = 'purged'; });
       return { ok: true, status: 'purged', backupId, freedBytes: sum(b.entries), message };
     }
     return { ok: false, error: 'invalid_action' };
@@ -125,6 +183,7 @@
     if (action === 'safemode-scan' || action === 'safemode-report') return safeReport(lang);
     if (action === 'safemode-disable') { safe.enabled = false; return safeReport(lang); }
     if (action === 'safemode-enforce' && !safe.enabled) return safeReport(lang);
+    if (!safe.enabled) register('services', null, { services: services.map((x) => ({ name: x.name, originalStartMode: x.startMode, originalState: x.state })) });
     safe.enabled = true;
     const repairs = [];
     for (const sv of services.filter((x) => x.autoRepair)) {
@@ -142,6 +201,7 @@
     if (!['de', 'en', 'it'].includes(lang)) return { ok: false, error: 'invalid_language' };
     if (String(action).startsWith('cache-')) return cache(action, backupId, confirmPurge, lang);
     if (String(action).startsWith('safemode-')) return safemode(action, lang);
+    if (String(action).startsWith('backup-')) return backup(action, backupId, lang);
     if (action === 'info') {
       return { ok: true, os: 'Microsoft Windows 11 Home (Mock)', cpu: 'AMD Ryzen 7 7800X3D', gpu: 'NVIDIA GeForce RTX 4070 Ti', ramGB: 32, isAdmin: true };
     }
@@ -154,6 +214,8 @@
     if (action === 'apply' || action === 'revert') {
       const was = t.applied;
       t.applied = action === 'apply';
+      if (action === 'apply' && !was) register('tweak', id, { id, before: { applied: false }, target: { applied: true } });
+      if (action === 'revert') recovery.filter((r) => r.tweakId === id && r.status === 'applied').forEach((r) => { r.status = 'restored'; });
       const status = action === 'revert' ? 'restored' : was ? 'unchanged' : 'applied';
       return { ok: true, id, applied: t.applied, restartRequired: t.requiresRestart, status, message: '' };
     }

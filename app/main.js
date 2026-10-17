@@ -72,23 +72,25 @@ ipcMain.handle('tweaker:call', async (e, request) => {
   }
 });
 
-// SafeMode-Bericht als JSON speichern; den Speicherort wählt der Nutzer im Windows-Dialog.
-ipcMain.handle('tweaker:export-report', async (e) => {
+// SafeMode-Bericht oder Wiederherstellungs-Nachweis als JSON speichern; den Ort wählt der Nutzer im Windows-Dialog.
+ipcMain.handle('tweaker:export', async (e, what, backupId) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
-  let report;
+  let req;
+  if (what === 'safemode') req = { action: 'safemode-report', lang: currentLang };
+  else if (what === 'backup' && typeof backupId === 'string' && /^[a-f0-9]{32}$/.test(backupId)) req = { action: 'backup-export', backupId, lang: currentLang };
+  else return { ok: false, error: 'invalid_action' };
+  let data;
   try {
-    report = await backend({ action: 'safemode-report', lang: currentLang });
+    data = await backend(req);
   } catch (err) {
     return { ok: false, error: err.message };
   }
-  if (!report?.ok) return report;
+  if (!data?.ok) return data;
   const stamp = new Date().toISOString().slice(0, 10);
-  const { canceled, filePath } = await dialog.showSaveDialog(win, {
-    defaultPath: `tweaker-safemode-${stamp}.json`,
-    filters: [{ name: 'JSON', extensions: ['json'] }],
-  });
+  const name = what === 'safemode' ? `tweaker-safemode-${stamp}.json` : `tweaker-backup-${backupId.slice(0, 8)}-${stamp}.json`;
+  const { canceled, filePath } = await dialog.showSaveDialog(win, { defaultPath: name, filters: [{ name: 'JSON', extensions: ['json'] }] });
   if (canceled || !filePath) return { ok: true, canceled: true };
-  await fs.writeFile(filePath, JSON.stringify(report, null, 2), 'utf8');
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
   return { ok: true, path: filePath };
 });
 

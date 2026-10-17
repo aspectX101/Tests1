@@ -237,3 +237,17 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .sm-alert { margin-top: 14px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(232,17,35,.5); background: rgba(232,17,35,.08); font-size: 12.5px; display: grid; gap: 3px; }
 .sm-row { padding: 12px 18px; gap: 14px; }
 .sm-name { font-weight: 400; font-size: 12px; }
+
+/* ---------- Sicherungen ---------- */
+.bk-item { border-radius: 16px; overflow: hidden; }
+.bk-item .row { border: 0; background: transparent; gap: 10px; }
+.bk-item .row-body { margin-right: 8px; }
+.bk-preview { padding: 0 20px 18px; font-size: 12.5px; }
+.bk-label { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin: 12px 0 6px; }
+.bk-preview pre { margin: 0; padding: 12px 14px; max-height: 240px; overflow: auto; border-radius: 10px; background: #050505; border: 1px solid var(--line); color: #d6d6d6; font: 11.5px/1.5 ui-monospace, Consolas, monospace; user-select: text; white-space: pre-wrap; word-break: break-all; }
+.bk-result { margin-bottom: 22px; }
+.bk-result .cache-list { margin-top: 12px; }
+.res-restored { color: var(--ok); }
+.res-skipped { color: var(--muted); }
+.res-failed { color: var(--danger); }
+.bk-result .cache-list div { grid-template-columns: minmax(0, 1fr) auto 130px; }

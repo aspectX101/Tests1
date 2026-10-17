@@ -11,7 +11,7 @@ Die Oberfläche liegt in `app/` (Claude), das Backend im Repo-Root (ChatGPT). `a
 ```
 app/main.js          rahmenloses Fenster, IPC nur von der eigenen Oberfläche → electron/backend.cjs
                      (eine Instanz, startet auch den SafeMode-Monitor; Bericht-Export per Speichern-Dialog)
-app/preload.js       window.tweaker: call({action,id,lang,backupId,confirmPurge}), mode, exportReport,
+app/preload.js       window.tweaker: call({action,id,lang,backupId,confirmPurge}), mode, exportJson(what, backupId),
                      lastSafeMode, onSafeMode, minimize, close, onUsage
 app/usage.js         Live-CPU/RAM/GPU fürs Dashboard (nur lesend)
 app/mock.js          Testdaten im selben JSON-Format (auf macOS/Linux oder mit --mock)

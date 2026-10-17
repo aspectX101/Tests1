@@ -5,7 +5,7 @@
 const bridge = window.tweaker || {
   call: (request) => window.TweakerMock.call(request),
   mode: async () => 'browser',
-  exportReport: async () => ({ ok: true, path: 'tweaker-safemode.json' }),
+  exportJson: async () => ({ ok: true, path: 'tweaker-export.json' }),
   lastSafeMode: async () => null,
   onSafeMode() {},
   minimize() {}, close() {},
@@ -33,6 +33,7 @@ const ICONS = {
   extra: '<path d="M12 4v16M4 12h16"/>',
   cleanup: '<path d="M6 6l12 12M18 6 6 18"/>',
   safemode: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+  backups: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
   mouse: '<rect x="6" y="2" width="12" height="20" rx="6"/><path d="M12 6v4"/>',
   keyboard: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/>',
@@ -73,6 +74,12 @@ const state = {
   safeError: null,
   safeBusy: null,    // 'scan' | 'enable' | 'disable' | 'enforce' | 'export'
   safeMonitorError: null,
+  bk: null,          // letzte backup-list-Antwort
+  bkError: null,
+  bkBusy: null,      // 'list' | 'all' | backupId
+  bkOpen: null,      // backupId mit geöffneter Vorschau
+  bkPreview: {},     // backupId -> backup-preview-Antwort
+  bkResult: null,    // letzte Wiederherstellungs-Antwort mit Einzelergebnissen
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -119,6 +126,7 @@ function renderNav() {
     MAIN_CATS.map((c) => item(c, catName(c), `data-cat="${c}"`)).join('') +
     item('cleanup', t().cleanup, 'data-go="cleanup"') +
     item('safemode', t().safemode, 'data-go="safemode"') +
+    item('backups', t().backupsPage, 'data-go="backups"') +
     item('extra', t().extra, 'data-go="extra"') +
     '<div class="nav-spacer"></div>' +
     item('settings', t().settings, 'data-go="settings"');
@@ -350,6 +358,85 @@ function renderSafeMode() {
     ${rows.length ? `<h3 class="section-title">${t().smServices}</h3><div class="rows">${rows.map(svc).join('')}</div>` : ''}`;
 }
 
+function backupName(b) {
+  if (b.kind === 'cache') return t().bkCacheName;
+  if (b.kind === 'services') return t().bkServicesName;
+  return state.tweaks.find((x) => x.id === b.tweakId)?.name || b.tweakId || b.backupId;
+}
+const bkReasonText = (code) => t().bkReason[code] || errorText(code);
+
+function renderBackups() {
+  const d = state.bk;
+  const busy = state.bkBusy;
+  if (!d && busy === 'list') return backupHead() + `<div class="card cache-card"><div class="cache-status muted">${t().bkLoading}</div></div>`;
+  if (!d) return backupHead() + `<div class="card cache-card"><div class="cache-status">${esc(errorText(state.bkError))}</div>
+    <div class="cache-actions"><button class="pill dark" id="bk-reload">${t().bkReload}</button></div></div>`;
+
+  const list = d.backups || [];
+  const restorable = list.filter((b) => b.canRestore).length;
+  const warnings = d.warnings || [];
+  const res = state.bkResult;
+  const resItems = res?.results || [];
+  const count = (st) => resItems.filter((x) => x.status === st).length;
+  const byId = Object.fromEntries(list.map((b) => [b.backupId, b]));
+
+  const row = (b) => {
+    const open = state.bkOpen === b.backupId;
+    const pv = state.bkPreview[b.backupId];
+    const mine = busy === b.backupId;
+    return `
+      <div class="card bk-item">
+        <div class="row">
+          <div class="row-body">
+            <div class="row-title">${esc(backupName(b))}
+              <span class="tag">${esc(t().bkKind[b.kind] || b.kind)}</span>
+              <span class="tag">${esc(t().bkStatus[b.status] || b.status)}</span></div>
+            <div class="row-desc">${esc(fmtDate(b.createdUtc))}${!b.canRestore && b.reason ? ' · ' + esc(bkReasonText(b.reason)) : ''}</div>
+          </div>
+          <button class="pill dark" data-bk-preview="${esc(b.backupId)}" ${busy ? 'disabled' : ''}>${open ? t().bkHide : t().bkPreview}</button>
+          ${b.canRestore ? `<button class="pill light" data-bk-restore="${esc(b.backupId)}" ${busy ? 'disabled' : ''}>${mine ? '…' : t().bkRestore}</button>` : ''}
+          <button class="pill dark" data-bk-export="${esc(b.backupId)}" ${busy ? 'disabled' : ''}>${t().bkExport}</button>
+        </div>
+        ${open ? `<div class="bk-preview">
+          ${!pv ? `<div class="muted">…</div>` : !pv.ok ? `<div class="sm-alert">${esc(errorText(pv.error))}</div>` : `
+            <div class="${pv.backup?.canRestore ? 'muted' : 'sm-alert'}">${pv.backup?.canRestore ? t().bkReady : esc(bkReasonText(pv.backup?.reason))}</div>
+            <div class="bk-label">${t().bkOriginal}</div>
+            <pre>${esc(JSON.stringify(pv.snapshot, null, 2).slice(0, 6000))}</pre>`}
+        </div>` : ''}
+      </div>`;
+  };
+
+  return backupHead() + `
+    <div class="card cache-card">
+      <div class="cache-total"><b>${list.length}</b><span>${t().bkCount(list.length, restorable)}</span></div>
+      ${warnings.length ? `<div class="sm-alert"><b>${t().bkWarnings}</b>${warnings.map((w) => `<div>${esc(w.file)}: ${esc(errorText(w.error))}</div>`).join('')}</div>` : ''}
+      <p class="cache-note">${esc(d.message || '')}</p>
+      <div class="cache-actions">
+        <button class="pill light" id="bk-all" ${busy || !restorable ? 'disabled' : ''}>${busy === 'all' ? '…' : t().bkRestoreAll}</button>
+        <button class="pill dark" id="bk-reload" ${busy ? 'disabled' : ''}>${t().bkReload}</button>
+      </div>
+    </div>
+    ${resItems.length ? `
+      <h3 class="section-title">${t().bkResult}</h3>
+      <div class="card cache-card bk-result">
+        <div class="${res.ok ? 'muted' : 'sm-alert'}">${res.ok ? t().bkDone : t().bkPartial} · ${t().bkSummary(count('restored'), count('skipped'), count('failed'))}</div>
+        <div class="cache-list">${resItems.map((x) => `
+          <div><span>${esc(byId[x.backupId] ? backupName(byId[x.backupId]) : x.backupId)}</span>
+            <span class="muted">${x.reason ? esc(bkReasonText(x.reason)) : ''}</span>
+            <b class="res-${esc(x.status)}">${esc(t().bkRes[x.status] || x.status)}</b></div>`).join('')}</div>
+      </div>` : ''}
+    <h3 class="section-title">${t().backupsPage}</h3>
+    <div class="rows">${list.length ? list.map(row).join('') : `<div class="card empty">${t().bkEmpty}</div>`}</div>`;
+}
+
+function backupHead() {
+  return `
+    <div class="card detail-head">
+      <div class="tile-icon">${icon('backups')}</div>
+      <div><h1>${t().backupsPage}</h1><p>${t().bkDesc}</p></div>
+    </div>`;
+}
+
 function renderSettings() {
   const langBtn = (l, label) => `<button data-lang="${l}" class="${state.lang === l ? 'active' : ''}">${label}</button>`;
   return `
@@ -371,13 +458,14 @@ function render() {
   let html = state.restartPending
     ? `<div class="restart"><span>${t().needsRestart}</span><button class="pill" id="restart-later">${t().later}</button></div>`
     : '';
-  if (state.loading && !['settings', 'cleanup', 'safemode'].includes(r.page)) {
+  if (state.loading && !['settings', 'cleanup', 'safemode', 'backups'].includes(r.page)) {
     html += '<div class="rows">' + '<div class="skeleton"></div>'.repeat(5) + '</div>';
   } else if (r.page === 'home') html += renderHome();
   else if (r.page === 'extra') html += renderExtra();
   else if (r.page === 'settings') html += renderSettings();
   else if (r.page === 'cleanup') html += renderCleanup();
   else if (r.page === 'safemode') html += renderSafeMode();
+  else if (r.page === 'backups') html += renderBackups();
   else html += renderCategory(r.cat, r.parent);
   $('#content').innerHTML = html;
   if (r.page === 'home') paintUsage();
@@ -532,11 +620,68 @@ async function safeExport() {
   state.safeBusy = 'export';
   render();
   let res;
-  try { res = await bridge.exportReport(); } catch (err) { res = { ok: false, error: err.message }; }
+  try { res = await bridge.exportJson('safemode'); } catch (err) { res = { ok: false, error: err.message }; }
   state.safeBusy = null;
   if (res?.ok && !res.canceled) toast(t().smExported);
   else if (!res?.ok) toast(errorText(res?.error), 'error');
   render();
+}
+
+async function bkList() {
+  state.bkBusy = 'list';
+  render();
+  const res = await call('backup-list');
+  state.bkBusy = null;
+  if (res?.ok) { state.bk = res; state.bkError = null; }
+  else { state.bk = null; state.bkError = res?.error; }
+  state.bkPreview = {};
+  if (state.route.page === 'backups') render();
+}
+
+async function bkTogglePreview(id) {
+  if (state.bkOpen === id) { state.bkOpen = null; render(); return; }
+  state.bkOpen = id;
+  render();
+  if (!state.bkPreview[id]) {
+    state.bkPreview[id] = await call('backup-preview', undefined, { backupId: id });
+    if (state.route.page === 'backups') render();
+  }
+}
+
+// Tweak-Status nach einer Wiederherstellung still neu einlesen (ohne Ladeanzeige).
+async function refreshTweaks() {
+  const list = await call('list');
+  if (list?.ok) state.tweaks = list.tweaks || [];
+  state.cache = null;
+}
+
+async function bkRestore(id, all) {
+  const b = state.bk?.backups?.find((x) => x.backupId === id);
+  const ok = all
+    ? await confirmDialog(t().bkAllTitle, t().bkAllText, t().bkRestoreAll)
+    : await confirmDialog(t().bkRestoreTitle, t().bkRestoreText(backupName(b)), t().bkRestore);
+  if (!ok) return;
+  state.bkBusy = all ? 'all' : id;
+  render();
+  const res = all ? await call('backup-restore-all') : await call('backup-restore', undefined, { backupId: id });
+  state.bkBusy = null;
+  // Teilerfolg kommt als ok:false MIT Einzelergebnissen – die immer anzeigen, nie zu einer Meldung zusammenfassen.
+  if (Array.isArray(res?.results)) {
+    state.bkResult = res;
+    toast(res.ok ? t().bkDone : t().bkPartial, res.ok ? 'info' : 'error');
+  } else {
+    toast(errorText(res?.error), 'error');
+  }
+  state.bkOpen = null;
+  await refreshTweaks();
+  await bkList();
+}
+
+async function bkExport(id) {
+  let res;
+  try { res = await bridge.exportJson('backup', id); } catch (err) { res = { ok: false, error: err.message }; }
+  if (res?.ok && !res.canceled) toast(t().bkExported);
+  else if (!res?.ok) toast(errorText(res?.error), 'error');
 }
 
 async function load() {
@@ -557,6 +702,7 @@ function go(route) {
   $('#content').scrollTop = 0;
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
   if (route.page === 'safemode' && !state.safeBusy) safeAction('scan');
+  if (route.page === 'backups' && !state.bkBusy) { state.bkResult = null; state.bkOpen = null; bkList(); }
 }
 
 // ---------- Events ----------
@@ -576,6 +722,7 @@ document.addEventListener('click', (e) => {
     state.lang = el.dataset.lang;
     store.set('lang', state.lang);
     state.cache = null;
+    state.bk = null;
     load();
   } else if (el.id === 'apply-safe') applySafe();
   else if (el.id === 'cache-info') cacheInfo();
@@ -583,6 +730,11 @@ document.addEventListener('click', (e) => {
   else if (el.dataset.restore) cacheRestore(el.dataset.restore);
   else if (el.dataset.purge) cachePurge(el.dataset.purge, el.dataset.date);
   else if (el.id === 'sm-export') safeExport();
+  else if (el.id === 'bk-reload') bkList();
+  else if (el.id === 'bk-all') bkRestore(null, true);
+  else if (el.dataset.bkPreview) bkTogglePreview(el.dataset.bkPreview);
+  else if (el.dataset.bkRestore) bkRestore(el.dataset.bkRestore, false);
+  else if (el.dataset.bkExport) bkExport(el.dataset.bkExport);
   else if (el.id.startsWith('sm-')) safeAction(el.id.slice(3));
   else if (el.id === 'reload') load();
   else if (el.id === 'restart-later') { state.restartPending = false; render(); }
