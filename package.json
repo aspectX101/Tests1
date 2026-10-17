@@ -1,0 +1,19 @@
+{
+  "name": "tweaker",
+  "productName": "Tweaker",
+  "version": "0.3.0",
+  "description": "Windows gaming utility for FiveM and Fortnite",
+  "author": "Tweaker",
+  "private": true,
+  "main": "app/main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:mock": "electron . --mock",
+    "test": "node --test tests/electron-backend.test.cjs",
+    "dist": "electron-builder --config electron-builder.config.cjs --win"
+  },
+  "devDependencies": {
+    "electron": "33.2.0",
+    "electron-builder": "25.1.8"
+  }
+}

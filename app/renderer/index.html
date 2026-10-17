@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tweaker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 2 9 16l7 14 7-14z" fill="currentColor"/>
+          <path d="M2 16h28" stroke="#000" stroke-width="2.5"/>
+          <path d="M16 2v28" stroke="#000" stroke-width="1.5"/>
+        </svg>
+        <div class="brand-text">
+          <div class="brand-name">Tweaker</div>
+          <div class="brand-ver">V0.3</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+
+    <main class="main">
+      <header class="titlebar">
+        <div class="crumbs" id="crumbs"></div>
+        <div class="win-controls">
+          <button class="win-btn" id="win-min" aria-label="Minimieren">
+            <svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg>
+          </button>
+          <button class="win-btn close" id="win-close" aria-label="Schließen">
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+      </header>
+      <section class="content" id="content"></section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 id="modal-title"></h2>
+      <p id="modal-text" class="muted"></p>
+      <div class="modal-actions">
+        <button class="pill dark" id="modal-cancel"></button>
+        <button class="pill light" id="modal-ok"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="../mock.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
