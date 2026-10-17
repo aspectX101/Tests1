@@ -6,9 +6,20 @@ $ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 try {
-    if ($Action -notin @('info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce')) { throw 'invalid_action' }
+    if ($Action -notin @('info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all')) { throw 'invalid_action' }
     if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
     Import-Module (Join-Path $PSScriptRoot 'Tweaker.psm1') -Force -WarningAction Stop
+    if ($Action.StartsWith('backup-')) {
+        $result=Invoke-TweakerBackup -Action $Action -BackupId $BackupId -FiveMPath $FiveMPath -Confirm:$false
+        $messages=@{
+            de='Wiederherstellung nutzt die Originalwerte des jeweiligen Vorgangs. Konflikte werden gemeldet; Dienstsicherungen bleiben aus Sicherheitsgruenden Nachweise. Bei Teilerfolg Details pruefen.'
+            en='Recovery uses the original values saved for each operation. Conflicts are reported; service snapshots remain evidence for safety. Check item details after partial recovery.'
+            it='Il ripristino usa i valori originali di ogni operazione. I conflitti vengono segnalati; le copie dei servizi restano prove per sicurezza. Controllare i dettagli in caso di risultato parziale.'
+        }
+        $result | Add-Member -NotePropertyName message -NotePropertyValue $messages[$Lang]
+        $result | ConvertTo-Json -Depth 16 -Compress
+        if ($result.ok) { exit 0 } else { exit 1 }
+    }
     if ($Action.StartsWith('safemode-')) {
         $result = Invoke-TweakerSafeMode -Action $Action -Confirm:$false
         $messages = @{

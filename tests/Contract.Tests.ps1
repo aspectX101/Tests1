@@ -1,5 +1,6 @@
 # Read-only Windows API checks and cache operations on a disposable fixture only.
 $ErrorActionPreference = 'Stop'
+$script:contractProfile = Join-Path (Join-Path (Get-Location) 'work') ('json-' + [guid]::NewGuid().ToString('N').Substring(0,8))
 $entry = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../tweaker.ps1'))
 if ($entry.Contains('"')) { throw 'Invalid test path' }
 $hostExecutable = (Get-Process -Id $PID).Path
@@ -8,6 +9,7 @@ function Invoke-JsonCli([string]$Arguments, [int]$ExpectedExit) {
     $start.FileName = $hostExecutable
     $start.Arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $entry + '" ' + $Arguments
     $start.UseShellExecute = $false
+    $start.EnvironmentVariables['LOCALAPPDATA'] = $script:contractProfile
     $start.CreateNoWindow = $true
     $start.RedirectStandardOutput = $true
     $start.RedirectStandardError = $true
@@ -59,7 +61,7 @@ foreach ($case in @(
     if ($result.ok -or $result.error -ne $case.error) { throw 'Invalid error contract' }
 }
 $fixtureParent = [IO.Path]::GetFullPath((Join-Path (Get-Location) 'work'))
-$fixture = Join-Path $fixtureParent ('json-' + [guid]::NewGuid().ToString('N').Substring(0,8))
+$fixture = Join-Path $script:contractProfile 'FiveM.app'
 try {
     $null = New-Item -ItemType Directory -Path (Join-Path $fixture 'data\server-cache') -Force
     [IO.File]::WriteAllText((Join-Path $fixture 'CitizenFX.ini'), 'fixture')
@@ -69,6 +71,14 @@ try {
     if ($preview.totalBytes -ne 5) { throw 'Invalid cache preview JSON' }
     $cleaned = Invoke-JsonCli ('-Action cache-clean' + $pathArgument) 0
     if ($cleaned.status -ne 'cleaned' -or $cleaned.freedBytes -ne 0 -or -not $cleaned.backupId) { throw 'Invalid clean JSON' }
+    $catalog=Invoke-JsonCli ('-Action backup-list' + $pathArgument) 0
+    $shared=@($catalog.backups | Where-Object { $_.kind -eq 'cache' -and $_.status -eq 'cleaned' })[0]
+    $backupPreview=Invoke-JsonCli ('-Action backup-preview -BackupId ' + $shared.backupId + $pathArgument) 0
+    if (-not $backupPreview.backup.canRestore) { throw 'Invalid common recovery preview' }
+    $export=Invoke-JsonCli ('-Action backup-export -BackupId ' + $shared.backupId + $pathArgument) 0
+    if ($export.importSupported -or $export.record.payload.id -ne $cleaned.backupId) { throw 'Invalid recovery export' }
+    $recovery=Invoke-JsonCli ('-Action backup-restore -BackupId ' + $shared.backupId + $pathArgument) 0
+    if ($recovery.results[0].status -ne 'restored') { throw 'Invalid common recovery JSON' }
     $restored = Invoke-JsonCli ('-Action cache-restore -BackupId ' + $cleaned.backupId + $pathArgument) 0
     if ($restored.status -ne 'restored') { throw 'Invalid restore JSON' }
     $cleaned = Invoke-JsonCli ('-Action cache-clean -Lang it' + $pathArgument) 0
@@ -76,9 +86,11 @@ try {
     if ($failure.error -ne 'explicit_purge_confirmation_required') { throw 'Missing purge confirmation check' }
     $purged = Invoke-JsonCli ('-Action cache-purge -ConfirmPurge -BackupId ' + $cleaned.backupId + $pathArgument) 0
     if ($purged.freedBytes -ne 5 -or $purged.status -ne 'purged') { throw 'Invalid purge JSON' }
+    $all=Invoke-JsonCli ('-Action backup-restore-all' + $pathArgument) 0
+    if (-not $all.ok -or $all.status -ne 'completed') { throw 'Invalid bulk recovery JSON' }
 } finally {
-    $absolute = [IO.Path]::GetFullPath($fixture)
+    $absolute = [IO.Path]::GetFullPath($script:contractProfile)
     if (-not $absolute.StartsWith($fixtureParent + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe fixture path' }
     if (Test-Path -LiteralPath $absolute) { Remove-Item -LiteralPath $absolute -Recurse -Force }
 }
-Write-Output 'PASS: JSON/UTF-8 contract, three languages, five tweaks, live keyboard status, invalid inputs and fixture cache preview/clean/restore/purge'
+Write-Output 'PASS: JSON/UTF-8 contract, languages, tweak metadata, keyboard/SafeMode reads, fixture cache operations and unified recovery APIs'

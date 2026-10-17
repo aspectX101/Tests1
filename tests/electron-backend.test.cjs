@@ -30,6 +30,7 @@ test('invalid requests and unconfirmed purge never start a process', async () =>
     { action: 'execute' }, { action: 'apply', id: 'untrusted' }, { action: 'list', lang: 'unknown' },
     { action: 'cache-purge', backupId: 'a'.repeat(32) },
     { action: 'cache-restore', backupId: '../other' },
+    { action: 'backup-restore', backupId: '../other' },
     { action: 'cache-info', fiveMPath: '..\\outside' }
   ]) await assert.rejects(backend(request));
 });
@@ -57,7 +58,7 @@ test('EXE packaging includes all backend dependencies outside ASAR', () => {
   assert.equal(config.win.requestedExecutionLevel, 'requireAdministrator');
   const shipped = config.extraResources[0];
   assert.equal(shipped.to, 'backend');
-  for (const file of ['tweaker.ps1', 'Tweaker.psm1', 'Keyboard.ps1', 'CacheCleaner.ps1', 'SafeMode.ps1', 'native/Keyboard.cs', 'electron/backend.cjs', 'electron/safemode-monitor.cjs']) assert.ok(shipped.filter.includes(file));
+  for (const file of ['tweaker.ps1', 'Tweaker.psm1', 'Keyboard.ps1', 'CacheCleaner.ps1', 'SafeMode.ps1', 'Backup.ps1', 'native/Keyboard.cs', 'electron/backend.cjs', 'electron/safemode-monitor.cjs']) assert.ok(shipped.filter.includes(file));
 });
 test('SafeMode actions use the same allowlisted JSON backend', async () => {
   const backend = client((exe, args, options, done) => {
@@ -65,4 +66,14 @@ test('SafeMode actions use the same allowlisted JSON backend', async () => {
     done(null, '{"ok":true,"enabled":true,"health":"green"}', '');
   });
   assert.equal((await backend({ action: 'safemode-enable', lang: 'it' })).enabled, true);
+});
+test('shared recovery passes validated IDs and preserves partial outcomes on exit 1', async () => {
+  const backend = client((exe, args, options, done) => {
+    assert.ok(args.includes('backup-restore'));
+    assert.equal(args[args.indexOf('-BackupId') + 1], 'a'.repeat(32));
+    done({ code: 1 }, '{"ok":false,"error":"restore_incomplete","status":"partial","results":[{"status":"failed","reason":"external_change_detected"}]}', '');
+  });
+  const result=await backend({ action: 'backup-restore', backupId: 'a'.repeat(32), lang: 'en' });
+  assert.equal(result.status, 'partial');
+  assert.equal(result.results[0].reason, 'external_change_detected');
 });

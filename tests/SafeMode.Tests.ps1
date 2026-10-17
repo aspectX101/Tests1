@@ -2,6 +2,7 @@
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
 & (Get-Module Tweaker) {
+    function Register-TweakerBackup {} # Central registration is covered in Backup.Tests.ps1.
     function Assert($Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
     function Expect-Error([scriptblock]$Operation, [string]$Code) {
         $actual = $null

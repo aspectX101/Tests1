@@ -41,3 +41,5 @@ Build after the UI lands. Launch the actual EXE on a Windows test account withou
 References: [electron-builder Windows targets](https://www.electron.build/docs/win/), [portable target](https://www.electron.build/docs/nsis/).
 
 SafeMode adds a fixed service policy, exportable audit JSON and a monitor while the app is open; see [SafeMode integration](../docs/safemode.md). Pass onSafeModeReport/onSafeModeError/getLanguage to the backend client so protection health and failures appear in the UI. The monitor resumes the persisted preference at startup; there is no background Windows service after the app exits. Package `SafeMode.ps1` and both Electron adapters. Verify real admin storage ACLs and actual service repair on a disposable Windows test account before release.
+
+The shared recovery manager adds `Backup.ps1` and backup-list/preview/export/restore/restore-all actions. The provided resource filter includes the new file. Use shared catalog IDs for recovery, keep native cache IDs for cache-specific actions, and display partial restore outcomes. See [backup integration](../docs/backup.md). No UI source or finished EXE is included yet.

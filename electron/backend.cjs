@@ -4,7 +4,7 @@ const { execFile } = require('node:child_process');
 const { createSafeModeMonitor } = require('./safemode-monitor.cjs');
 
 const tweakIds = new Set(['windows.power.high', 'fivem.priority.high', 'keyboard.repeat.fast', 'keyboard.filterkeys.off', 'keyboard.stickykeys.off']);
-const actions = new Set(['info', 'list', 'status', 'apply', 'revert', 'cache-info', 'cache-clean', 'cache-restore', 'cache-purge', 'safemode-scan', 'safemode-report', 'safemode-enable', 'safemode-disable', 'safemode-enforce']);
+const actions = new Set(['info', 'list', 'status', 'apply', 'revert', 'cache-info', 'cache-clean', 'cache-restore', 'cache-purge', 'safemode-scan', 'safemode-report', 'safemode-enable', 'safemode-disable', 'safemode-enforce', 'backup-list', 'backup-preview', 'backup-export', 'backup-restore', 'backup-restore-all']);
 
 // Main-process code only. Do not give the renderer access to execFile or arbitrary paths.
 function createBackendClient(app, options = {}) {
@@ -23,12 +23,12 @@ function createBackendClient(app, options = {}) {
     if (['status', 'apply', 'revert'].includes(action) && !tweakIds.has(id)) return Promise.reject(new Error('invalid_tweak_id'));
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, '-Action', action, '-Lang', lang];
     if (['status', 'apply', 'revert'].includes(action)) args.push('-Id', id);
-    if (action.startsWith('cache-')) {
+    if (action.startsWith('cache-') || action.startsWith('backup-')) {
       if (fiveMPath !== undefined) {
         if (typeof fiveMPath !== 'string' || !path.win32.isAbsolute(fiveMPath) || /[\x00-\x1f]/.test(fiveMPath) || fiveMPath.startsWith('\\\\')) return Promise.reject(new Error('invalid_fivem_path'));
         args.push('-FiveMPath', fiveMPath);
       }
-      if (['cache-restore', 'cache-purge'].includes(action)) {
+      if (['cache-restore', 'cache-purge', 'backup-preview', 'backup-export', 'backup-restore'].includes(action)) {
         if (typeof backupId !== 'string' || !/^[a-f0-9]{32}$/.test(backupId)) return Promise.reject(new Error('invalid_backup_id'));
         args.push('-BackupId', backupId);
       }

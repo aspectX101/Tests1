@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
 $module = Get-Module Tweaker
 & $module {
+    function Register-TweakerBackup {} # Central registration is covered in Backup.Tests.ps1.
     function Assert($Condition, $Message) { if (-not $Condition) { throw $Message } }
     $script:fakePower = '381b4222-f694-41f0-9685-ff5bb260df2e'
     $script:restorePoints = 0

@@ -114,7 +114,7 @@ function Invoke-TweakerCache {
     [CmdletBinding(SupportsShouldProcess=$true)]
     param(
         [Parameter(Mandatory)][ValidateSet('cache-info','cache-clean','cache-restore','cache-purge')][string]$Action,
-        [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge
+        [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge, [string]$ExpectedRecoveryId
     )
     $root = Resolve-FiveMRoot $FiveMPath
     $backupRoot = Assert-CachePath (Join-Path $root '.tweaker-cache-backups') $root
@@ -172,9 +172,11 @@ function Invoke-TweakerCache {
         $state = Read-CacheManifest $root $BackupId
         $folder = Join-Path $backupRoot $BackupId
         $manifest = Join-Path $folder 'manifest.json'
+        if ($ExpectedRecoveryId) { Assert-ExpectedRecovery $state $manifest $ExpectedRecoveryId }
         if ($Action -eq 'cache-restore') {
             if ($state.status -in @('purging','purged')) { throw 'cache_backup_purged' }
             if ($state.status -eq 'restored') { return [pscustomobject]@{ok=$true;status='restored';backupId=$BackupId} }
+            Register-TweakerBackup $state $manifest
             # Preflight every path before the first restore. Never overwrite regenerated data.
             foreach ($entry in $state.entries) {
                 $original = Assert-CachePath (Join-Path $root $entry.relative) $root

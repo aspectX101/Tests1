@@ -63,13 +63,14 @@ function Test-TweakerKeyboardApplied([string]$Id) {
     return $true
 }
 
-function Invoke-TweakerKeyboard([string]$Action, [string]$Id, [string]$StateDirectory) {
+function Invoke-TweakerKeyboard([string]$Action, [string]$Id, [string]$StateDirectory, [string]$ExpectedRecoveryId) {
     Assert-Administrator
     $null = New-Item -ItemType Directory -Path $StateDirectory -Force
     $path = Join-Path $StateDirectory ($Id + '.json')
     $lock = [IO.File]::Open((Join-Path $StateDirectory 'operation.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
     try {
         $state = if (Test-Path -LiteralPath $path) { Get-Content -LiteralPath $path -Raw | ConvertFrom-Json } else { $null }
+        if ($ExpectedRecoveryId) { Assert-ExpectedRecovery $state $path $ExpectedRecoveryId }
         $fields = @(Get-KeyboardFields $Id)
         if ($Action -eq 'apply') {
             if ($null -ne $state -and $state.status -ne 'restored') { throw 'existing_backup_restore_first' }
@@ -99,6 +100,7 @@ function Invoke-TweakerKeyboard([string]$Action, [string]$Id, [string]$StateDire
             if ($null -eq $state) { throw 'backup_not_found' }
             if ($state.version -ne 1 -or $state.id -ne $Id -or $state.status -notin @('pending','applied','restored')) { throw 'invalid_backup' }
             if ($state.status -eq 'restored') { return [pscustomobject]@{id=$Id;status='restored'} }
+            Register-TweakerBackup $state $path
             if (@($state.entries).Count -ne $fields.Count) { throw 'invalid_backup' }
             # Validate every entry and preflight all conflicts before restoring any field.
             foreach ($field in $fields) {

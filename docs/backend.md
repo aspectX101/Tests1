@@ -11,6 +11,7 @@ UI-independent Windows backend for the shared Tweaker project. First implementat
 - `keyboard.stickykeys.off`: disables Sticky Keys and its five-Shift activation hotkey. Preserves the other persistent preferences. Does not attempt to save/restore transient held/latched modifier state.
 - Catalog includes German, English and Italian names/descriptions. IDs and status codes are language-neutral. UI translates errors and displays warnings before applying.
 - SafeMode audits 22 named services and repairs the enabled/running policy for 15 core/essential services. Its Electron watchdog runs while the app is open. See [SafeMode contract](safemode.md) for scope, reports and UI integration.
+- A shared backup manager automatically archives originals across these modules, lists recovery history and provides preview, export, individual and global restore. See [backup contract](backup.md). SafeMode service evidence is listed without re-disabling critical services.
 - FiveM Cache Cleaner is a separate utility with preview, reversible quarantine, restore and explicit permanent purge. See below. Windows EXE packaging and main-process integration for Claude's Electron UI are provided in [packaging/README.md](../packaging/README.md) and [electron/backend.cjs](../electron/backend.cjs).
 
 ## UI integration
@@ -49,6 +50,7 @@ pwsh -NoProfile -File tests/Keyboard.Tests.ps1
 pwsh -NoProfile -File tests/Contract.Tests.ps1
 pwsh -NoProfile -File tests/CacheCleaner.Tests.ps1
 pwsh -NoProfile -File tests/SafeMode.Tests.ps1
+pwsh -NoProfile -File tests/Backup.Tests.ps1
 node --test tests/electron-backend.test.cjs
 node --test tests/safemode-monitor.test.cjs
 ```

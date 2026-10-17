@@ -5,6 +5,7 @@ $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
 . (Join-Path $PSScriptRoot 'Keyboard.ps1')
 . (Join-Path $PSScriptRoot 'CacheCleaner.ps1')
 . (Join-Path $PSScriptRoot 'SafeMode.ps1')
+. (Join-Path $PSScriptRoot 'Backup.ps1')
 
 function Get-TweakerCatalog {
     @(
@@ -72,7 +73,7 @@ function New-TweakerRestorePoint {
     if (-not (Get-ComputerRestorePoint | Where-Object { $_.Description -eq $description })) { throw 'restore_point_not_created' }
 }
 
-function Save-Journal($State, [string]$Path) {
+function Write-AtomicJson($State, [string]$Path) {
     $temporary = Join-Path ([IO.Path]::GetDirectoryName($Path)) ([guid]::NewGuid().ToString('N').Substring(0, 8) + '.tmp')
     $created = $false
     try {
@@ -88,6 +89,11 @@ function Save-Journal($State, [string]$Path) {
     } finally { if ($created -and (Test-Path -LiteralPath $temporary)) { Remove-Item -LiteralPath $temporary } }
 }
 
+function Save-Journal($State, [string]$Path) {
+    Register-TweakerBackup $State $Path
+    Write-AtomicJson $State $Path
+}
+
 function Get-TweakerStatus {
     [pscustomobject]@{ powerScheme=(Get-PowerState); fiveMProcesses=@(Get-FiveMProcesses) }
 }
@@ -97,10 +103,11 @@ function Invoke-TweakerPerformance {
     param(
         [Parameter(Mandatory)][ValidateSet('apply','restore')][string]$Action,
         [Parameter(Mandatory)][ValidateSet('windows.power.high','fivem.priority.high','keyboard.repeat.fast','keyboard.filterkeys.off','keyboard.stickykeys.off')][string]$Id,
-        [string]$StateDirectory = (Join-Path $env:LOCALAPPDATA 'Tweaker\Performance')
+        [string]$StateDirectory = $script:PerformanceStateDirectory,
+        [string]$ExpectedRecoveryId
     )
     if (-not $PSCmdlet.ShouldProcess($Id, $Action)) { return }
-    if ($Id.StartsWith('keyboard.')) { return Invoke-TweakerKeyboard $Action $Id $StateDirectory }
+    if ($Id.StartsWith('keyboard.')) { return Invoke-TweakerKeyboard $Action $Id $StateDirectory $ExpectedRecoveryId }
     # Separate journal per Windows user; UI must elevate as the same user.
     $null = New-Item -ItemType Directory -Path $StateDirectory -Force
     $path = Join-Path $StateDirectory ($Id + '.json')
@@ -108,6 +115,7 @@ function Invoke-TweakerPerformance {
     $lock = [IO.File]::Open((Join-Path $StateDirectory 'operation.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
     try {
         $state = if (Test-Path -LiteralPath $path) { Get-Content -LiteralPath $path -Raw | ConvertFrom-Json } else { $null }
+        if ($ExpectedRecoveryId) { Assert-ExpectedRecovery $state $path $ExpectedRecoveryId }
         if ($Action -eq 'apply') {
             if ($null -ne $state -and $state.status -ne 'restored') { throw 'existing_backup_restore_first' }
             if ($Id -eq 'windows.power.high') {
@@ -137,6 +145,7 @@ function Invoke-TweakerPerformance {
             if ($null -eq $state) { throw 'backup_not_found' }
             if ($state.version -ne 1 -or $state.id -ne $Id) { throw 'invalid_backup' }
             if ($state.status -eq 'restored') { return [pscustomobject]@{id=$Id;status='restored'} }
+            Register-TweakerBackup $state $path
             if ($Id -eq 'windows.power.high') {
                 Assert-Administrator
                 $current = Get-PowerState
@@ -175,4 +184,4 @@ function Get-TweakerSystemInfo {
     [pscustomobject]@{ok=$true;os=$os.Caption;cpu=$cpu;gpu=$gpu;ramGB=[math]::Round($memory / 1GB, 1);isAdmin=$admin}
 }
 
-Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Invoke-TweakerCache,Invoke-TweakerSafeMode
+Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup
