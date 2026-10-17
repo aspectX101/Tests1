@@ -43,3 +43,11 @@ lädt neue Versionen im Hintergrund und installiert sie beim Beenden oder über 
    gh release create v0.4.1 dist/UNDCC-Tweaker-Setup-0.4.1.exe dist/UNDCC-Tweaker-Setup-0.4.1.exe.blockmap dist/latest.yml --target codex/performance-backend --title "UND.CC Tweaker 0.4.1"
    ```
    Das Release darf kein Entwurf und keine Vorabversion sein.
+
+### Installer-Anpassungen (`build/`)
+
+- `installer.nsh` hängt sich in die NSIS-Prüfung „App läuft noch?“ ein (läuft direkt vor dem Entfernen der alten Version).
+- `cleanup-old-install.ps1` (nur Installer): entfernt eine alte Installation pro Benutzer (bis 0.5.1) selbst –
+  Prozesse, Ordner unter `%LOCALAPPDATA%\Programs`, Verknüpfungen und Registry-Einträge mit der App-GUID.
+  Protokoll: `%TEMP%\undcc-tweaker-setup.log`.
+- `close-running-app.ps1` (nur Deinstaller): beendet die laufende App, notfalls per UAC.

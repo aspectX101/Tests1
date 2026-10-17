@@ -1,4 +1,4 @@
-$n = 'Tweaker', 'UND.CC Tweaker'
+﻿$n = 'Tweaker', 'UND.CC Tweaker'
 if (Get-Process -Name $n -ErrorAction SilentlyContinue) {
   Stop-Process -Name $n -Force -ErrorAction SilentlyContinue
   Start-Sleep -Milliseconds 800
