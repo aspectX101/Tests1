@@ -6,9 +6,11 @@ $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
 . (Join-Path $PSScriptRoot 'CacheCleaner.ps1')
 . (Join-Path $PSScriptRoot 'SafeMode.ps1')
 . (Join-Path $PSScriptRoot 'Backup.ps1')
+. (Join-Path $PSScriptRoot 'Optimization.ps1')
 . (Join-Path $PSScriptRoot 'ModManager.ps1')
 
 function Get-TweakerCatalog {
+    Get-OptimizationCatalog
     @(
         [pscustomobject]@{ id='windows.power.high'; scope='system'; category='performance'; risk='low'; bulkSafe=$true; requiresAdmin=$true; restart=$false
             name=@{de='Hohe Leistung';en='High performance';it='Prestazioni elevate'}
@@ -68,7 +70,18 @@ function Assert-Administrator {
 }
 
 function New-TweakerRestorePoint {
-    # Fail closed. Do not bypass Windows restore-point frequency limits.
+    # Reuse only a verified, recent Tweaker checkpoint. Windows normally limits
+    # checkpoint creation to one per day; never change its frequency registry key.
+    $now = [DateTime]::UtcNow
+    foreach ($point in @(Get-ComputerRestorePoint -ErrorAction Stop)) {
+        if ($point.Description -notmatch '^Tweaker-[a-f0-9]{32}$') { continue }
+        try {
+            $created = if ($point.CreationTime -is [DateTime]) { $point.CreationTime.ToUniversalTime() }
+                else { [Management.ManagementDateTimeConverter]::ToDateTime($point.CreationTime).ToUniversalTime() }
+            if ($created -le $now -and ($now - $created).TotalHours -lt 24) { return }
+        } catch { continue }
+    }
+    # Fail closed if neither a recent checkpoint nor a newly verified one exists.
     $description = 'Tweaker-' + [guid]::NewGuid().ToString('N')
     Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS -WarningAction Stop -ErrorAction Stop
     if (-not (Get-ComputerRestorePoint | Where-Object { $_.Description -eq $description })) { throw 'restore_point_not_created' }
@@ -103,11 +116,13 @@ function Invoke-TweakerPerformance {
     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
     param(
         [Parameter(Mandatory)][ValidateSet('apply','restore')][string]$Action,
-        [Parameter(Mandatory)][ValidateSet('windows.power.high','fivem.priority.high','keyboard.repeat.fast','keyboard.filterkeys.off','keyboard.stickykeys.off')][string]$Id,
+        [Parameter(Mandatory)][string]$Id,
         [string]$StateDirectory = $script:PerformanceStateDirectory,
         [string]$ExpectedRecoveryId
     )
+    if ($Id -notin @((Get-TweakerCatalog).id)) { throw 'invalid_tweak_id' }
     if (-not $PSCmdlet.ShouldProcess($Id, $Action)) { return }
+    if ($Id -in @((Get-OptimizationCatalog).id)) { return Invoke-TweakerOptimization $Action $Id $StateDirectory $ExpectedRecoveryId }
     if ($Id.StartsWith('keyboard.')) { return Invoke-TweakerKeyboard $Action $Id $StateDirectory $ExpectedRecoveryId }
     # Separate journal per Windows user; UI must elevate as the same user.
     $null = New-Item -ItemType Directory -Path $StateDirectory -Force
@@ -185,4 +200,5 @@ function Get-TweakerSystemInfo {
     [pscustomobject]@{ok=$true;os=$os.Caption;cpu=$cpu;gpu=$gpu;ramGB=[math]::Round($memory / 1GB, 1);isAdmin=$admin}
 }
 
-Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup,Invoke-TweakerMods
+Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Test-TweakerOptimizationApplied,Get-OptimizationCatalog,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup,Invoke-TweakerMods
+

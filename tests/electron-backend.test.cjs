@@ -4,6 +4,23 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { createBackendClient } = require('../electron/backend.cjs');
 
+test('all shipped catalog IDs reach the fixed CLI adapter, including new optimization IDs', async () => {
+  const catalog = require('../app/tweak-catalog.js');
+  const backend = client((exe, args, options, done) => {
+    const id = args[args.indexOf('-Id') + 1];
+    assert.ok(catalog.some(t => t.id === id));
+    done(null, JSON.stringify({ ok: true, id, applied: true, restartRequired: true }), '');
+  }, true);
+  assert.equal(catalog.length, 8);
+  assert.equal(catalog.filter(t => t.category === 'performance').length, 4);
+  for (const tw of catalog) for (const lang of ['de', 'en', 'it']) {
+    assert.ok(tw.name[lang] && tw.description[lang]);
+    assert.equal((await backend({ action: 'apply', id: tw.id, lang })).id, tw.id);
+  }
+  const config = require('../packaging/electron-builder.cjs');
+  assert.ok(config.extraResources[0].filter.includes('Optimization.ps1'));
+});
+
 function client(callback, packaged = false) {
   return createBackendClient({ isPackaged: packaged }, {
     resourcesPath: 'C:\\Program Files\\Tweaker\\resources', windowsRoot: 'C:\\Windows', execFile: callback
@@ -77,3 +94,4 @@ test('shared recovery passes validated IDs and preserves partial outcomes on exi
   assert.equal(result.status, 'partial');
   assert.equal(result.results[0].reason, 'external_change_detected');
 });
+

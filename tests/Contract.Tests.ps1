@@ -33,13 +33,14 @@ function Invoke-JsonCli([string]$Arguments, [int]$ExpectedExit) {
 }
 foreach ($language in @('de','en','it')) {
     $result = Invoke-JsonCli "-Action list -Lang $language" 0
-    if (-not $result.ok -or @($result.tweaks).Count -ne 5) { throw 'Invalid catalog' }
+    if (-not $result.ok -or @($result.tweaks).Count -ne 8) { throw 'Invalid catalog' }
     foreach ($tweak in $result.tweaks) {
         foreach ($property in @('id','name','description','category','risk','requiresRestart','reversible','applied')) {
             if ($tweak.PSObject.Properties.Name -notcontains $property) { throw "Missing $property" }
         }
-        if ($tweak.applied -isnot [bool]) { throw 'applied must be boolean' }
-        $expectedRisk = if ($tweak.id -in @('windows.power.high','keyboard.repeat.fast')) {'low'} else {'medium'}
+        if ($tweak.available -and $tweak.applied -isnot [bool]) { throw 'Known applied state must be boolean' }
+        if (-not $tweak.available -and ($null -ne $tweak.applied -or -not $tweak.stateError)) { throw 'Unknown state must not claim false' }
+        $expectedRisk = if ($tweak.id -in @('windows.power.high','keyboard.repeat.fast','windows.gamemode.on','windows.audio.ducking.off')) {'low'} else {'medium'}
         if ($tweak.risk -ne $expectedRisk) { throw 'Incorrect per-tweak risk' }
         if ($tweak.id.StartsWith('keyboard.') -and $tweak.category -ne 'keyboard') { throw 'Keyboard category required' }
         if ($tweak.id -in @('keyboard.filterkeys.off','keyboard.stickykeys.off') -and $tweak.bulkSafe) { throw 'Accessibility tweaks require individual choice' }
@@ -94,3 +95,4 @@ try {
     if (Test-Path -LiteralPath $absolute) { Remove-Item -LiteralPath $absolute -Recurse -Force }
 }
 Write-Output 'PASS: JSON/UTF-8 contract, languages, tweak metadata, keyboard/SafeMode reads, fixture cache operations and unified recovery APIs'
+

@@ -2,7 +2,7 @@
 
 All current modules use the same atomic journal writer and automatic recovery registration. Before a journal is changed, immutable original-value metadata is archived under `%LOCALAPPDATA%\Tweaker\Backups\records`. If registration or journal storage fails, the pending apply operation stops before modifying Windows or moving cache data. Restore also verifies registration before modifying the affected data. Original archives are retained after successful restore and after later operations.
 
-This is a shared manager for Tweaker operations, not a full Windows/disk-image backup. No new UI is included. Windows restore points continue to supplement per-operation backups for persistent settings. Existing checkpoint rules and Windows frequency limits are unchanged.
+This is a shared manager for Tweaker operations, not a full Windows/disk-image backup. Windows restore points supplement per-operation backups for persistent settings. A verified Tweaker checkpoint less than 24 hours old can be reused; Windows frequency limits are unchanged. Selected optimization settings also use this catalog, including exact restoration of originally absent registry values; see [optimization](optimization.md).
 
 ## Scope and storage
 
@@ -63,3 +63,4 @@ Package `Backup.ps1` alongside the existing scripts; the supplied EXE configurat
 `tests/Backup.Tests.ps1` uses real archive/journal/cache fixture files with simulated Windows adapters. It verifies automatic registration, immutable originals, registration failure before apply/restore, conflict previews, individual/global recovery, partial retry, unchanged SafeMode protection, source identity under lock, historical suppression, read-only legacy discovery and corrupt archive isolation. It passes on Windows PowerShell 5.1 and PowerShell 7.
 
 CLI contract tests exercise shared listing/preview/export and restoration using a disposable cache fixture and an isolated LOCALAPPDATA. Node tests verify shared action validation and preservation of partial outcomes. Real Windows mutations, machine-wide ACLs, long-path edge cases and a full packaged Electron app remain release checks; development did not modify real Windows or FiveM settings.
+

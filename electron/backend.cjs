@@ -3,7 +3,7 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { createSafeModeMonitor } = require('./safemode-monitor.cjs');
 
-const tweakIds = new Set(['windows.power.high', 'fivem.priority.high', 'keyboard.repeat.fast', 'keyboard.filterkeys.off', 'keyboard.stickykeys.off']);
+const tweakIds = new Set(['windows.power.high', 'fivem.priority.high', 'keyboard.repeat.fast', 'keyboard.filterkeys.off', 'keyboard.stickykeys.off', 'windows.capture.off', 'windows.gamemode.on', 'windows.audio.ducking.off']);
 const actions = new Set(['info', 'list', 'status', 'apply', 'revert', 'cache-info', 'cache-clean', 'cache-restore', 'cache-purge', 'safemode-scan', 'safemode-report', 'safemode-enable', 'safemode-disable', 'safemode-enforce', 'backup-list', 'backup-preview', 'backup-export', 'backup-restore', 'backup-restore-all',
   'mods-list', 'mods-import', 'mods-enable', 'mods-disable', 'mods-remove', 'res-get', 'res-set', 'res-reset']);
 const modCategories = new Set(['graphics', 'sound', 'weapons', 'minimap', 'other']);
@@ -92,3 +92,4 @@ function createBackendClient(app, options = {}) {
 }
 
 module.exports = { createBackendClient };
+

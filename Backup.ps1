@@ -16,7 +16,13 @@ function Get-RecoveryPayload($State) {
     if ($State.id -in @((Get-TweakerCatalog).id)) {
         $created = ([DateTimeOffset]$State.createdUtc).ToUniversalTime().ToString('o')
         $payload = [ordered]@{version=[int]$State.version;kind='tweak';id=[string]$State.id;createdUtc=$created}
-        if ($State.id.StartsWith('keyboard.')) {
+        if ($State.id -in @((Get-OptimizationCatalog).id)) {
+            $payload.entries = @($State.entries | Sort-Object field | ForEach-Object {
+                [pscustomobject]@{field=[string]$_.field
+                    before=[pscustomobject]@{exists=$_.before.exists;kind=$_.before.kind;value=$_.before.value}
+                    target=[pscustomobject]@{exists=$_.target.exists;kind=$_.target.kind;value=$_.target.value}}
+            })
+        } elseif ($State.id.StartsWith('keyboard.')) {
             $payload.entries = @($State.entries | Sort-Object field | ForEach-Object {
                 [pscustomobject]@{field=[string]$_.field;before=[int]$_.before;target=[int]$_.target}
             })
@@ -141,7 +147,10 @@ function Test-RecoveryReady($Record) {
         return ''
     }
     if ($state.version -ne 1 -or $state.status -notin @('pending','applied')) { throw 'invalid_backup' }
-    if ($state.id -eq 'windows.power.high') {
+    if ($state.id -in @((Get-OptimizationCatalog).id)) {
+        Assert-OptimizationPlatform
+        Assert-OptimizationRestore $state
+    } elseif ($state.id -eq 'windows.power.high') {
         $null = [guid]$state.before
         $current = Get-PowerState
         if ($current -ne $state.before -and $current -ne $script:HighPerformance) { return 'external_change_detected' }
@@ -248,7 +257,7 @@ function Invoke-TweakerBackup {
     $null=Assert-CachePath $lockPath $script:BackupDirectory
     $lock=[IO.File]::Open($lockPath,'OpenOrCreate','ReadWrite','None')
     try {
-        $results=@()
+        $results=@(); $restartRequired=$false
         foreach ($item in $items) {
             $terminal = $item.reason -in @('already_restored','backup_superseded','service_evidence_only','cache_backup_purged')
             if ($Action -eq 'backup-restore-all' -and $terminal) {
@@ -257,13 +266,15 @@ function Invoke-TweakerBackup {
             }
             try {
                 $null = Restore-RecoveryRecord $item.record
+                if ($item.kind -eq 'tweak' -and @((Get-TweakerCatalog | Where-Object id -eq $item.tweakId) | Where-Object restart).Count) { $restartRequired=$true }
                 $results += [pscustomobject]@{backupId=$item.backupId;status='restored';reason=''}
             } catch { $results += [pscustomobject]@{backupId=$item.backupId;status='failed';reason=$_.Exception.Message} }
         }
         $failed=@($results | Where-Object status -eq 'failed').Count
         $result=[pscustomobject]@{ok=($failed -eq 0 -and @($inventory.warnings).Count -eq 0);status=$(if ($failed -or @($inventory.warnings).Count) {'partial'} else {'completed'})
-            results=$results;warnings=$inventory.warnings;restartRequired=$false}
+            results=$results;warnings=$inventory.warnings;restartRequired=$restartRequired}
         if (-not $result.ok) { $result | Add-Member -NotePropertyName error -NotePropertyValue 'restore_incomplete' }
         return $result
     } finally { $lock.Dispose() }
 }
+

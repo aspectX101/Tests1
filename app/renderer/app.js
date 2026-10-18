@@ -113,7 +113,7 @@ const t = () => window.I18N[state.lang];
 
 const catOf = (tw) => tw.category || 'other';
 // Sammelaktion nur für Tweaks, die das Backend ausdrücklich freigibt (nie Bedienungshilfen).
-const bulkOk = (tw) => tw.risk === 'low' && tw.bulkSafe === true;
+const bulkOk = (tw) => tw.available !== false && tw.risk === 'low' && tw.bulkSafe === true;
 const catName = (c) => t().cats[c]?.[0] || c;
 const catDesc = (c) => t().cats[c]?.[1] || '';
 const tweaksIn = (c) => state.tweaks.filter((tw) => catOf(tw) === c);
@@ -253,10 +253,10 @@ function tweakRow(tw) {
           ${risk ? `<span class="tag${tw.risk === 'high' ? ' high' : ''}">${risk}</span>` : ''}
           ${tw.requiresRestart ? `<span class="tag">${t().restart}</span>` : ''}
         </div>
-        <div class="row-desc">${busy ? t().working : esc(tw.description)}</div>
+        <div class="row-desc">${busy ? t().working : esc(tw.description)}${tw.available === false ? `<br>${esc(errorText(tw.stateError))}` : ''}</div>
       </div>
       <label class="switch${busy ? ' busy' : ''}">
-        <input type="checkbox" data-toggle="${esc(tw.id)}" ${tw.applied ? 'checked' : ''} ${busy ? 'disabled' : ''} aria-label="${esc(tw.name)}">
+        <input type="checkbox" data-toggle="${esc(tw.id)}" ${tw.applied ? 'checked' : ''} ${busy || tw.available === false ? 'disabled' : ''} aria-label="${esc(tw.name)}">
         <span></span>
       </label>
     </div>`;
@@ -709,7 +709,7 @@ async function call(action, id, extra = {}) {
 
 async function setTweak(id, apply, { quiet = false } = {}) {
   const tw = state.tweaks.find((x) => x.id === id);
-  if (!tw || state.busy.has(id)) return false;
+  if (!tw || tw.available === false || state.busy.has(id)) return false;
   state.busy.add(id);
   render();
   const res = await call(apply ? 'apply' : 'revert', id);
@@ -1075,3 +1075,4 @@ setTimeout(hideSplash, 6000);
 
 bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings') render(); });
 load();
+

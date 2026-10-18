@@ -1,38 +1,11 @@
 // Mock-Backend: liefert dasselbe JSON wie tweaker.ps1, ohne etwas am System zu ändern.
-// Die ersten 5 Einträge entsprechen ChatGPTs echtem Katalog, der Rest sind Platzhalter fürs Design.
+// Der Katalog entspricht den echten Backend-Funktionen.
 // Läuft in Node (require) und im Browser (window.TweakerMock).
 (function (root) {
-  const L = (de, en, it) => ({ de, en, it });
-  const T = (id, category, risk, name, description, extra = {}) =>
-    ({ id, category, risk, bulkSafe: risk === 'low', name, description, requiresRestart: false, reversible: true, requiresAdmin: true, applied: false, ...extra });
-
-  const catalog = [
-    // Echte Backend-Tweaks (Kategorie/Risiko/bulkSafe wie Tweaker.psm1)
-    T('windows.power.high', 'performance', 'low', L('Hohe Leistung', 'High performance', 'Prestazioni elevate'),
-      L('Aktiviert den vorhandenen Windows-Energieplan Hohe Leistung. Kein garantierter FPS-Gewinn.', 'Activates the existing Windows High performance plan. No guaranteed FPS gain.', 'Attiva il piano Windows Prestazioni elevate esistente. Nessun aumento FPS garantito.')),
-    T('fivem.priority.high', 'gaming', 'medium', L('FiveM-Prozesspriorität', 'FiveM process priority', 'Priorità del processo FiveM'),
-      L('Setzt laufende FiveM-Spielprozesse auf Hoch. Endet mit dem Spielprozess.', 'Sets running FiveM game processes to High. Ends with the game process.', 'Imposta su Alta i processi di gioco FiveM attivi. Termina con il processo.'), { requiresAdmin: false }),
-    T('keyboard.repeat.fast', 'keyboard', 'low', L('WASD: schnelle Tastenwiederholung', 'WASD: fast key repeat', 'WASD: ripetizione rapida dei tasti'),
-      L('Kürzeste Wiederholverzögerung (ca. 250 ms) und höchste Wiederholrate (ca. 30/s).', 'Shortest repeat delay (about 250 ms) and highest repeat rate (about 30/s).', 'Ritardo minimo (circa 250 ms) e velocità massima (circa 30/s).')),
-    T('keyboard.filterkeys.off', 'keyboard', 'medium', L('Filtertasten deaktivieren', 'Disable Filter Keys', 'Disattiva Filtro tasti'),
-      L('Deaktiviert Filtertasten und die Aktivierung über die rechte Umschalttaste.', 'Disables Filter Keys and its right-Shift activation shortcut.', 'Disattiva Filtro tasti e la scorciatoia con Maiusc destro.')),
-    T('keyboard.stickykeys.off', 'keyboard', 'medium', L('Einrastfunktion deaktivieren', 'Disable Sticky Keys', 'Disattiva Tasti permanenti'),
-      L('Deaktiviert die Einrastfunktion und die Aktivierung durch 5× Umschalt.', 'Disables Sticky Keys and its five-Shift shortcut.', 'Disattiva Tasti permanenti e la scorciatoia con 5× Maiusc.')),
-
-    // Platzhalter (noch nicht im Backend)
-    T('mock.game-dvr.off', 'gaming', 'low', L('Game DVR deaktivieren', 'Disable Game DVR', 'Disattiva Game DVR'),
-      L('Schaltet Xbox-Aufnahme im Hintergrund ab', 'Turns off Xbox background recording', 'Disattiva la registrazione Xbox in background'), { applied: true }),
-    T('mock.mouse-accel.off', 'mouse', 'low', L('Mausbeschleunigung aus', 'Mouse acceleration off', 'Accelerazione mouse off'),
-      L('Deaktiviert „Zeigerpräzision verbessern“', 'Disables “Enhance pointer precision”', 'Disattiva “Precisione puntatore avanzata”')),
-    T('mock.dns.cloudflare', 'network', 'low', L('Cloudflare DNS', 'Cloudflare DNS', 'DNS Cloudflare'),
-      L('Schnellere DNS-Auflösung über 1.1.1.1', 'Faster DNS resolution via 1.1.1.1', 'Risoluzione DNS più veloce con 1.1.1.1')),
-    T('mock.telemetry.off', 'privacy', 'low', L('Telemetrie deaktivieren', 'Disable telemetry', 'Disattiva telemetria'),
-      L('Minimiert Diagnosedaten an Microsoft', 'Minimises diagnostic data sent to Microsoft', 'Riduce i dati diagnostici inviati a Microsoft'), { requiresRestart: true }),
-    T('mock.xbox-apps.remove', 'debloat', 'high', L('Xbox-Apps entfernen', 'Remove Xbox apps', 'Rimuovi app Xbox'),
-      L('Deinstalliert vorinstallierte Xbox-Komponenten', 'Uninstalls preinstalled Xbox components', 'Disinstalla i componenti Xbox preinstallati')),
-    T('mock.hibernate.off', 'power', 'low', L('Ruhezustand deaktivieren', 'Disable hibernation', 'Disattiva ibernazione'),
-      L('Entfernt hiberfil.sys und gibt Speicher frei', 'Removes hiberfil.sys and frees disk space', 'Rimuove hiberfil.sys e libera spazio')),
-  ];
+  // Same definitions as the real backend; no fictitious design-only tweaks.
+  const definitions = typeof module !== 'undefined' && module.exports
+    ? require('./tweak-catalog') : root.TweakerCatalog;
+  const catalog = definitions.map(t => ({ ...t, applied: false }));
 
   // Gemeinsamer Wiederherstellungs-Katalog (Format wie Backup.ps1). Jede Änderung legt automatisch einen Eintrag an.
   const recovery = [];
@@ -284,3 +257,4 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.TweakerMock = api;
 })(this);
+
