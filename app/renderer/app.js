@@ -96,6 +96,7 @@ const state = {
   modsError: null,
   modsBusy: null,    // 'list' | 'import' | modId
   modsTab: 'all',
+  modsOpen: null,    // Mod-ID, deren Dateiliste aufgeklappt ist
   res: null,         // letzte res-get/res-set-Antwort
   resError: null,
   resBusy: false,
@@ -496,32 +497,48 @@ function renderMods() {
     ${d.root ? `<div class="cache-root" title="${esc(d.root)}">FiveM: ${esc(d.root)}</div>` : ''}
     <div class="cache-root" title="${esc(d.gtaRoot || '')}">GTA V: ${d.gtaRoot ? esc(d.gtaRoot) : t().modsNoGta}</div>
     ${d.fivemFound ? '' : `<div class="sm-alert">${t().modsNoFivem}</div>`}
+    ${d.brokenCount ? `<div class="sm-alert">${t().modsBrokenSummary(d.brokenCount)}</div>` : ''}
     <p class="cache-note">${esc(d.message || '')}</p>
     <div class="cache-actions">
       <button class="pill light" data-mod-import="file" ${busy ? 'disabled' : ''}>${busy === 'import' ? '…' : t().modsImportFile}</button>
       <button class="pill dark" data-mod-import="folder" ${busy ? 'disabled' : ''}>${t().modsImportFolder}</button>
       <button class="pill dark" id="mods-open" ${d.fivemFound ? '' : 'disabled'}>${t().modsOpenFolder}</button>
-    </div>`;
+    </div>
+    ${busy === 'import' ? `<p class="cache-note">${t().modsImporting}</p>` : ''}`;
 
   const list = (d?.mods || []).filter((m) => state.modsTab === 'all' || m.category === state.modsTab);
   const tab = (k) => `<button data-mod-tab="${k}" class="${state.modsTab === k ? 'active' : ''}">${k === 'all' ? t().all : t().modCats[k]}</button>`;
+  const nameOf = (id) => d.mods.find((x) => x.id === id)?.name || id;
   const row = (m) => {
     const mine = busy === m.id;
     const more = m.fileCount > 1 ? ` +${m.fileCount - 1}` : '';
+    const broken = m.health === 'broken';
+    const conflicts = (m.conflictsWith || []).map(nameOf).join(', ');
+    const open = state.modsOpen === m.id;
+    const files = open ? `
+          <ul class="mod-files">${m.targets.map((x) => `<li class="mono">${esc(showTarget(x))}</li>`).join('')}
+            ${m.fileCount > m.targets.length ? `<li class="mono">${t().modsMore(m.fileCount - m.targets.length)}</li>` : ''}</ul>` : '';
     return `
-      <div class="card row mod-row${m.enabled ? ' on' : ''}">
+      <div class="card row mod-row${m.enabled ? ' on' : ''}${broken ? ' broken' : ''}">
         <div class="mod-icon">${icon(m.category)}</div>
         <div class="row-body">
           <div class="row-title">${esc(m.name)}
             <span class="tag">${esc(t().modCats[m.category] || m.category)}</span>
+            ${broken ? `<span class="tag high">${t().modsBrokenTag}</span>` : ''}
+            ${conflicts ? `<span class="tag" title="${esc(t().modsConflictHint(conflicts))}">${t().modsConflictTag}</span>` : ''}
             ${m.skippedCount ? `<span class="tag" title="${esc(t().modsSkippedHint)}">${t().modsSkipped(m.skippedCount)}</span>` : ''}</div>
-          <div class="row-desc">${fmtBytes(m.sizeBytes)} · ${t().modsFiles(m.fileCount)} · <span class="mono">${esc(showTarget(m.targets[0] || ''))}${more}</span></div>
+          <div class="row-desc">${fmtBytes(m.sizeBytes)} · <button class="link${open ? ' open' : ''}" data-mod-details="${esc(m.id)}" aria-expanded="${open}">${t().modsFiles(m.fileCount)}</button> · <span class="mono">${esc(showTarget(m.targets[0] || ''))}${more}</span></div>
+          ${broken ? `<div class="row-desc warn">${t().modsBrokenText(m.brokenCount)}</div>` : ''}
+          ${files}
         </div>
-        <button class="pill dark danger" data-mod-remove="${esc(m.id)}" ${busy ? 'disabled' : ''}>${t().modsRemove}</button>
-        <label class="switch${mine ? ' busy' : ''}">
-          <input type="checkbox" data-mod-toggle="${esc(m.id)}" ${m.enabled ? 'checked' : ''} ${busy ? 'disabled' : ''} aria-label="${esc(m.name)}">
-          <span></span>
-        </label>
+        <div class="mod-actions">
+          ${broken ? `<button class="pill light" data-mod-repair="${esc(m.id)}" ${busy ? 'disabled' : ''}>${mine ? '…' : t().modsRepair}</button>` : ''}
+          <button class="pill dark danger" data-mod-remove="${esc(m.id)}" ${busy ? 'disabled' : ''}>${t().modsRemove}</button>
+          <label class="switch${mine ? ' busy' : ''}">
+            <input type="checkbox" data-mod-toggle="${esc(m.id)}" ${m.enabled ? 'checked' : ''} ${busy ? 'disabled' : ''} aria-label="${esc(m.name)}">
+            <span></span>
+          </label>
+        </div>
       </div>`;
   };
   const mods = d ? `
@@ -895,7 +912,28 @@ async function modToggle(id, enable) {
   const res = await call(enable ? 'mods-enable' : 'mods-disable', undefined, { modId: id });
   state.modsBusy = null;
   if (res?.ok) toast(enable ? t().modsEnabled(m.name) : t().modsDisabled(m.name));
-  else toast(`${m?.name}: ${errorText(res?.error)}`, 'error');
+  else toast(`${m?.name}: ${modError(m, res?.error)}`, 'error');
+  await modsLoad();
+}
+
+// Konflikt: die aktive Mod nennen, die dieselben Dateien ersetzt.
+function modError(m, code) {
+  if (code === 'mod_conflict') {
+    const names = (m?.conflictsWith || []).map((id) => state.mods?.mods.find((x) => x.id === id)).filter((x) => x?.enabled).map((x) => x.name);
+    if (names.length) return t().modsConflictWith(names.join(', '));
+  }
+  return errorText(code);
+}
+
+// Reparieren = erneut aktivieren: fehlende oder vom Spiel ersetzte Dateien werden neu kopiert.
+async function modRepair(id) {
+  const m = state.mods?.mods.find((x) => x.id === id);
+  state.modsBusy = id;
+  render();
+  const res = await call('mods-enable', undefined, { modId: id });
+  state.modsBusy = null;
+  if (res?.ok) toast(t().modsRepaired(m.name));
+  else toast(`${m?.name}: ${modError(m, res?.error)}`, 'error');
   await modsLoad();
 }
 
@@ -977,6 +1015,8 @@ document.addEventListener('click', (e) => {
   else if (el.dataset.modTab) { state.modsTab = el.dataset.modTab; render(); }
   else if (el.dataset.modImport) modImport(el.dataset.modImport);
   else if (el.dataset.modRemove) modRemove(el.dataset.modRemove);
+  else if (el.dataset.modRepair) modRepair(el.dataset.modRepair);
+  else if (el.dataset.modDetails) { state.modsOpen = state.modsOpen === el.dataset.modDetails ? null : el.dataset.modDetails; render(); }
   else if (el.id === 'mods-open') bridge.openModsFolder().then((r) => { if (!r?.ok) toast(errorText(r?.error), 'error'); });
   else if (el.id === 'mods-reload' || el.id === 'res-reload') modsLoad();
   else if (el.dataset.res) { const [w, h] = el.dataset.res.split('x').map(Number); Object.assign(state.resForm, { width: w, height: h }); render(); }

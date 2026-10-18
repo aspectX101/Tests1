@@ -61,7 +61,9 @@ function createBackendClient(app, options = {}) {
       }
     }
     return new Promise((resolve, reject) => {
-      run(powershell, args, { windowsHide: true, shell: false, encoding: 'utf8', timeout: 600000, maxBuffer: 8 * 1024 * 1024 }, (error, stdout, stderr) => {
+      // Große Mod-Packs (mehrere GB entpacken/kopieren) brauchen länger als die übrigen Aktionen.
+      const timeout = ['mods-import', 'mods-enable', 'mods-disable', 'mods-remove'].includes(action) ? 3600000 : 600000;
+      run(powershell, args, { windowsHide: true, shell: false, encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024 }, (error, stdout, stderr) => {
         // Valid backend errors use exit 1 AND a JSON object. Preserve them for the UI.
         if (error && error.code !== 1) return reject(new Error(error.killed ? 'backend_timeout_or_terminated' : 'backend_process_failed'));
         let result;

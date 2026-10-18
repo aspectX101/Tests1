@@ -173,13 +173,18 @@
   const hex12 = () => hex32().slice(0, 12);
   const now = () => new Date().toISOString();
   const M = (name, category, sizeBytes, targets, enabled, skippedCount = 0) =>
-    ({ id: hex12(), name, category, enabled, sizeBytes, fileCount: targets.length, skippedCount, importedUtc: now(), enabledUtc: enabled ? now() : null, targets });
+    ({ id: hex12(), name, category, enabled, sizeBytes, fileCount: targets.length, skippedCount, importedUtc: now(), enabledUtc: enabled ? now() : null, targets, health: enabled ? 'ok' : null, brokenCount: 0, conflictsWith: [] });
   const mods = [
     M('NaturalVision Evolved', 'graphics', 1.9 * 1024 * MB, ['mods\\nve_graphics.rpf', 'mods\\nve_timecycle.rpf'], true, 3),
     M('Glock Sound Pack', 'sound', 84 * MB, ['gta:x64\\audio\\sfx\\RESIDENT.rpf', 'gta:x64\\audio\\sfx\\WEAPONS_PLAYER.rpf'], false, 1),
     M('Gold Weapon Skins', 'weapons', 212 * MB, ['mods\\weapons_gold.rpf'], true),
     M('Clean Minimap', 'minimap', 6 * MB, ['mods\\minimap.rpf'], false),
+    M('Dark Minimap', 'minimap', 5 * MB, ['mods\\minimap.rpf'], false),
   ];
+  // Beispiel: ein Spiel-Update hat eine Datei der Waffen-Skins ersetzt
+  Object.assign(mods[2], { health: 'broken', brokenCount: 1 });
+  // Konflikte wie in ModManager.ps1: gleiche Zieldatei in zwei Mods
+  const withConflicts = () => mods.map((m) => ({ ...m, conflictsWith: mods.filter((o) => o !== m && o.targets.some((x) => m.targets.includes(x))).map((o) => o.id) }));
   const res = { width: 1920, height: 1080, windowed: 0, refreshRate: 144, original: null };
   const resOut = () => ({ ok: true, file: 'C:\\Users\\Spieler\\AppData\\Roaming\\CitizenFX\\gta5_settings.xml', width: res.width, height: res.height, windowed: res.windowed, refreshRate: res.refreshRate, hasBackup: !!res.original });
   const modMsg = {
@@ -190,12 +195,12 @@
   function modsAction(action, { modId, modPath, category, width, height, windowed }, lang) {
     const message = modMsg[lang];
     const find = () => mods.find((m) => m.id === modId);
-    if (action === 'mods-list') return { ok: true, fivemFound: true, root: 'C:\\Users\\Spieler\\AppData\\Local\\FiveM\\FiveM.app', gtaRoot: 'C:\\Program Files\\Rockstar Games\\Grand Theft Auto V Legacy', mods, enabledCount: mods.filter((m) => m.enabled).length, categories: ['graphics', 'sound', 'weapons', 'minimap', 'other'], message };
+    if (action === 'mods-list') return { ok: true, fivemFound: true, root: 'C:\\Users\\Spieler\\AppData\\Local\\FiveM\\FiveM.app', gtaRoot: 'C:\\Program Files\\Rockstar Games\\Grand Theft Auto V Legacy', mods: withConflicts(), enabledCount: mods.filter((m) => m.enabled).length, brokenCount: mods.filter((m) => m.health === 'broken').length, categories: ['graphics', 'sound', 'weapons', 'minimap', 'other'], message };
     if (action === 'mods-import') {
       if (!['graphics', 'sound', 'weapons', 'minimap', 'other'].includes(category)) return { ok: false, error: 'invalid_mod_category' };
       const file = String(modPath || 'Neue Mod.zip').split(/[\\/]/).pop();
       const base = file.replace(/\.[^.]+$/, '');
-      if (/\.(rar|7z)$/i.test(file)) return { ok: false, error: 'mod_archive_unsupported' };
+      if (/\.(oiv|tar|gz)$/i.test(file)) return { ok: false, error: 'mod_archive_unsupported' };
       const m = M(base, category, Math.round((20 + Math.random() * 300) * MB), [category === 'sound' ? 'gta:x64\\audio\\sfx\\RESIDENT.rpf' : `mods\\${base.toLowerCase().replace(/\s+/g, '_')}.rpf`], false, Math.round(Math.random() * 2));
       mods.unshift(m);
       return { ok: true, mod: m, message };
@@ -218,9 +223,10 @@
     if (action === 'mods-enable') {
       const clash = mods.some((o) => o.enabled && o.id !== m.id && o.targets.some((t) => m.targets.includes(t)));
       if (clash) return { ok: false, error: 'mod_conflict' };
-      m.enabled = true; m.enabledUtc = now();
+      if (!m.enabled) m.enabledUtc = now();
+      Object.assign(m, { enabled: true, health: 'ok', brokenCount: 0 });
     }
-    if (action === 'mods-disable') { m.enabled = false; m.enabledUtc = null; }
+    if (action === 'mods-disable') Object.assign(m, { enabled: false, enabledUtc: null, health: null, brokenCount: 0 });
     if (action === 'mods-remove') { mods.splice(mods.indexOf(m), 1); return { ok: true, id: modId, message }; }
     return { ok: true, mod: m, message };
   }

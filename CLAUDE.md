@@ -19,6 +19,8 @@ Oberfläche dreisprachig (de/en/it, `app/renderer/i18n.js`) – neue Texte immer
 - Jede Systemänderung umkehrbar: vorher sichern, bei Teilfehler zurückdrehen. FiveM muss bei Datei-Änderungen geschlossen sein.
 - Die Oberfläche gibt nie Pfade/Skripte ans Backend; Dateipfade nur aus nativen Dialogen im Hauptprozess.
 - Mod Manager installiert nie ausführbare Dateien (.exe/.dll/.asi/Skripte). Soundpacks gehen in `<GTA V>\x64\audio\sfx` (`gta:`-Ziele).
+- Mod Manager: RAR/7z über 7-Zip oder `tar.exe` (nie eigene Entpacker); Aktivieren/Deaktivieren muss wiederholbar bleiben
+  (Sicherung = Original, nie überschreiben/löschen, solange sie Dateien enthält). Details: `docs/mods.md`.
 - Design: Schwarz, Blutrot `#e3112b`, Weiß; feine rote Verlaufslinien, Animationen respektieren `prefers-reduced-motion`.
 
 ## Auslieferung (wichtig – lange Fehlersuche dahinter)

@@ -36,3 +36,17 @@ test('mod ids and resolutions are validated', async () => {
   await client((a) => { seen = a; })({ action: 'res-set', width: 1440, height: 1080, windowed: 2 });
   assert.deepEqual([argAfter(seen, '-Width'), argAfter(seen, '-Height'), argAfter(seen, '-Windowed')], ['1440', '1080', '2']);
 });
+
+test('mod import, enable and disable get a longer timeout than other actions', async () => {
+  const timeouts = {};
+  const c = createBackendClient({ isPackaged: true }, {
+    resourcesPath: 'C:\\Program Files\\Tweaker\\resources', windowsRoot: 'C:\\Windows',
+    execFile: (exe, args, options, done) => { timeouts[argAfter(args, '-Action')] = options.timeout; done(null, '{"ok":true}', ''); },
+  });
+  await c({ action: 'mods-import', modPath: 'C:\\Mods\\pack.rar', category: 'sound' });
+  await c({ action: 'mods-enable', modId: 'a1b2c3d4e5f6' });
+  await c({ action: 'mods-list' });
+  assert.equal(timeouts['mods-import'], 3600000);
+  assert.equal(timeouts['mods-enable'], 3600000);
+  assert.equal(timeouts['mods-list'], 600000);
+});

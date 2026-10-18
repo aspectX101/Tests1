@@ -119,7 +119,7 @@ ipcMain.handle('tweaker:mod-import', async (e, category, kind) => {
   const folder = kind === 'folder';
   const pick = await dialog.showOpenDialog(win, folder
     ? { properties: ['openDirectory'] }
-    : { properties: ['openFile'], filters: [{ name: 'Mods', extensions: ['zip', 'rpf', 'awc', 'ytd', 'ydr', 'yft', 'gfx', 'meta', 'dat', 'xml'] }, { name: '*', extensions: ['*'] }] });
+    : { properties: ['openFile'], filters: [{ name: 'Mods', extensions: ['zip', 'rar', '7z', 'rpf', 'awc', 'ytd', 'ydr', 'yft', 'gfx', 'meta', 'dat', 'xml'] }, { name: '*', extensions: ['*'] }] });
   if (pick.canceled || !pick.filePaths[0]) return { ok: true, canceled: true };
   try {
     return await backend({ action: 'mods-import', modPath: pick.filePaths[0], category, lang: currentLang });
