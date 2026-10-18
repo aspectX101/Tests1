@@ -1,0 +1,37 @@
+# Baut die portable Exe auf Windows und veröffentlicht sie als GitHub-Release, sobald ein Tag v<version> gepusht wird.
+# Der Tag muss zur Version in package.json passen; app/updater.js findet die Exe über den Namen UNDCC-Tweaker-<version>.exe.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Version prüfen
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ("v$v" -ne $env:GITHUB_REF_NAME) { throw "package.json $v passt nicht zum Tag $env:GITHUB_REF_NAME" }
+          if (-not (Test-Path "release-notes/$env:GITHUB_REF_NAME.md")) { throw "release-notes/$env:GITHUB_REF_NAME.md fehlt" }
+          "VERSION=$v" >> $env:GITHUB_ENV
+      - run: npm ci
+      - run: npm test
+      - name: Mod-Manager-Tests (Windows PowerShell 5.1)
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/ModManager.Tests.ps1
+      - run: npm run dist
+      - name: Release veröffentlichen
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create $env:GITHUB_REF_NAME "dist/UNDCC-Tweaker-$env:VERSION.exe" --title "UND.CC Tweaker $env:VERSION" --notes-file "release-notes/$env:GITHUB_REF_NAME.md"

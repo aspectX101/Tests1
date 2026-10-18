@@ -45,8 +45,10 @@ npm run dist            # dist/UNDCC-Tweaker-<version>.exe
 
 ## Neue Version veröffentlichen
 
-Nur nach ausdrücklichem OK des Nutzers. Branch `codex/performance-backend` (PR #1).
-1. `version` in `package.json` erhöhen, `npm run dist`, testen.
-2. Commit + Push (vorher `git fetch` – auf dem Branch wurde auch von ChatGPT gepusht).
-3. `gh release create v<version> dist/UNDCC-Tweaker-<version>.exe --target codex/performance-backend --title "UND.CC Tweaker <version>" --notes-file <notizen.md>`
+Nur nach ausdrücklichem OK des Nutzers.
+1. `version` in `package.json`/`package-lock.json` erhöhen, Notizen in `release-notes/v<version>.md` schreiben, testen.
+2. Commit + Push (vorher `git fetch` – auf den Branches wurde auch von ChatGPT gepusht).
+3. Tag `v<version>` auf diesen Commit pushen. `.github/workflows/release.yml` baut auf Windows (Node- und
+   Mod-Manager-Tests, `npm run dist`) und veröffentlicht `UNDCC-Tweaker-<version>.exe` als Release.
+   (Bis 0.8.1 von Hand: `gh release create … --target codex/performance-backend`.)
 4. Prüfen, dass `https://api.github.com/repos/aspectX101/Tests1/releases/latest` die neue Exe mit `digest` zeigt.
