@@ -1,10 +1,16 @@
-# Baut die portable Exe auf Windows und veröffentlicht sie als GitHub-Release, sobald ein Tag v<version> gepusht wird.
+# Baut die portable Exe auf Windows und hängt sie an das GitHub-Release v<version>. Auslöser: ein gepushter Tag v<version>
+# oder ein auf GitHub veröffentlichtes Release mit neuem Tag v<version> (Ziel: der Branch mit dem Versions-Commit).
 # Der Tag muss zur Version in package.json passen; app/updater.js findet die Exe über den Namen UNDCC-Tweaker-<version>.exe.
 name: Release
 
 on:
   push:
     tags: ['v*']
+  release:
+    types: [published]
+
+concurrency:
+  group: release-${{ github.ref_name }}
 
 permissions:
   contents: write
@@ -34,4 +40,14 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create $env:GITHUB_REF_NAME "dist/UNDCC-Tweaker-$env:VERSION.exe" --title "UND.CC Tweaker $env:VERSION" --notes-file "release-notes/$env:GITHUB_REF_NAME.md"
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $exe = "dist/UNDCC-Tweaker-$env:VERSION.exe"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $exe --clobber
+            gh release edit $tag --title "UND.CC Tweaker $env:VERSION" --notes-file "release-notes/$tag.md"
+          } else {
+            gh release create $tag $exe --title "UND.CC Tweaker $env:VERSION" --notes-file "release-notes/$tag.md"
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Release konnte nicht veröffentlicht werden' }
