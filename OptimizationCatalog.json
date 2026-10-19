@@ -1,0 +1,1303 @@
+{
+  "tweaks": [
+    {
+      "id": "windows.power.profile",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "UND.CC Leistungsprofil",
+        "en": "UND.CC performance preset",
+        "it": "Profilo prestazioni UND.CC"
+      },
+      "description": {
+        "de": "Eigenes Profil statt Elux: setzt im aktiven Energieplan die minimale CPU-Leistung auf 100% und Standby auf Nie, nur am Netzteil. Mehr Verbrauch, Hitze und Luefter; kein FPS-Versprechen.",
+        "en": "Our alternative to Elux: sets minimum CPU performance to 100% and sleep to Never in the current plan, on AC power only. More heat, power and fan noise; no FPS promise.",
+        "it": "Alternativa a Elux: CPU minima al 100% e sospensione Mai nel piano attivo, solo con alimentazione di rete. Piu consumi, calore e rumore; nessuna promessa FPS."
+      },
+      "fields": [
+        "cpuMinimum",
+        "sleepTimeout"
+      ]
+    },
+    {
+      "id": "windows.cpu.unpark",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "CPU-Core-Parking deaktivieren",
+        "en": "Unpark CPU cores",
+        "it": "Disattiva parcheggio core CPU"
+      },
+      "description": {
+        "de": "Setzt den Mindestanteil aktiver Kerne im aktuellen Plan am Netzteil auf 100%. Kann Verbrauch und Temperaturen erhoehen und bei Hybrid-/X3D-CPUs nachteilig sein.",
+        "en": "Sets minimum unparked cores to 100% in the current AC power plan. Can increase heat and power use and hurt hybrid/X3D scheduling.",
+        "it": "Imposta al 100% i core non parcheggiati nel piano attivo con alimentazione di rete. Puo aumentare calore e consumi e peggiorare la gestione di CPU ibride/X3D."
+      },
+      "fields": [
+        "parkMinimum"
+      ]
+    },
+    {
+      "id": "windows.sync.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Einstellungssynchronisierung aus",
+        "en": "Disable settings sync groups",
+        "it": "Disattiva sincronizzazione impostazioni"
+      },
+      "description": {
+        "de": "Sperrt die Windows-Einstellungssynchronisierung per Richtlinie. Aendert keine Cloud-Dateien. Datenschutzoption, kein FPS-Tweak.",
+        "en": "Disables Windows settings synchronization by policy. Does not modify cloud files. Privacy option, not an FPS tweak.",
+        "it": "Disattiva la sincronizzazione delle impostazioni tramite criterio. Non modifica file cloud. Opzione privacy, non aumenta gli FPS."
+      },
+      "fields": [
+        "sync"
+      ]
+    },
+    {
+      "id": "windows.explorer.startup",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Explorer-Startverzoegerung aus",
+        "en": "Remove Explorer startup delay",
+        "it": "Rimuovi ritardo avvio Explorer"
+      },
+      "description": {
+        "de": "Setzt die klassische Explorer-Autostartverzoegerung auf 0 ms. Mehr gleichzeitige Last bei der Anmeldung; abhaengig von Windows-Version und Autostart-App.",
+        "en": "Sets the classic Explorer startup delay to 0 ms. More simultaneous load at sign-in; behavior depends on Windows version and startup application.",
+        "it": "Imposta a 0 ms il ritardo classico di avvio Explorer. Maggiore carico simultaneo all accesso; dipende da Windows e dalle app."
+      },
+      "fields": [
+        "startup"
+      ]
+    },
+    {
+      "id": "windows.menu.instant",
+      "category": "performance",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Menues ohne Wartezeit",
+        "en": "Zero menu show delay",
+        "it": "Menu senza attesa"
+      },
+      "description": {
+        "de": "Klassische Untermenues oeffnen ohne Wartezeit. Komfortoption; keine schnelleren Spiele. Ab-/Anmeldung erforderlich.",
+        "en": "Classic submenus open without a delay. Convenience only, no game speed gain. Sign out and back in.",
+        "it": "I sottomenu classici si aprono senza attesa. Solo comodita, nessun vantaggio nei giochi. Disconnettersi e riconnettersi."
+      },
+      "fields": [
+        "menu"
+      ]
+    },
+    {
+      "id": "windows.hibernate.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Ruhezustand und Schnellstart aus",
+        "en": "Disable hibernate / fast startup",
+        "it": "Disattiva ibernazione e avvio rapido"
+      },
+      "description": {
+        "de": "Deaktiviert den Ruhezustand mit powercfg und den Schnellstart. Hiberfil wird von Windows entfernt; Hochfahren kann laenger dauern. Kein FPS-Gewinn.",
+        "en": "Disables hibernation through powercfg and Fast Startup. Windows removes the hiberfile; boot may take longer. No FPS gain.",
+        "it": "Disattiva ibernazione con powercfg e avvio rapido. Windows rimuove il file di ibernazione; avvio potenzialmente piu lento. Nessun aumento FPS."
+      },
+      "fields": [
+        "hibernate",
+        "fastStartup"
+      ]
+    },
+    {
+      "id": "windows.gpu.tdr",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "GPU-TDR-Wartezeit: 8 Sekunden",
+        "en": "GPU TDR delay: 8 seconds",
+        "it": "Attesa TDR GPU: 8 secondi"
+      },
+      "description": {
+        "de": "Nur Treiberdiagnose: wartet 8 statt standardmaessig 2 Sekunden vor GPU-Timeout. Kann Haenger verlaengern und Fehler verdecken. Microsoft raet Endnutzern von TDR-Aenderungen ab; kein Leistungsgewinn.",
+        "en": "Driver diagnostics only: waits 8 instead of the default 2 seconds before a GPU timeout. Can prolong freezes and mask faults. Microsoft advises end users against TDR changes; no performance gain.",
+        "it": "Solo diagnostica driver: attende 8 secondi invece di 2 prima del timeout GPU. Puo prolungare blocchi e nascondere guasti. Microsoft sconsiglia queste modifiche agli utenti; nessun aumento prestazioni."
+      },
+      "fields": [
+        "tdr"
+      ]
+    },
+    {
+      "id": "windows.mmcss.games",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Multimedia-Prioritaet fuer Spiele",
+        "en": "Games multimedia priority",
+        "it": "Priorita multimedia giochi"
+      },
+      "description": {
+        "de": "Setzt das vorhandene MMCSS-Profil Games auf High / Prioritaet 2. Wirkt nur auf Threads, die dieses Profil verwenden. Kann andere Multimedia-Aufgaben beeintraechtigen.",
+        "en": "Sets the existing MMCSS Games profile to High / priority 2. Only affects threads registered with this profile. May affect other multimedia work.",
+        "it": "Imposta il profilo MMCSS Games esistente su High / priorita 2. Agisce solo sui thread registrati con questo profilo. Puo penalizzare altre attivita multimediali."
+      },
+      "fields": [
+        "gamesCategory",
+        "gamesPriority"
+      ]
+    },
+    {
+      "id": "windows.mmcss.latency",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "MMCSS: Hintergrundreserve 10%",
+        "en": "MMCSS: 10% background reserve",
+        "it": "MMCSS: riserva background 10%"
+      },
+      "description": {
+        "de": "Eigene Low-latency-Variante: SystemResponsiveness 10 statt 20. Nur fuer MMCSS-Anwendungen; kann Hintergrundarbeit verlangsamen. Kein erfundenes Profil, das Spiele nicht verwenden.",
+        "en": "Our low-latency variant: SystemResponsiveness 10 instead of 20. Only affects MMCSS applications and can slow background work. Does not create an unused custom game profile.",
+        "it": "Variante a bassa latenza: SystemResponsiveness 10 invece di 20. Solo per app MMCSS; puo rallentare attivita in background. Non crea un profilo inutilizzato dai giochi."
+      },
+      "fields": [
+        "responsiveness"
+      ]
+    },
+    {
+      "id": "windows.foreground",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Vordergrundplanung fuer Programme",
+        "en": "Foreground scheduling",
+        "it": "Pianificazione in primo piano"
+      },
+      "description": {
+        "de": "Verwendet Win32PrioritySeparation 38 (0x26): kurze variable Zeitscheiben mit Vordergrundbonus. Oft bereits Standard; Hintergrunddienste koennen langsamer werden.",
+        "en": "Uses Win32PrioritySeparation 38 (0x26): short variable quanta with foreground boost. Often already the default; background services may slow down.",
+        "it": "Usa Win32PrioritySeparation 38 (0x26): intervalli brevi variabili con priorita al primo piano. Spesso gia predefinito; servizi in background potenzialmente piu lenti."
+      },
+      "fields": [
+        "foreground"
+      ]
+    },
+    {
+      "id": "windows.prefetch.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Prefetch deaktivieren (Legacy)",
+        "en": "Disable Prefetch (legacy)",
+        "it": "Disattiva Prefetch (legacy)"
+      },
+      "description": {
+        "de": "Setzt EnablePrefetcher auf 0. Kann Programmstarts verlangsamen; auf modernen Windows-Versionen kein belegter Gaming-Vorteil. SysMain ist ein separater Schalter.",
+        "en": "Sets EnablePrefetcher to 0. Can slow application launches; no established gaming benefit on modern Windows. SysMain is a separate switch.",
+        "it": "Imposta EnablePrefetcher a 0. Puo rallentare avvio app; nessun beneficio gaming dimostrato su Windows moderno. SysMain ha un comando separato."
+      },
+      "fields": [
+        "prefetch"
+      ]
+    },
+    {
+      "id": "windows.service.sysmain.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "SysMain deaktivieren",
+        "en": "Disable SysMain service",
+        "it": "Disattiva servizio SysMain"
+      },
+      "description": {
+        "de": "Stoppt und deaktiviert SysMain. Nur zur Diagnose hoher Datentraegerlast; Programmstarts koennen langsamer werden. SafeMode blockiert Dienstabschaltungen.",
+        "en": "Stops and disables SysMain. For diagnosing high disk activity; app launches may slow down. SafeMode blocks service shutdowns.",
+        "it": "Arresta e disabilita SysMain. Per diagnosticare attivita disco elevata; avvio app potenzialmente piu lento. SafeMode impedisce arresti dei servizi."
+      },
+      "fields": [
+        "sysmain_start",
+        "sysmain_running"
+      ]
+    },
+    {
+      "id": "windows.service.diagtrack.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "DiagTrack deaktivieren",
+        "en": "Disable Connected User Experiences (DiagTrack)",
+        "it": "Disattiva DiagTrack"
+      },
+      "description": {
+        "de": "Stoppt den Dienst fuer verbundene Benutzererfahrungen und Diagnosedaten. Kein vollstaendiger Telemetrie-Stopp und kein FPS-Versprechen. SafeMode blockiert dies.",
+        "en": "Stops the Connected User Experiences and Telemetry service. Does not disable all telemetry or promise more FPS. Blocked by SafeMode.",
+        "it": "Arresta il servizio esperienze utente connesse e telemetria. Non disattiva tutta la telemetria e non promette FPS. Bloccato da SafeMode."
+      },
+      "fields": [
+        "diagtrack_start",
+        "diagtrack_running"
+      ]
+    },
+    {
+      "id": "windows.service.wappush.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "WAP-Push-Dienst deaktivieren",
+        "en": "Disable WAP Push service",
+        "it": "Disattiva servizio WAP Push"
+      },
+      "description": {
+        "de": "Stoppt WAP-Push-Routing, falls vorhanden. Kann Geraeteverwaltung beeintraechtigen; keine geschaeftlich verwalteten PCs. SafeMode blockiert dies.",
+        "en": "Stops WAP Push routing when installed. Can affect device management; unsuitable for managed business PCs. Blocked by SafeMode.",
+        "it": "Arresta WAP Push se presente. Puo compromettere gestione dispositivi; non adatto a PC aziendali gestiti. Bloccato da SafeMode."
+      },
+      "fields": [
+        "wappush_start",
+        "wappush_running"
+      ]
+    },
+    {
+      "id": "windows.service.wer.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Windows-Fehlerberichte deaktivieren",
+        "en": "Disable Windows Error Reporting service",
+        "it": "Disattiva segnalazione errori Windows"
+      },
+      "description": {
+        "de": "Stoppt den Fehlerberichtsdienst. Weniger Absturzdiagnose; verhindert keine Abstuerze. SafeMode blockiert dies.",
+        "en": "Stops Windows Error Reporting. Reduces crash diagnostics; does not prevent crashes. Blocked by SafeMode.",
+        "it": "Arresta segnalazione errori Windows. Riduce la diagnostica; non evita arresti anomali. Bloccato da SafeMode."
+      },
+      "fields": [
+        "wer_start",
+        "wer_running"
+      ]
+    },
+    {
+      "id": "windows.service.diagnosticshub.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Diagnostics-Hub-Sammlung deaktivieren",
+        "en": "Disable Diagnostics Hub collector",
+        "it": "Disattiva raccolta Diagnostics Hub"
+      },
+      "description": {
+        "de": "Stoppt den Standard Collector, falls installiert. Diagnose- und Entwicklerwerkzeuge koennen Funktionen verlieren. SafeMode blockiert dies.",
+        "en": "Stops the Standard Collector when installed. Diagnostic and developer tools may lose functionality. Blocked by SafeMode.",
+        "it": "Arresta Standard Collector se installato. Strumenti diagnostici e di sviluppo possono perdere funzioni. Bloccato da SafeMode."
+      },
+      "fields": [
+        "diagnosticshub_start",
+        "diagnosticshub_running"
+      ]
+    },
+    {
+      "id": "windows.service.xbgm.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Xbox Game Monitoring deaktivieren",
+        "en": "Disable Xbox Game Monitoring",
+        "it": "Disattiva Xbox Game Monitoring"
+      },
+      "description": {
+        "de": "Stoppt den alten xbgm-Dienst, falls vorhanden. Kann Xbox-Funktionen beeintraechtigen; fehlt auf vielen PCs. SafeMode blockiert dies.",
+        "en": "Stops the legacy xbgm service when present. May affect Xbox functionality; absent on many PCs. Blocked by SafeMode.",
+        "it": "Arresta il servizio legacy xbgm se presente. Puo influire sulle funzioni Xbox; assente su molti PC. Bloccato da SafeMode."
+      },
+      "fields": [
+        "xbgm_start",
+        "xbgm_running"
+      ]
+    },
+    {
+      "id": "windows.svchost.group",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Svchost-Prozesse gruppieren",
+        "en": "Group svchost processes",
+        "it": "Raggruppa processi svchost"
+      },
+      "description": {
+        "de": "Setzt die Trennschwelle auf 4.194.303 MB. Weniger getrennte Prozesse, aber schlechtere Fehlerisolation. Kein allgemeiner Leistungsgewinn; Neustart erforderlich.",
+        "en": "Raises the split threshold to 4,194,303 MB. Fewer isolated processes but worse fault isolation. No general performance gain; restart required.",
+        "it": "Alza la soglia di separazione a 4.194.303 MB. Meno processi isolati, ma minore isolamento guasti. Nessun vantaggio generale; riavvio necessario."
+      },
+      "fields": [
+        "svchost"
+      ]
+    },
+    {
+      "id": "windows.ceip.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "CEIP-Aufgaben deaktivieren",
+        "en": "Disable CEIP scheduled tasks",
+        "it": "Disattiva attivita CEIP"
+      },
+      "description": {
+        "de": "Deaktiviert vorhandene Consolidator-, KernelCeipTask- und UsbCeip-Aufgaben. Keine Aufgaben werden geloescht. Datenschutz, kein garantierter Leistungsgewinn.",
+        "en": "Disables installed Consolidator, KernelCeipTask and UsbCeip tasks without deleting them. Privacy option, no guaranteed performance gain.",
+        "it": "Disattiva le attivita Consolidator, KernelCeipTask e UsbCeip presenti senza eliminarle. Opzione privacy, nessun aumento prestazioni garantito."
+      },
+      "fields": [
+        "ceipConsolidator",
+        "ceipKernelCeipTask",
+        "ceipUsbCeip"
+      ]
+    },
+    {
+      "id": "windows.power.extras",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Energieplan: Standby und Drosselung aus",
+        "en": "Power plan extras: sleep / throttle",
+        "it": "Piano energia: sospensione / limitazione"
+      },
+      "description": {
+        "de": "Deaktiviert Standby am Netzteil und Windows Power Throttling. Hoeherer Verbrauch; Akkulaufzeit kann durch die globale Drosselungsoption sinken.",
+        "en": "Disables AC sleep and Windows Power Throttling. Higher power use; the global throttling option may reduce battery life.",
+        "it": "Disattiva sospensione con alimentazione di rete e Windows Power Throttling. Maggiori consumi; la modifica globale puo ridurre autonomia."
+      },
+      "fields": [
+        "sleepTimeout",
+        "throttling"
+      ]
+    },
+    {
+      "id": "windows.office.telemetry.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Office-Telemetrie-Agent deaktivieren",
+        "en": "Disable Office Telemetry Agent",
+        "it": "Disattiva agente telemetria Office"
+      },
+      "description": {
+        "de": "Deaktiviert Logging und Upload des klassischen Office-16-Telemetrie-Agenten. Betrifft nicht alle Microsoft-365-Diagnosedaten; nur bei installierter Office-16-Familie.",
+        "en": "Disables logging and upload for the classic Office 16 Telemetry Agent. Does not disable all Microsoft 365 diagnostics; requires Office 16 family.",
+        "it": "Disattiva log e invio per agente telemetria classico Office 16. Non disattiva tutta la diagnostica Microsoft 365; richiede Office 16."
+      },
+      "fields": [
+        "officeLogging",
+        "officeUpload"
+      ],
+      "feature": "office"
+    },
+    {
+      "id": "windows.suggestions.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "App-Vorschlaege deaktivieren",
+        "en": "Disable consumer app suggestions",
+        "it": "Disattiva suggerimenti app"
+      },
+      "description": {
+        "de": "Deaktiviert vorgeschlagene Apps fuer diesen Benutzer. Treiberdiagnose/WUDF-Logs bleiben erhalten: kein belegter Vorteil durch deren Abschaltung.",
+        "en": "Disables suggested apps for this user. Keeps WUDF driver diagnostic logs: disabling those has no established benefit.",
+        "it": "Disattiva suggerimenti app per questo utente. Mantiene log diagnostici WUDF: disattivarli non offre benefici dimostrati."
+      },
+      "fields": [
+        "suggestions"
+      ]
+    },
+    {
+      "id": "windows.legacy.fps",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": false,
+      "name": {
+        "de": "Legacy-Games-FPS-Schluessel",
+        "en": "Legacy Games FPS keys",
+        "it": "Chiavi FPS giochi legacy"
+      },
+      "description": {
+        "de": "Keine universelle Windows-Funktion unter diesem Namen. Es werden keine wirkungslosen FPS-Schluessel angelegt. Fuer konkrete Spiele sind individuelle Kompatibilitaetseinstellungen erforderlich.",
+        "en": "No universal Windows feature has this name. No ineffective FPS keys are created. Specific games need individual compatibility settings.",
+        "it": "Non esiste una funzione Windows universale con questo nome. Non vengono create chiavi FPS inefficaci. Servono impostazioni specifiche per ogni gioco."
+      },
+      "fields": [],
+      "unavailable": "unsupported_optimization_recipe"
+    },
+    {
+      "id": "windows.io.realtime",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": false,
+      "name": {
+        "de": "IO-Realtime-Worker-Prioritaet",
+        "en": "IO realtime worker priority",
+        "it": "Priorita worker IO realtime"
+      },
+      "description": {
+        "de": "Kein unterstuetzter globaler Windows-Schalter. Echtzeit-Prioritaet kann Systemaufgaben verdraengen; diese Karte veraendert deshalb keine Systemwerte.",
+        "en": "No supported global Windows switch. Real-time priority can starve system work; this card therefore changes no settings.",
+        "it": "Nessun comando Windows globale supportato. La priorita tempo reale puo bloccare attivita di sistema; questa scheda non modifica impostazioni."
+      },
+      "fields": [],
+      "unavailable": "unsupported_optimization_recipe"
+    },
+    {
+      "id": "windows.close.faster",
+      "category": "performance",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Kuerzere Wartezeit bei haengenden Apps",
+        "en": "Shorter hung-app response timeout",
+        "it": "Attesa ridotta per app bloccate"
+      },
+      "description": {
+        "de": "Setzt HungAppTimeout auf 3000 ms und WaitToKillAppTimeout auf 5000 ms. Kann Speichern beim Abmelden unterbrechen. Erzwingt kein automatisches Beenden; Menue-Wartezeit bleibt separat.",
+        "en": "Sets HungAppTimeout to 3000 ms and WaitToKillAppTimeout to 5000 ms. May interrupt saving at sign-out. Does not force automatic termination; menu delay is separate.",
+        "it": "Imposta HungAppTimeout a 3000 ms e WaitToKillAppTimeout a 5000 ms. Puo interrompere salvataggi alla disconnessione. Non forza chiusura automatica; menu separati."
+      },
+      "fields": [
+        "hung",
+        "kill"
+      ]
+    },
+    {
+      "id": "windows.mmcss.on",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "MMCSS-Dienst aktivieren",
+        "en": "Enable MMCSS service",
+        "it": "Attiva servizio MMCSS"
+      },
+      "description": {
+        "de": "Eigene Alternative zu No-lazy-mode: stellt MMCSS auf Automatisch und startet ihn. Veraendert keine undokumentierten Scheduler-Schluessel. Meist bereits aktiv.",
+        "en": "Our alternative to no-lazy-mode: sets MMCSS to Automatic and starts it. Does not alter undocumented scheduler keys. Usually already active.",
+        "it": "Alternativa a no-lazy-mode: imposta MMCSS su Automatico e lo avvia. Non modifica chiavi scheduler non documentate. Di solito gia attivo."
+      },
+      "fields": [
+        "mmcss_start",
+        "mmcss_running"
+      ]
+    },
+    {
+      "id": "windows.assistance.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Remoteunterstuetzung deaktivieren",
+        "en": "Disable Remote Assistance",
+        "it": "Disattiva Assistenza remota"
+      },
+      "description": {
+        "de": "Deaktiviert angeforderte Windows-Remoteunterstuetzung. Remote Desktop und Drittanbieter-Fernwartung bleiben separat. Kein FPS-Tweak.",
+        "en": "Disables solicited Windows Remote Assistance. Remote Desktop and third-party remote tools are separate. Not an FPS tweak.",
+        "it": "Disattiva Assistenza remota Windows richiesta. Desktop remoto e strumenti esterni sono separati. Non aumenta gli FPS."
+      },
+      "fields": [
+        "assistance"
+      ]
+    },
+    {
+      "id": "windows.autoplay.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Automatische Wiedergabe deaktivieren",
+        "en": "Disable AutoPlay",
+        "it": "Disattiva AutoPlay"
+      },
+      "description": {
+        "de": "Deaktiviert die automatische Wiedergabe fuer alle Laufwerkstypen dieses Benutzers. Laufwerke bleiben normal erreichbar.",
+        "en": "Disables AutoPlay for all drive types for this user. Drives remain accessible.",
+        "it": "Disattiva AutoPlay per tutti i tipi di unita di questo utente. Le unita restano accessibili."
+      },
+      "fields": [
+        "autoplay"
+      ]
+    },
+    {
+      "id": "windows.tooltip.fast",
+      "category": "performance",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Schnellere Hover-Reaktion",
+        "en": "Faster hover / tooltip delay",
+        "it": "Reazione hover piu rapida"
+      },
+      "description": {
+        "de": "Setzt MouseHoverTime auf 100 ms. Wirkt auf klassische Hover-Ereignisse; Apps mit eigenen Tooltips koennen dies ignorieren. Keine Eingabelatenz-Optimierung.",
+        "en": "Sets MouseHoverTime to 100 ms for classic hover events. Apps with custom tooltips may ignore it. Does not reduce keyboard input latency.",
+        "it": "Imposta MouseHoverTime a 100 ms per eventi hover classici. App con tooltip propri possono ignorarlo. Non riduce latenza tastiera."
+      },
+      "fields": [
+        "hover"
+      ]
+    },
+    {
+      "id": "windows.activity.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Aktivitaetsverlauf deaktivieren",
+        "en": "Disable activity history",
+        "it": "Disattiva cronologia attivita"
+      },
+      "description": {
+        "de": "Deaktiviert Aktivitaetsfeed, Sammlung und Upload per Richtlinie. Loescht keine bestehende Historie. Veraltete Timeline-Funktionen sind versionsabhaengig.",
+        "en": "Disables activity feed, collection and upload by policy. Does not delete existing history. Legacy Timeline features depend on Windows version.",
+        "it": "Disattiva feed, raccolta e invio attivita tramite criterio. Non elimina la cronologia esistente. Le funzioni Timeline dipendono da Windows."
+      },
+      "fields": [
+        "activityEnableActivityFeed",
+        "activityPublishUserActivities",
+        "activityUploadUserActivities"
+      ]
+    },
+    {
+      "id": "windows.storage.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Speicheroptimierung deaktivieren",
+        "en": "Disable Storage Sense",
+        "it": "Disattiva Sensore memoria"
+      },
+      "description": {
+        "de": "Deaktiviert automatische Speicherbereinigung. Keine Dateien werden geloescht; belegter Speicher kann wachsen.",
+        "en": "Disables automatic storage cleanup. Deletes no files; disk usage may grow.",
+        "it": "Disattiva pulizia automatica spazio. Non elimina file; lo spazio occupato puo aumentare."
+      },
+      "fields": [
+        "storage"
+      ]
+    },
+    {
+      "id": "windows.explorer.defaults",
+      "category": "performance",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Explorer: Dieser PC ohne Verlauf",
+        "en": "Explorer: This PC without recent history",
+        "it": "Explorer: Questo PC senza cronologia"
+      },
+      "description": {
+        "de": "Oeffnet Explorer bei Dieser PC und blendet zuletzt genutzte Dateien/Ordner aus. Komfortoption; kein FPS-Vorteil und keine Dateiloeschung.",
+        "en": "Opens Explorer at This PC and hides recent files/folders. Convenience only; no FPS gain or file deletion.",
+        "it": "Apre Explorer su Questo PC e nasconde file/cartelle recenti. Solo comodita; nessun aumento FPS o eliminazione file."
+      },
+      "fields": [
+        "explorerHome",
+        "recent",
+        "frequent"
+      ]
+    },
+    {
+      "id": "windows.spotlight.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Sperrbildschirm-Spotlight und Tipps aus",
+        "en": "Disable lock-screen Spotlight and tips",
+        "it": "Disattiva Spotlight e suggerimenti blocco"
+      },
+      "description": {
+        "de": "Deaktiviert rotierende Spotlight-Inhalte und Tipps am Sperrbildschirm fuer diesen Benutzer. Keine Leistungsgarantie.",
+        "en": "Disables rotating lock-screen Spotlight content and tips for this user. No performance guarantee.",
+        "it": "Disattiva contenuti Spotlight e suggerimenti sulla schermata di blocco per questo utente. Nessuna garanzia prestazioni."
+      },
+      "fields": [
+        "spotlight",
+        "spotlightTips"
+      ]
+    },
+    {
+      "id": "windows.gamebar.quiet",
+      "category": "performance",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Game-Bar-Starttipps aus",
+        "en": "Quiet Game Bar startup",
+        "it": "Disattiva suggerimenti iniziali Game Bar"
+      },
+      "description": {
+        "de": "Deaktiviert Starttipps der klassischen Game Bar. Versionsabhaengige Komfortoption; Aufzeichnung bleibt separat.",
+        "en": "Disables classic Game Bar startup tips. Version-dependent convenience setting; recording is separate.",
+        "it": "Disattiva suggerimenti iniziali della Game Bar classica. Opzione comodita dipendente dalla versione; registrazione separata."
+      },
+      "fields": [
+        "gamebarTips"
+      ]
+    },
+    {
+      "id": "windows.clipboard.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Zwischenablageverlauf deaktivieren",
+        "en": "Disable clipboard history",
+        "it": "Disattiva cronologia Appunti"
+      },
+      "description": {
+        "de": "Sperrt den Zwischenablageverlauf. Normales Kopieren/Einfuegen bleibt moeglich. Gespeicherte Eintraege werden nicht aktiv geloescht.",
+        "en": "Disables clipboard history. Normal copy/paste remains available. Does not actively delete saved entries.",
+        "it": "Disattiva cronologia Appunti. Copia/incolla normale resta disponibile. Non elimina attivamente le voci salvate."
+      },
+      "fields": [
+        "clipboard"
+      ]
+    },
+    {
+      "id": "windows.copilot.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Klassischen Windows-Copilot deaktivieren",
+        "en": "Disable legacy Windows Copilot policy",
+        "it": "Disattiva Copilot Windows classico"
+      },
+      "description": {
+        "de": "Nur fuer die alte integrierte Copilot-Seitenleiste. Deinstalliert und blockiert nicht die neue eigenstaendige Copilot-App; auf neueren Windows-Versionen nicht verfuegbar.",
+        "en": "Only for the old integrated Copilot sidebar. Does not uninstall or block the newer standalone Copilot app; unavailable on newer Windows builds.",
+        "it": "Solo per la vecchia barra Copilot integrata. Non disinstalla ne blocca la nuova app Copilot autonoma; non disponibile su build Windows recenti."
+      },
+      "fields": [
+        "copilot"
+      ],
+      "feature": "legacyCopilot"
+    },
+    {
+      "id": "windows.ink.off",
+      "category": "performance",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Windows Ink Workspace deaktivieren",
+        "en": "Disable Windows Ink Workspace",
+        "it": "Disattiva Windows Ink Workspace"
+      },
+      "description": {
+        "de": "Deaktiviert den klassischen Ink Workspace per Richtlinie. Kann Stift-Workflows beeintraechtigen; kein FPS-Gewinn.",
+        "en": "Disables classic Ink Workspace by policy. Can affect pen workflows; no FPS gain.",
+        "it": "Disattiva Ink Workspace classico tramite criterio. Puo influire sui flussi con penna; nessun aumento FPS."
+      },
+      "fields": [
+        "ink"
+      ]
+    }
+  ],
+  "fields": {
+    "cpuMinimum": {
+      "adapter": "power",
+      "kind": "Power",
+      "subgroup": "54533251-82be-4824-96c1-47b60b740d00",
+      "setting": "893dee8e-2bef-41e0-89c6-b55d0929964c",
+      "target": 100,
+      "maximum": 4294967295
+    },
+    "sleepTimeout": {
+      "adapter": "power",
+      "kind": "Power",
+      "subgroup": "238c9fa8-0aad-41ed-83f4-97be242c8f20",
+      "setting": "29f6c1db-86da-48c5-9fdb-f2b67b1f44da",
+      "target": 0,
+      "maximum": 4294967295
+    },
+    "parkMinimum": {
+      "adapter": "power",
+      "kind": "Power",
+      "subgroup": "54533251-82be-4824-96c1-47b60b740d00",
+      "setting": "0cc5b647-c1df-4637-891a-dec35c318583",
+      "target": 100,
+      "maximum": 4294967295
+    },
+    "sync": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "Software\\Policies\\Microsoft\\Windows\\SettingSync",
+      "name": "DisableSettingSync",
+      "target": 2,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "startup": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize",
+      "name": "StartupDelayInMSec",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "menu": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Control Panel\\Desktop",
+      "name": "MenuShowDelay",
+      "target": "0",
+      "kind": "String",
+      "maximum": 4294967295
+    },
+    "hibernate": {
+      "adapter": "hibernate",
+      "kind": "Hibernate",
+      "target": 0,
+      "maximum": 1
+    },
+    "fastStartup": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power",
+      "name": "HiberbootEnabled",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "tdr": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers",
+      "name": "TdrDelay",
+      "target": 8,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "gamesCategory": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games",
+      "name": "Scheduling Category",
+      "target": "High",
+      "kind": "String",
+      "maximum": 4294967295
+    },
+    "gamesPriority": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games",
+      "name": "Priority",
+      "target": 2,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "responsiveness": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile",
+      "name": "SystemResponsiveness",
+      "target": 10,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "foreground": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\PriorityControl",
+      "name": "Win32PrioritySeparation",
+      "target": 38,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "prefetch": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\\PrefetchParameters",
+      "name": "EnablePrefetcher",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "sysmain_start": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "SysMain",
+      "part": "start",
+      "target": 4,
+      "maximum": 4
+    },
+    "sysmain_running": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "SysMain",
+      "part": "running",
+      "target": 0,
+      "maximum": 4
+    },
+    "diagtrack_start": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "DiagTrack",
+      "part": "start",
+      "target": 4,
+      "maximum": 4
+    },
+    "diagtrack_running": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "DiagTrack",
+      "part": "running",
+      "target": 0,
+      "maximum": 4
+    },
+    "wappush_start": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "dmwappushservice",
+      "part": "start",
+      "target": 4,
+      "maximum": 4
+    },
+    "wappush_running": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "dmwappushservice",
+      "part": "running",
+      "target": 0,
+      "maximum": 4
+    },
+    "wer_start": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "WerSvc",
+      "part": "start",
+      "target": 4,
+      "maximum": 4
+    },
+    "wer_running": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "WerSvc",
+      "part": "running",
+      "target": 0,
+      "maximum": 4
+    },
+    "diagnosticshub_start": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "diagnosticshub.standardcollector.service",
+      "part": "start",
+      "target": 4,
+      "maximum": 4
+    },
+    "diagnosticshub_running": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "diagnosticshub.standardcollector.service",
+      "part": "running",
+      "target": 0,
+      "maximum": 4
+    },
+    "xbgm_start": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "xbgm",
+      "part": "start",
+      "target": 4,
+      "maximum": 4
+    },
+    "xbgm_running": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "xbgm",
+      "part": "running",
+      "target": 0,
+      "maximum": 4
+    },
+    "svchost": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control",
+      "name": "SvcHostSplitThresholdInKB",
+      "target": 4294967295,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "ceipConsolidator": {
+      "adapter": "task",
+      "kind": "DWord",
+      "path": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+      "name": "Consolidator",
+      "target": 0,
+      "maximum": 1
+    },
+    "ceipKernelCeipTask": {
+      "adapter": "task",
+      "kind": "DWord",
+      "path": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+      "name": "KernelCeipTask",
+      "target": 0,
+      "maximum": 1
+    },
+    "ceipUsbCeip": {
+      "adapter": "task",
+      "kind": "DWord",
+      "path": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+      "name": "UsbCeip",
+      "target": 0,
+      "maximum": 1
+    },
+    "throttling": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling",
+      "name": "PowerThrottlingOff",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "officeLogging": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Policies\\Microsoft\\Office\\16.0\\OSM",
+      "name": "EnableLogging",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "officeUpload": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Policies\\Microsoft\\Office\\16.0\\OSM",
+      "name": "EnableUpload",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "suggestions": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+      "name": "SilentInstalledAppsEnabled",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "hung": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Control Panel\\Desktop",
+      "name": "HungAppTimeout",
+      "target": "3000",
+      "kind": "String",
+      "maximum": 4294967295
+    },
+    "kill": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Control Panel\\Desktop",
+      "name": "WaitToKillAppTimeout",
+      "target": "5000",
+      "kind": "String",
+      "maximum": 4294967295
+    },
+    "mmcss_start": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "MMCSS",
+      "part": "start",
+      "target": 2,
+      "maximum": 4
+    },
+    "mmcss_running": {
+      "adapter": "service",
+      "kind": "DWord",
+      "service": "MMCSS",
+      "part": "running",
+      "target": 1,
+      "maximum": 4
+    },
+    "assistance": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Remote Assistance",
+      "name": "fAllowToGetHelp",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "autoplay": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer",
+      "name": "NoDriveTypeAutoRun",
+      "target": 255,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "hover": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Control Panel\\Mouse",
+      "name": "MouseHoverTime",
+      "target": "100",
+      "kind": "String",
+      "maximum": 4294967295
+    },
+    "activityEnableActivityFeed": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "Software\\Policies\\Microsoft\\Windows\\System",
+      "name": "EnableActivityFeed",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "activityPublishUserActivities": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "Software\\Policies\\Microsoft\\Windows\\System",
+      "name": "PublishUserActivities",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "activityUploadUserActivities": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "Software\\Policies\\Microsoft\\Windows\\System",
+      "name": "UploadUserActivities",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "storage": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "Software\\Policies\\Microsoft\\Windows\\StorageSense",
+      "name": "AllowStorageSenseGlobal",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "explorerHome": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "LaunchTo",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "recent": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer",
+      "name": "ShowRecent",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "frequent": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer",
+      "name": "ShowFrequent",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "spotlight": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+      "name": "RotatingLockScreenEnabled",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "spotlightTips": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+      "name": "RotatingLockScreenOverlayEnabled",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "gamebarTips": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\GameBar",
+      "name": "ShowStartupPanel",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "clipboard": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "Software\\Policies\\Microsoft\\Windows\\System",
+      "name": "AllowClipboardHistory",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "copilot": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Policies\\Microsoft\\Windows\\WindowsCopilot",
+      "name": "TurnOffWindowsCopilot",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "ink": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "Software\\Policies\\Microsoft\\WindowsInkWorkspace",
+      "name": "AllowWindowsInkWorkspace",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    }
+  }
+}

@@ -723,6 +723,9 @@ async function setTweak(id, apply, { quiet = false } = {}) {
     }
   } else {
     toast(`${tw.name}: ${errorText(res?.error)}`, 'error');
+      // A failed native call may have rolled back or left a recoverable partial change.
+      const refreshed = await call('list');
+      if (refreshed?.ok) state.tweaks = refreshed.tweaks;
   }
   render();
   return !!res?.ok;

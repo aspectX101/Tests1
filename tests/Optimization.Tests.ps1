@@ -1,4 +1,4 @@
-# Real journals and shared recovery, simulated Windows settings. No real registry writes.
+﻿# Real journals and shared recovery, simulated Windows settings. No real registry writes.
 $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
 & (Get-Module Tweaker) {
@@ -71,7 +71,7 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
         Assert ($script:values.capture.value -eq 1 -and -not $script:values.historicalCapture.exists -and $script:values.gameDvr.value -eq 1) 'Exact originals including absent values'
         $script:failField='gameDvr'
         Expect-Error {Invoke-TweakerPerformance apply windows.capture.off} 'simulated_write_failure'
-        Assert ((Get-Content $path -Raw | ConvertFrom-Json).status -eq 'pending') 'Partial apply remains recoverable'
+        Assert ((Get-Content $path -Raw | ConvertFrom-Json).status -eq 'restored') 'Partial apply rolls back automatically'
         $script:failField=''
         $null=Invoke-TweakerPerformance restore windows.capture.off
         Assert (-not $script:values.historicalCapture.exists -and $script:values.capture.value -eq 1) 'Partial apply recovery'

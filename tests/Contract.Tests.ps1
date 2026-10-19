@@ -1,4 +1,4 @@
-# Read-only Windows API checks and cache operations on a disposable fixture only.
+﻿# Read-only Windows API checks and cache operations on a disposable fixture only.
 $ErrorActionPreference = 'Stop'
 $script:contractProfile = Join-Path (Join-Path (Get-Location) 'work') ('json-' + [guid]::NewGuid().ToString('N').Substring(0,8))
 $entry = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../tweaker.ps1'))
@@ -33,15 +33,15 @@ function Invoke-JsonCli([string]$Arguments, [int]$ExpectedExit) {
 }
 foreach ($language in @('de','en','it')) {
     $result = Invoke-JsonCli "-Action list -Lang $language" 0
-    if (-not $result.ok -or @($result.tweaks).Count -ne 8) { throw 'Invalid catalog' }
+    if (-not $result.ok -or @($result.tweaks).Count -ne 45) { throw 'Invalid catalog' }
     foreach ($tweak in $result.tweaks) {
         foreach ($property in @('id','name','description','category','risk','requiresRestart','reversible','applied')) {
             if ($tweak.PSObject.Properties.Name -notcontains $property) { throw "Missing $property" }
         }
         if ($tweak.available -and $tweak.applied -isnot [bool]) { throw 'Known applied state must be boolean' }
         if (-not $tweak.available -and ($null -ne $tweak.applied -or -not $tweak.stateError)) { throw 'Unknown state must not claim false' }
-        $expectedRisk = if ($tweak.id -in @('windows.power.high','keyboard.repeat.fast','windows.gamemode.on','windows.audio.ducking.off')) {'low'} else {'medium'}
-        if ($tweak.risk -ne $expectedRisk) { throw 'Incorrect per-tweak risk' }
+        if ($tweak.risk -notin @('low','medium','high')) {throw 'Invalid risk'}
+        if ($tweak.bulkSafe -and $tweak.risk -ne 'low') {throw 'Unsafe bulk metadata'}
         if ($tweak.id.StartsWith('keyboard.') -and $tweak.category -ne 'keyboard') { throw 'Keyboard category required' }
         if ($tweak.id -in @('keyboard.filterkeys.off','keyboard.stickykeys.off') -and $tweak.bulkSafe) { throw 'Accessibility tweaks require individual choice' }
     }

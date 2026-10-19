@@ -1,5 +1,7 @@
-# Small, fixed allowlist of useful Windows gaming preferences. No service changes.
+﻿# Allowlisted Windows settings with exact original-value recovery.
+. (Join-Path $PSScriptRoot 'OptimizationNative.ps1')
 function Get-OptimizationCatalog {
+    Get-ExtendedOptimizationCatalog
     @(
         [pscustomobject]@{id='windows.capture.off';category='performance';scope='user';risk='medium';bulkSafe=$false;requiresAdmin=$true;restart=$true
             name=@{de='Game-DVR-Aufzeichnung deaktivieren';en='Disable Game DVR recording';it='Disattiva registrazione Game DVR'}
@@ -18,19 +20,25 @@ function Get-OptimizationFields([string]$Id) {
         'windows.capture.off' { 'capture'; 'historicalCapture'; 'gameDvr' }
         'windows.gamemode.on' { 'gameMode' }
         'windows.audio.ducking.off' { 'ducking' }
-        default { throw 'invalid_tweak_id' }
+        default {
+            $entry=@($script:ExtendedOptimization.tweaks | Where-Object id -eq $Id)
+            if ($entry.Count -ne 1) {throw 'invalid_tweak_id'}
+            $entry[0].fields
+        }
     }
 }
 
 function Get-OptimizationDefinition([string]$Field) {
-    switch ($Field) {
+    $result = switch ($Field) {
         'capture' { @{path='Software\Microsoft\Windows\CurrentVersion\GameDVR';name='AppCaptureEnabled';target=0;maximum=1} }
         'historicalCapture' { @{path='Software\Microsoft\Windows\CurrentVersion\GameDVR';name='HistoricalCaptureEnabled';target=0;maximum=1} }
         'gameDvr' { @{path='System\GameConfigStore';name='GameDVR_Enabled';target=0;maximum=1} }
         'gameMode' { @{path='Software\Microsoft\GameBar';name='AutoGameModeEnabled';target=1;maximum=1} }
         'ducking' { @{path='Software\Microsoft\Multimedia\Audio';name='UserDuckingPreference';target=3;maximum=3} }
-        default { throw 'invalid_optimization_field' }
+        default { Get-ExtendedOptimizationDefinition $Field }
     }
+    if (-not $result.ContainsKey('adapter')) {$result.adapter='registry';$result.hive='CurrentUser';$result.kind='DWord'}
+    return $result
 }
 
 function Assert-OptimizationPlatform {
@@ -39,32 +47,41 @@ function Assert-OptimizationPlatform {
 }
 
 function Assert-OptimizationValue([string]$Field, $Value) {
-    $definition = Get-OptimizationDefinition $Field
-    if ($null -eq $Value -or $Value.exists -isnot [bool]) { throw 'invalid_optimization_backup' }
-    if ($Value.exists) {
-        if ($Value.kind -ne 'DWord' -or $Value.value -isnot [ValueType] -or
-            [long]$Value.value -lt 0 -or [long]$Value.value -gt $definition.maximum -or
-            [double]$Value.value -ne [long]$Value.value) { throw 'unsupported_optimization_value' }
-    } elseif ($null -ne $Value.value -or $null -ne $Value.kind) { throw 'invalid_optimization_backup' }
+    $d=Get-OptimizationDefinition $Field
+    if ($null -eq $Value -or $Value.exists -isnot [bool]) {throw 'invalid_optimization_backup'}
+    if (-not $Value.exists) {
+        if ($null -ne $Value.value -or $null -ne $Value.kind -or $d.adapter -notin @('registry','task')) {throw 'invalid_optimization_backup'}
+        return
+    }
+    if ($Value.kind -cne $d.kind) {throw 'unsupported_optimization_value'}
+    $valid=switch ($d.kind) {
+        'DWord' {$Value.value -is [ValueType] -and $Value.value -isnot [bool] -and [decimal]$Value.value -ge 0 -and [decimal]$Value.value -le $d.maximum -and [decimal]$Value.value -eq [long]$Value.value}
+        'String' {$Value.value -is [string] -and $Value.value.Length -le 1024 -and $Value.value -notmatch '[\x00-\x1f]'}
+        'ServiceStart' {$Value.value -is [string] -and $Value.value -cmatch '^[234]\|[x01]$'}
+        'Power' {$Value.value -is [string] -and $Value.value -cmatch '^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\|[0-9]{1,10}$' -and [decimal]$Value.value.Split('|')[1] -le 4294967295}
+        'Hibernate' {$Value.value -is [string] -and $Value.value -cmatch '^[01]\|[x01]\|[x012]\|(x|[0-9]{1,3})$' -and ($Value.value.Split('|')[3] -eq 'x' -or [int]$Value.value.Split('|')[3] -le 100)}
+        default {$false}
+    }
+    if (-not $valid) {throw 'unsupported_optimization_value'}
+    if ($d.adapter -eq 'service' -and $d.part -eq 'running' -and $Value.value -notin @(0,1,2)) {throw 'unsupported_optimization_value'}
 }
 
 function Get-OptimizationValue([string]$Field) {
-    $definition = Get-OptimizationDefinition $Field
-    $hive = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser','Registry64')
-    $key = $null
-    try {
-        $key = $hive.OpenSubKey($definition.path, $false)
-        if ($null -eq $key -or $definition.name -notin @($key.GetValueNames())) {
-            return [pscustomobject]@{exists=$false;kind=$null;value=$null}
-        }
-        $result = [pscustomobject]@{exists=$true;kind=$key.GetValueKind($definition.name).ToString();value=$key.GetValue($definition.name)}
-        Assert-OptimizationValue $Field $result
-        return $result
-    } finally { if ($null -ne $key) {$key.Dispose()}; $hive.Dispose() }
+    $d=Get-OptimizationDefinition $Field
+    try {$result=if ($d.adapter -eq 'registry') {Get-OptimizationRegistryValue $d} else {Get-OptimizationNativeValue $d}}
+    catch {
+        if ($_.Exception.Message -cmatch '^[a-z][a-z_]+$') {throw}
+        throw 'optimization_state_unavailable'
+    }
+    Assert-OptimizationValue $Field $result
+    return $result
 }
 
-function Get-OptimizationTarget([string]$Field) {
-    [pscustomobject]@{exists=$true;kind='DWord';value=[int](Get-OptimizationDefinition $Field).target}
+function Get-OptimizationTarget([string]$Field,$Reference=$null) {
+    $d=Get-OptimizationDefinition $Field
+    if ($d.adapter -eq 'registry') {return [pscustomobject]@{exists=$true;kind=$d.kind;value=$d.target}}
+    if ($null -eq $Reference) {$Reference=Get-OptimizationValue $Field}
+    Get-OptimizationNativeTarget $d $Reference
 }
 
 function Test-OptimizationValueEqual($Left,$Right) {
@@ -73,28 +90,60 @@ function Test-OptimizationValueEqual($Left,$Right) {
 
 function Set-OptimizationValue([string]$Field,$Value) {
     Assert-OptimizationValue $Field $Value
-    $definition = Get-OptimizationDefinition $Field
-    $hive = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser','Registry64')
-    $key = $null
-    try {
-        if ($Value.exists) {
-            $key = $hive.CreateSubKey($definition.path)
-            $key.SetValue($definition.name,[int]$Value.value,[Microsoft.Win32.RegistryValueKind]::DWord)
-        } else {
-            $key = $hive.OpenSubKey($definition.path,$true)
-            if ($null -ne $key) { $key.DeleteValue($definition.name,$false) }
+    $d=Get-OptimizationDefinition $Field
+    if ($d.adapter -eq 'registry') {Set-OptimizationRegistryValue $d $Value}
+    else {Set-OptimizationNativeValue $d $Value}
+    if (-not (Test-OptimizationValueEqual (Get-OptimizationValue $Field) $Value)) {throw 'optimization_verification_failed'}
+}
+
+function Set-OptimizationTrackedValue($Entry,$Value,$State,[string]$Path) {
+    try {Set-OptimizationValue $Entry.field $Value}
+    catch {
+        $failure=$_
+        # Native Windows operations may consist of several API calls. Preserve
+        # the observed partial state so normal recovery can recognize our write.
+        try {
+            $observed=Get-OptimizationValue $Entry.field
+            Assert-OptimizationValue $Entry.field $observed
+            if (Test-OptimizationIntermediate $Entry $observed) {
+                $Entry | Add-Member -NotePropertyName interrupted -NotePropertyValue $observed -Force
+                Save-Journal $State $Path
+            }
+        } catch { # Original journal is already durable even if this read/save fails.
         }
-        if ($null -ne $key) { $key.Flush() }
-    } finally { if ($null -ne $key) {$key.Dispose()}; $hive.Dispose() }
-    if (-not (Test-OptimizationValueEqual (Get-OptimizationValue $Field) $Value)) { throw 'optimization_verification_failed' }
+        throw $failure
+    }
+}
+
+function Test-OptimizationIntermediate($Entry,$Value) {
+    $d=Get-OptimizationDefinition $Entry.field
+    # A single registry/task/power write is atomic. An unexpected third value
+    # must remain a conflict, never become owned merely because a write failed.
+    if ($d.adapter -ne 'hibernate' -or $Value.kind -ne 'Hibernate') {return $false}
+    $before=$Entry.before.value.Split('|');$target=$Entry.target.value.Split('|');$now=$Value.value.Split('|')
+    # powercfg can recreate a default full hiberfile before setting type/size.
+    $now[0] -in @($before[0],$target[0]) -and $now[1] -in @($before[1],$target[1]) -and
+        $now[2] -in @($before[2],$target[2],'2') -and $now[3] -in @($before[3],$target[3],'0')
+}
+
+function Test-OptimizationOwnedValue($Entry,$Current) {
+    if ((Test-OptimizationValueEqual $Current $Entry.before) -or (Test-OptimizationValueEqual $Current $Entry.target)) {return $true}
+    if ($Entry.PSObject.Properties['interrupted']) {
+        Assert-OptimizationValue $Entry.field $Entry.interrupted
+        return ((Test-OptimizationIntermediate $Entry $Entry.interrupted) -and (Test-OptimizationValueEqual $Current $Entry.interrupted))
+    }
+    return $false
 }
 
 function Test-TweakerOptimizationApplied([string]$Id) {
     Assert-OptimizationPlatform
+    Assert-OptimizationAvailable $Id
+    $applied=$true
     foreach ($field in @(Get-OptimizationFields $Id)) {
-        if (-not (Test-OptimizationValueEqual (Get-OptimizationValue $field) (Get-OptimizationTarget $field))) { return $false }
+        $current=Get-OptimizationValue $field
+        if (-not (Test-OptimizationValueEqual $current (Get-OptimizationTarget $field $current))) {$applied=$false}
     }
-    return $true
+    return $applied
 }
 
 function Assert-OptimizationRestore($State) {
@@ -107,10 +156,28 @@ function Assert-OptimizationRestore($State) {
         $entry = $entries[0]
         Assert-OptimizationValue $field $entry.before
         Assert-OptimizationValue $field $entry.target
-        if (-not (Test-OptimizationValueEqual $entry.target (Get-OptimizationTarget $field))) { throw 'invalid_optimization_backup' }
+        if (-not (Test-OptimizationValueEqual $entry.target (Get-OptimizationTarget $field $entry.before))) { throw 'invalid_optimization_backup' }
         if (Test-OptimizationValueEqual $entry.before $entry.target) { continue }
+        $d=Get-OptimizationDefinition $field
+        if ($d.adapter -eq 'service' -and (Read-SafeModeState).enabled) {
+            if (($d.part -eq 'start' -and $entry.before.value.StartsWith('4|')) -or ($d.part -eq 'running' -and $entry.before.value -ne 1)) {throw 'safemode_protects_service'}
+        }
         $current = Get-OptimizationValue $field
-        if (-not (Test-OptimizationValueEqual $current $entry.before) -and -not (Test-OptimizationValueEqual $current $entry.target)) { throw 'external_change_detected' }
+        if (-not (Test-OptimizationOwnedValue $entry $current)) { throw 'external_change_detected' }
+    }
+}
+
+function Restore-OptimizationEntries($State,[string]$Path) {
+    Assert-OptimizationRestore $State
+    $entries=@($State.entries); [array]::Reverse($entries)
+    # Restore startup configuration before attempting to resume a service.
+    $entries=@($entries | Sort-Object {if ((Get-OptimizationDefinition $_.field).adapter -eq 'service' -and (Get-OptimizationDefinition $_.field).part -eq 'start') {0} else {1}})
+    foreach ($entry in $entries) {
+        if (Test-OptimizationValueEqual $entry.before $entry.target) {continue}
+        $current=Get-OptimizationValue $entry.field
+        if (Test-OptimizationValueEqual $current $entry.before) {continue}
+        if (-not (Test-OptimizationOwnedValue $entry $current)) {throw 'external_change_detected'}
+        Set-OptimizationTrackedValue $entry $entry.before $State $Path
     }
 }
 
@@ -118,6 +185,7 @@ function Invoke-TweakerOptimization([string]$Action,[string]$Id,[string]$StateDi
     Assert-Administrator
     Assert-OptimizationPlatform
     $fields = @(Get-OptimizationFields $Id)
+    if ($Action -eq 'apply') {Assert-OptimizationAvailable $Id}
     if ($Action -notin @('apply','restore')) { throw 'invalid_action' }
     $path = Join-Path $StateDirectory ($Id + '.json')
     # Validate existing ancestors/files before any elevated filesystem writes.
@@ -126,12 +194,25 @@ function Invoke-TweakerOptimization([string]$Action,[string]$Id,[string]$StateDi
     }
     $null = New-Item -ItemType Directory -Path $StateDirectory -Force
     $lock = [IO.File]::Open((Join-Path $StateDirectory 'operation.lock'),'OpenOrCreate','ReadWrite','None')
+    $safeLock=$null
     try {
+        if (@($fields | Where-Object {(Get-OptimizationDefinition $_).adapter -eq 'service'}).Count -gt 0) {
+            Initialize-SafeModeStorage
+            $safeLock=[IO.File]::Open((Join-Path $script:SafeModeDirectory 'operation.lock'),'OpenOrCreate','ReadWrite','None')
+            if ($Action -eq 'apply') {Assert-OptimizationServiceGuard $fields}
+        }
         $state = if (Test-Path -LiteralPath $path) {Get-Content -LiteralPath $path -Raw | ConvertFrom-Json} else {$null}
         if ($ExpectedRecoveryId) { Assert-ExpectedRecovery $state $path $ExpectedRecoveryId }
         if ($Action -eq 'apply') {
             if ($null -ne $state -and $state.status -ne 'restored') { throw 'existing_backup_restore_first' }
-            $entries = @($fields | ForEach-Object { [pscustomobject]@{field=$_;before=(Get-OptimizationValue $_);target=(Get-OptimizationTarget $_)} })
+            $entries = @($fields | ForEach-Object { $before=Get-OptimizationValue $_; [pscustomobject]@{field=$_;before=$before;target=(Get-OptimizationTarget $_ $before)} })
+            foreach ($entry in $entries) {
+                $d=Get-OptimizationDefinition $entry.field
+                if ($d.adapter -eq 'service' -and $d.part -eq 'start' -and $entry.before.value.StartsWith('4|')) {
+                    $runtime=@($entries | Where-Object {(Get-OptimizationDefinition $_.field).adapter -eq 'service' -and (Get-OptimizationDefinition $_.field).part -eq 'running'})
+                    if ($runtime.Count -ne 1 -or $runtime[0].before.value -ne 0) {throw 'unsupported_optimization_value'}
+                }
+            }
             $changed = @($entries | Where-Object { -not (Test-OptimizationValueEqual $_.before $_.target) })
             if ($changed.Count -eq 0) { return [pscustomobject]@{id=$Id;status='unchanged'} }
             New-TweakerRestorePoint
@@ -140,11 +221,22 @@ function Invoke-TweakerOptimization([string]$Action,[string]$Id,[string]$StateDi
             }
             $state = [pscustomobject]@{version=1;id=$Id;status='pending';createdUtc=[DateTime]::UtcNow.ToString('o');entries=$entries}
             Save-Journal $state $path
-            foreach ($entry in $changed) {
-                if (-not (Test-OptimizationValueEqual (Get-OptimizationValue $entry.field) $entry.before)) { throw 'external_change_detected' }
-                Set-OptimizationValue $entry.field $entry.target
+            try {
+                foreach ($entry in $changed) {
+                    if (-not (Test-OptimizationValueEqual (Get-OptimizationValue $entry.field) $entry.before)) { throw 'external_change_detected' }
+                    Set-OptimizationTrackedValue $entry $entry.target $state $path
+                }
+                if (-not (Test-TweakerOptimizationApplied $Id)) { throw 'optimization_verification_failed' }
+            } catch {
+                $failure=$_
+                try {
+                    Restore-OptimizationEntries $state $path
+                    $state.status='restored'
+                    Save-Journal $state $path
+                } catch { # Keep durable pending backup if rollback itself is blocked.
+                }
+                throw $failure
             }
-            if (-not (Test-TweakerOptimizationApplied $Id)) { throw 'optimization_verification_failed' }
             $state.status = 'applied'
         } else {
             if ($null -eq $state) { throw 'backup_not_found' }
@@ -152,16 +244,10 @@ function Invoke-TweakerOptimization([string]$Action,[string]$Id,[string]$StateDi
             Assert-OptimizationRestore $state
             if ($state.status -eq 'restored') { return [pscustomobject]@{id=$Id;status='restored'} }
             Register-TweakerBackup $state $path
-            foreach ($entry in $state.entries) {
-                if (Test-OptimizationValueEqual $entry.before $entry.target) { continue }
-                $current = Get-OptimizationValue $entry.field
-                if (Test-OptimizationValueEqual $current $entry.before) { continue }
-                if (-not (Test-OptimizationValueEqual $current $entry.target)) { throw 'external_change_detected' }
-                Set-OptimizationValue $entry.field $entry.before
-            }
+            Restore-OptimizationEntries $state $path
             $state.status = 'restored'
         }
         Save-Journal $state $path
         [pscustomobject]@{id=$Id;status=$state.status}
-    } finally { $lock.Dispose() }
+    } finally { if ($null -ne $safeLock) {$safeLock.Dispose()}; $lock.Dispose() }
 }

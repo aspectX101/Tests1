@@ -64,3 +64,7 @@ Package `Backup.ps1` alongside the existing scripts; the supplied EXE configurat
 
 CLI contract tests exercise shared listing/preview/export and restoration using a disposable cache fixture and an isolated LOCALAPPDATA. Node tests verify shared action validation and preservation of partial outcomes. Real Windows mutations, machine-wide ACLs, long-path edge cases and a full packaged Electron app remain release checks; development did not modify real Windows or FiveM settings.
 
+
+## Expanded optimization adapters
+
+The optimization catalog now also preserves original service startup/delayed-start/runtime state, scheduled-task enabled state, the active power-plan GUID and AC indices, and hibernation configuration. These optional-service tweak records are reversible; SafeMode repair snapshots remain evidence-only. SafeMode can block restoration of an originally disabled service. Apply failures attempt rollback; unresolved partial changes remain in the common recovery list. See [optimization](optimization.md) for conflicts, unavailable components and native-call limitations.

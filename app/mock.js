@@ -5,7 +5,7 @@
   // Same definitions as the real backend; no fictitious design-only tweaks.
   const definitions = typeof module !== 'undefined' && module.exports
     ? require('./tweak-catalog') : root.TweakerCatalog;
-  const catalog = definitions.map(t => ({ ...t, applied: false }));
+  const catalog = definitions.map(t => ({ ...t, applied: t.available === false ? null : false }));
 
   // Gemeinsamer Wiederherstellungs-Katalog (Format wie Backup.ps1). Jede Änderung legt automatisch einen Eintrag an.
   const recovery = [];
@@ -241,6 +241,7 @@
     }
     const t = catalog.find((x) => x.id === id);
     if (!t) return { ok: false, error: 'invalid_tweak_id' };
+    if (t.available === false) return { ok: false, error: t.stateError };
     if (action === 'status') return { ok: true, id, applied: t.applied };
     if (action === 'apply' || action === 'revert') {
       const was = t.applied;

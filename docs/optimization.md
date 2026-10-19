@@ -1,44 +1,79 @@
-# Selected optimization settings
+# Optimization catalog
 
-The screenshot request was narrowed to useful options, not the entire tweak list.
-The Optimierung / Optimization / Ottimizzazione tab now contains four real entries:
+The Optimierung / Optimization / Ottimizzazione tab contains 40 screenshot-derived entries plus the existing High performance plan. The full application catalog has 45 entries: 43 implemented settings/presets and two informational, disabled cards. Optional components may be unavailable on a particular PC. All names, descriptions and new error codes are provided in German, English and Italian.
 
-| ID | Setting | Benefit and cost |
+The user authorized our own definitions rather than a clone of the pictured utility. The UND.CC performance preset changes the active plan's AC minimum processor state to 100% and sleep timeout to Never; it does not install an Elux/Ultimate plan. Battery indices are preserved. The multimedia latency option uses documented SystemResponsiveness=10, not an unused custom task. The No-lazy-mode alternative enables the real MMCSS service. Consumer suggestions are disabled without suppressing WUDF driver logs. Prefetch configuration and SysMain service control are separate.
+
+`Legacy Games FPS keys` and `IO realtime worker priority` remain visible but cannot be applied: these labels do not identify supported universal Windows controls. No fake FPS settings, ignored SFIO/GPU-priority fields, or arbitrary real-time process priorities are created. Microsoft documents some MMCSS fields as unused. Settings such as TDR, svchost grouping, service shutdowns and scheduling experiments are high risk and require individual confirmation. TDR is a driver-debug setting, not a performance fix; Microsoft advises end users not to manipulate it.
+
+## Implemented settings
+
+The authoritative field definitions are in `OptimizationCatalog.json` and the original three definitions in `Optimization.ps1`. The table lists fixed targets; originals are read before each operation, never inferred from defaults.
+
+| ID | Concrete behavior | Risk |
 |---|---|---|
-| `windows.power.high` | Existing High performance plan | May help power-limited workloads; increases power/heat. Existing implementation, not a new or branded power plan. |
-| `windows.capture.off` | Disable Game DVR capture | Avoids capture work when previously active; disables manual Game Bar recording too. Does not delete videos. Medium risk because recording functionality is lost. |
-| `windows.gamemode.on` | Enable Game Mode | Windows' game scheduling preference; often already enabled. Low risk; no guaranteed FPS increase. |
-| `windows.audio.ducking.off` | No communications audio attenuation | Keeps other sounds from being automatically lowered by Windows during calls. Audio convenience, no performance claim. Low risk. |
+| `windows.power.profile` | Our alternative to Elux: sets minimum CPU performance to 100% and sleep to Never in the current plan, on AC power only. More heat, power and fan noise; no FPS promise. | medium |
+| `windows.cpu.unpark` | Sets minimum unparked cores to 100% in the current AC power plan. Can increase heat and power use and hurt hybrid/X3D scheduling. | high |
+| `windows.sync.off` | Disables Windows settings synchronization by policy. Does not modify cloud files. Privacy option, not an FPS tweak. | medium |
+| `windows.explorer.startup` | Sets the classic Explorer startup delay to 0 ms. More simultaneous load at sign-in; behavior depends on Windows version and startup application. | medium |
+| `windows.menu.instant` | Classic submenus open without a delay. Convenience only, no game speed gain. Sign out and back in. | low |
+| `windows.hibernate.off` | Disables hibernation through powercfg and Fast Startup. Windows removes the hiberfile; boot may take longer. No FPS gain. | medium |
+| `windows.gpu.tdr` | Driver diagnostics only: waits 8 instead of the default 2 seconds before a GPU timeout. Can prolong freezes and mask faults. Microsoft advises end users against TDR changes; no performance gain. | high |
+| `windows.mmcss.games` | Sets the existing MMCSS Games profile to High / priority 2. Only affects threads registered with this profile. May affect other multimedia work. | high |
+| `windows.mmcss.latency` | Our low-latency variant: SystemResponsiveness 10 instead of 20. Only affects MMCSS applications and can slow background work. Does not create an unused custom game profile. | high |
+| `windows.foreground` | Uses Win32PrioritySeparation 38 (0x26): short variable quanta with foreground boost. Often already the default; background services may slow down. | medium |
+| `windows.prefetch.off` | Sets EnablePrefetcher to 0. Can slow application launches; no established gaming benefit on modern Windows. SysMain is a separate switch. | high |
+| `windows.service.sysmain.off` | Stops and disables SysMain. For diagnosing high disk activity; app launches may slow down. SafeMode blocks service shutdowns. | high |
+| `windows.service.diagtrack.off` | Stops the Connected User Experiences and Telemetry service. Does not disable all telemetry or promise more FPS. Blocked by SafeMode. | high |
+| `windows.service.wappush.off` | Stops WAP Push routing when installed. Can affect device management; unsuitable for managed business PCs. Blocked by SafeMode. | high |
+| `windows.service.wer.off` | Stops Windows Error Reporting. Reduces crash diagnostics; does not prevent crashes. Blocked by SafeMode. | high |
+| `windows.service.diagnosticshub.off` | Stops the Standard Collector when installed. Diagnostic and developer tools may lose functionality. Blocked by SafeMode. | high |
+| `windows.service.xbgm.off` | Stops the legacy xbgm service when present. May affect Xbox functionality; absent on many PCs. Blocked by SafeMode. | high |
+| `windows.svchost.group` | Raises the split threshold to 4,194,303 MB. Fewer isolated processes but worse fault isolation. No general performance gain; restart required. | high |
+| `windows.ceip.off` | Disables installed Consolidator, KernelCeipTask and UsbCeip tasks without deleting them. Privacy option, no guaranteed performance gain. | medium |
+| `windows.power.extras` | Disables AC sleep and Windows Power Throttling. Higher power use; the global throttling option may reduce battery life. | high |
+| `windows.office.telemetry.off` | Disables logging and upload for the classic Office 16 Telemetry Agent. Does not disable all Microsoft 365 diagnostics; requires Office 16 family. | medium |
+| `windows.suggestions.off` | Disables suggested apps for this user. Keeps WUDF driver diagnostic logs: disabling those has no established benefit. | low |
+| `windows.legacy.fps` | No universal Windows feature has this name. No ineffective FPS keys are created. Specific games need individual compatibility settings. | high |
+| `windows.io.realtime` | No supported global Windows switch. Real-time priority can starve system work; this card therefore changes no settings. | high |
+| `windows.close.faster` | Sets HungAppTimeout to 3000 ms and WaitToKillAppTimeout to 5000 ms. May interrupt saving at sign-out. Does not force automatic termination; menu delay is separate. | high |
+| `windows.mmcss.on` | Our alternative to no-lazy-mode: sets MMCSS to Automatic and starts it. Does not alter undocumented scheduler keys. Usually already active. | medium |
+| `windows.assistance.off` | Disables solicited Windows Remote Assistance. Remote Desktop and third-party remote tools are separate. Not an FPS tweak. | medium |
+| `windows.autoplay.off` | Disables AutoPlay for all drive types for this user. Drives remain accessible. | low |
+| `windows.tooltip.fast` | Sets MouseHoverTime to 100 ms for classic hover events. Apps with custom tooltips may ignore it. Does not reduce keyboard input latency. | low |
+| `windows.activity.off` | Disables activity feed, collection and upload by policy. Does not delete existing history. Legacy Timeline features depend on Windows version. | medium |
+| `windows.storage.off` | Disables automatic storage cleanup. Deletes no files; disk usage may grow. | medium |
+| `windows.explorer.defaults` | Opens Explorer at This PC and hides recent files/folders. Convenience only; no FPS gain or file deletion. | low |
+| `windows.spotlight.off` | Disables rotating lock-screen Spotlight content and tips for this user. No performance guarantee. | low |
+| `windows.gamebar.quiet` | Disables classic Game Bar startup tips. Version-dependent convenience setting; recording is separate. | low |
+| `windows.clipboard.off` | Disables clipboard history. Normal copy/paste remains available. Does not actively delete saved entries. | medium |
+| `windows.copilot.off` | Only for the old integrated Copilot sidebar. Does not uninstall or block the newer standalone Copilot app; unavailable on newer Windows builds. | medium |
+| `windows.ink.off` | Disables classic Ink Workspace by policy. Can affect pen workflows; no FPS gain. | medium |
+| `windows.capture.off` | AppCaptureEnabled=0, HistoricalCaptureEnabled=0, GameDVR_Enabled=0; includes manual recording. | medium |
+| `windows.gamemode.on` | AutoGameModeEnabled=1. | low |
+| `windows.audio.ducking.off` | UserDuckingPreference=3. Convenience, no FPS claim. | low |
+| `windows.power.high` | Selects the existing Windows High performance plan. | low |
 
-No CPU unparking, GPU TDR extensions, real-time I/O, legacy FPS keys, custom MMCSS profiles, svchost grouping, or blanket service shutdowns were added. Menu/tooltip delays, telemetry, advertisements and privacy preferences are not sold as FPS optimizations. SafeMode's service policy is unchanged.
+## Runtime and recovery
 
-## Implementation and contract
+- `list`, `status`, `apply`, `revert` retain the single UTF-8 JSON-object contract and fixed Electron allowlist. `applied` reads configured/live values, not a journal flag or a benchmark. Restart metadata is conservative. An unavailable or failed read returns `available=false`, `applied=null`, and a localized `stateError`; the switch is disabled. The two informational cards also have `reversible=false`.
+- `OptimizationNative.ps1` and `OptimizationCatalog.json` ship next to the CLI in the portable EXE's backend resources. Mock mode uses the generated real catalog, including the disabled informational cards. A failed mutation refreshes the UI's live list because rollback may have changed the result.
+- Each changed operation requires an administrator and a verified recent Tweaker checkpoint (less than 24 hours old) or a newly verified checkpoint. Before writes, the pending journal and immutable shared recovery record preserve registry value existence/type/value, service start mode/delayed-start value and runtime state, enabled task state, AC power index and its plan GUID, or hibernation file presence/type/size metadata. Registry keys created for values may remain empty after recovery.
+- Exact restore does not invent Windows defaults. Writes are verified, fields already at target are not owned, and changes outside our recorded states cause conflicts. A switched active power plan must be selected again before its backup can restore. Missing optional tasks are not created or deleted. Running scheduled tasks are not forcibly terminated; disabling affects future scheduling.
+- Apply failures attempt automatic rollback under the operation lock. If rollback fails, the durable journal remains available to shared recovery. For a failed multi-step hibernation API call, a validated observed intermediate state is recorded. Unknown states, unreadable hardware, or a process/power loss inside a native call may require manual diagnosis; there is no promise of machine-wide atomicity. Hibernation recreates its file/settings, not previous hibernation-session memory.
+- Optional service changes hold the same machine SafeMode lock as protection changes. SafeMode blocks all optional service shutdowns, both on apply and restore. Critical Windows/security services are not in the disabling allowlist. Dependent services are never force-stopped. MMCSS can be enabled while SafeMode is active; restoring an originally disabled/stopped state is blocked until protection is off. Existing SafeMode repair snapshots remain evidence-only; these separately journaled optional-service tweaks are reversible.
+- All 40 screenshot-derived entries have `bulkSafe=false`. “Apply all safe” still only considers explicitly eligible low-risk presets. Privacy, comfort, compatibility and diagnostic options are not described as established FPS improvements. Legacy Copilot policy is disabled on build 26100+ and does not manage the standalone Copilot app. Legacy UI preferences and policies may be ignored by newer components or managed Windows editions.
 
-`Optimization.ps1` is shipped as an external backend resource. Existing `list`, `status`, `apply`, `revert`, and shared backup endpoints accept the three new fixed IDs. There are eight actual tweaks across all tabs. Mock mode uses `app/tweak-catalog.js` generated from `Get-TweakerCatalog`; the previous six fictional design-only entries have been removed.
+## Verification
 
-Settings apply to the current Windows user on Windows 10 client build 19041+ / Windows 11. Elevate as the same user. The fixed fields are:
+Automated tests cover the complete catalog, three languages, fixed IPC IDs, exact original-value recovery through the shared manager, absent values/tasks, automatic rollback, interrupted hibernation-state recovery, external plan conflicts, SafeMode guards, delayed-start and paused services, dependent-service refusal, packaging resources, and JSON/UTF-8 output. Windows mutation providers are simulated; read-only CLI checks use the actual Windows environment. No performance gain was measured and no real service/power/registry tweak was applied to the development PC. Native mutation behavior still needs validation on a disposable Windows test machine before a public release.
 
-| ID | HKCU path | DWORD values |
-|---|---|---|
-| capture | `Software\Microsoft\Windows\CurrentVersion\GameDVR` | `AppCaptureEnabled=0`, `HistoricalCaptureEnabled=0` |
-| capture | `System\GameConfigStore` | `GameDVR_Enabled=0` |
-| game mode | `Software\Microsoft\GameBar` | `AutoGameModeEnabled=1` |
-| audio | `Software\Microsoft\Multimedia\Audio` | `UserDuckingPreference=3` |
+## Sources
 
-`applied` reads these actual settings each time, never the saved applied flag. It reports configured state, not measured FPS, active capture sessions or immediate effectiveness. The three new settings conservatively report `requiresRestart=true`, and successful mutations report `restartRequired=true`. Already-at-target values return `unchanged` without a new backup. All three require individual selection (`bulkSafe=false`) because recording/audio are personal preferences and Game Mode may already be in use.
-
-If reading an individual entry fails, `list` returns `available=false`, `applied=null`, and `stateError`. The UI disables that switch and displays the error. Missing registry values are valid original states; unexpected types/ranges fail closed. No arbitrary path, command or registry name is accepted from the UI or backup.
-
-Every operation uses the existing exclusive operation lock. Before writing, it records value existence, original DWORD type/value and the fixed target in a pending journal and immutable common backup. It rechecks originals after checkpoint creation and immediately before each write. Restore validates the complete allowlist and all conflicts before changes; absent originals are restored by removing only that value. Unchanged fields are not owned. Failed/partial apply or restore remains recoverable from the shared backup view. Empty parent registry keys may remain; unrelated values are never removed.
-
-Persistent changes require a verified Windows checkpoint. A Tweaker checkpoint less than 24 hours old can now be reused, allowing several tweaks in succession without modifying Windows' restore-point frequency limit. Its description and creation timestamp are re-read from Windows on each call; foreign, future, malformed or expired checkpoints are not reused. Without one, a newly created checkpoint must be verified or apply fails. Exact per-operation backups are still created for every changed setting.
-
-## Evidence and limits
-
-- [Microsoft Windows settings reference](https://learn.microsoft.com/en-us/windows/apps/develop/settings/settings-windows-11) maps `AutoGameModeEnabled` to the Game Mode setting.
-- [Xbox engineering on Game DVR overhead](https://news.xbox.com/en-us/2016/10/14/tips-on-windows-10-and-game-dvr-optimization/) explains why active background capture can cost performance. The underlying HKCU capture preferences are implementation details, not a guaranteed public cross-version API. They require manual verification in Windows Captures settings on each supported release.
-- [Microsoft engineer's audio workaround](https://techcommunity.microsoft.com/discussions/microsoftteams/audio-volume-turned-very-low-when-sharing-content-via-hdmi-in-mtr/2406913) uses `UserDuckingPreference=3`; per-app audio attenuation remains independent.
-- [Microsoft TDR documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/display/tdr-registry-keys) reserves those controls for driver testing/debugging, not end-user optimization.
-- [Microsoft MMCSS documentation](https://learn.microsoft.com/en-us/windows/win32/procthread/multimedia-class-scheduler-service) requires application participation; writing an invented game task alone does not opt a game into it.
-
-Automated tests use simulated Windows writes and real disposable journals. They cover exact restore (including missing values), partial failures/retries, shared restore-all, external conflicts, allowlist tampering, admin/platform/archive failures, checkpoint reuse/expiry, IPC and packaging. CLI contract tests read actual Windows settings but do not apply them. Real setters, post-restart behavior and FPS impact still require a disposable Windows test account; no performance improvement has been benchmarked and the developer's PC settings were not changed.
+- [Microsoft: MMCSS, task priorities and unused fields](https://learn.microsoft.com/en-us/windows/win32/procthread/multimedia-class-scheduler-service)
+- [Microsoft: CPMinCores](https://learn.microsoft.com/en-us/windows-hardware/customize/power-settings/options-for-core-parking-cpmincores)
+- [Microsoft: powercfg and hibernation](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options)
+- [Microsoft: TDR keys are for driver development](https://learn.microsoft.com/en-us/windows-hardware/drivers/display/tdr-registry-keys)
+- [Microsoft: SYSTEM_POWER_CAPABILITIES](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-system_power_capabilities)
+- [Microsoft: Office Telemetry Agent](https://learn.microsoft.com/en-us/deployoffice/compat/deploy-telemetry-dashboard)
+- Local Windows policy definitions checked for SettingSync, StorageSense, OSPolicy, WindowsCopilot and WindowsInkWorkspace. These describe configured policy values, not a guarantee of enforcement on every edition.

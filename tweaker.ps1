@@ -71,7 +71,7 @@ try {
                 try { $applied=Test-Applied $_.id $live } catch { $stateError=$_.Exception.Message }
                 [pscustomobject]@{id=$_.id;name=$_.name[$Lang];description=$_.description[$Lang]
                     category=$_.category;risk=$_.risk;bulkSafe=$_.bulkSafe
-                    requiresRestart=$_.restart;reversible=$true;requiresAdmin=$_.requiresAdmin
+                    requiresRestart=$_.restart;reversible=($null -eq $_.PSObject.Properties['unavailable']);requiresAdmin=$_.requiresAdmin
                     applied=$applied;available=($null -eq $stateError);stateError=$stateError}
             })
             @{ok=$true;tweaks=$items}

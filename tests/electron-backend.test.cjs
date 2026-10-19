@@ -11,14 +11,14 @@ test('all shipped catalog IDs reach the fixed CLI adapter, including new optimiz
     assert.ok(catalog.some(t => t.id === id));
     done(null, JSON.stringify({ ok: true, id, applied: true, restartRequired: true }), '');
   }, true);
-  assert.equal(catalog.length, 8);
-  assert.equal(catalog.filter(t => t.category === 'performance').length, 4);
+  assert.equal(catalog.length, 45);
+  assert.equal(catalog.filter(t => t.category === 'performance').length, 41);
   for (const tw of catalog) for (const lang of ['de', 'en', 'it']) {
     assert.ok(tw.name[lang] && tw.description[lang]);
     assert.equal((await backend({ action: 'apply', id: tw.id, lang })).id, tw.id);
   }
   const config = require('../packaging/electron-builder.cjs');
-  assert.ok(config.extraResources[0].filter.includes('Optimization.ps1'));
+  for (const file of ['Optimization.ps1', 'OptimizationNative.ps1', 'OptimizationCatalog.json']) assert.ok(config.extraResources[0].filter.includes(file));
 });
 
 function client(callback, packaged = false) {
