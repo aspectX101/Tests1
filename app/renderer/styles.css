@@ -492,3 +492,4 @@ body::before { animation: smoke 26s ease-in-out infinite alternate; }
 .app-loc .row-body { flex-basis: 100%; }
 .app-path { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: #050506; border: 1px solid var(--line); color: #d4d4d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: text; }
 .app-loc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+

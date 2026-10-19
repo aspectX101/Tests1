@@ -8,6 +8,7 @@
   const catalog = definitions.map(t => ({ ...t, applied: t.available === false ? null : false }));
 
   // Gemeinsamer Wiederherstellungs-Katalog (Format wie Backup.ps1). Jede Änderung legt automatisch einen Eintrag an.
+  const debloat = typeof module !== 'undefined' && module.exports ? require('./debloat-mock') : root.DebloatMock;
   const recovery = [];
   const hex32 = () => Array.from({ length: 32 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
   function register(kind, tweakId, payload) {
@@ -17,7 +18,7 @@
     recovery.unshift(r);
     return r;
   }
-  const reasonOf = (r) => ({ superseded: 'backup_superseded', evidence: 'service_evidence_only', restored: 'already_restored', purged: 'cache_backup_purged' }[r.status] || '');
+  const reasonOf = (r) => r.kind === 'debloat' ? 'app_reinstall_required' : ({ superseded: 'backup_superseded', evidence: 'service_evidence_only', restored: 'already_restored', purged: 'cache_backup_purged' }[r.status] || '');
   const pub = (r) => ({ backupId: r.backupId, kind: r.kind, tweakId: r.tweakId, createdUtc: r.createdUtc, status: r.status, canRestore: !reasonOf(r), reason: reasonOf(r) });
   const backupMsg = {
     de: 'Wiederherstellung nutzt die Originalwerte des jeweiligen Vorgangs. Konflikte werden gemeldet; Dienstsicherungen bleiben aus Sicherheitsgründen Nachweise. Bei Teilerfolg Details prüfen.',
@@ -33,6 +34,7 @@
       const b = backups.find((x) => x.backupId === r.payload.id);
       if (b) { b.status = 'restored'; candidates = b.entries; }
     }
+    if (r.kind === 'startup') debloat.restoreStartup(r.payload.id);
     r.status = 'restored';
   }
   function backup(action, backupId, lang) {
@@ -226,6 +228,12 @@
   }
 
   async function call(req = {}) {
+    if (/^(debloat|startup)-/.test(req.action)) {
+      const result = debloat.call(req, register);
+      if (result.ok && req.action === 'startup-restore') recovery.filter(r => r.kind === 'startup' && r.payload.id === req.id).forEach(r => { r.status = 'restored'; });
+      return result;
+    }
+    if (req.action === 'apply' && req.id === 'debloat.recall.off' && req.confirmDataLoss !== true) return { ok:false, error:'explicit_debloat_confirmation_required' };
     const { action, id, lang = 'de', backupId, confirmPurge } = req;
     await delay();
     if (!['de', 'en', 'it'].includes(lang)) return { ok: false, error: 'invalid_language' };

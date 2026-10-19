@@ -1,15 +1,20 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 [CmdletBinding()]
 param([string]$Action, [string]$Id, [string]$Lang='de', [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge,
-    [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed)
+    [string]$AppIds, [string]$PreviewToken, [switch]$ConfirmDataLoss, [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 try {
-    if ($Action -notin @('info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all','mods-list','mods-import','mods-enable','mods-disable','mods-remove','res-get','res-set','res-reset')) { throw 'invalid_action' }
+    if ($Action -notin @('debloat-list','debloat-preview','debloat-remove','startup-list','startup-disable','startup-restore','info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all','mods-list','mods-import','mods-enable','mods-disable','mods-remove','res-get','res-set','res-reset')) { throw 'invalid_action' }
     if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
     Import-Module (Join-Path $PSScriptRoot 'Tweaker.psm1') -Force -WarningAction Stop
+    if ($Action.StartsWith('debloat-') -or $Action.StartsWith('startup-')) {
+        $result=if ($Action.StartsWith('debloat-')) {Invoke-TweakerDebloat $Action $AppIds $PreviewToken ([bool]$ConfirmDataLoss)} else {Invoke-TweakerStartup $Action $Id $PreviewToken}
+        $result | ConvertTo-Json -Depth 14 -Compress
+        if ($result.ok) {exit 0} else {exit 1}
+    }
     if ($Action.StartsWith('mods-') -or $Action.StartsWith('res-')) {
         $result = Invoke-TweakerMods -Action $Action -ModId $ModId -ModPath $ModPath -Category $Category -Name $Name -FiveMPath $FiveMPath -Width $Width -Height $Height -Windowed $Windowed
         $messages = @{
@@ -82,7 +87,7 @@ try {
         }
         default {
             $operation = if ($Action -eq 'revert') {'restore'} else {'apply'}
-            $change = Invoke-TweakerPerformance -Action $operation -Id $Id -Confirm:$false
+            $change = Invoke-TweakerPerformance -Action $operation -Id $Id -ConfirmDataLoss:$ConfirmDataLoss -Confirm:$false
             $messages = @{
                 applied=@{de='Aenderung angewendet.';en='Change applied.';it='Modifica applicata.'}
                 restored=@{de='Originalzustand wiederhergestellt.';en='Original state restored.';it='Stato originale ripristinato.'}

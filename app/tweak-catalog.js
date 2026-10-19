@@ -947,6 +947,91 @@
     "reversible": true,
     "available": true,
     "stateError": null
+  },
+  {
+    "id": "debloat.widgets.hide",
+    "category": "debloat",
+    "risk": "medium",
+    "bulkSafe": false,
+    "requiresAdmin": true,
+    "name": {
+      "de": "Widgets und Nachrichten ausblenden",
+      "en": "Hide widgets and news",
+      "it": "Nascondi widget e notizie"
+    },
+    "description": {
+      "de": "Blendet Widgets und Nachrichten in der Taskleiste aus. Aendert keine Store- oder Sicherheitsdienste. Die Wirkung der Widgets-Richtlinie ist editionsabhaengig.",
+      "en": "Hides taskbar widgets and news. Does not change Store or security services. Widget policy enforcement depends on Windows edition.",
+      "it": "Nasconde widget e notizie nella barra delle applicazioni. Non modifica servizi Store o sicurezza. Il criterio widget dipende dall edizione Windows."
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "id": "debloat.onedrive.block",
+    "category": "debloat",
+    "risk": "high",
+    "bulkSafe": false,
+    "requiresAdmin": true,
+    "name": {
+      "de": "OneDrive-Synchronisierung sperren",
+      "en": "Block OneDrive synchronization",
+      "it": "Blocca sincronizzazione OneDrive"
+    },
+    "description": {
+      "de": "Sperrt OneDrive-Synchronisierung per Richtlinie, ohne Cloud-Dateien oder lokale Ordner zu loeschen. Verhindert nicht garantiert jede Neuinstallation. Vor erneuter Nutzung die Richtlinie rueckgaengig machen.",
+      "en": "Blocks OneDrive synchronization by policy without deleting cloud files or local folders. Does not guarantee prevention of reinstallations. Undo this policy before using OneDrive again.",
+      "it": "Blocca sincronizzazione OneDrive tramite criterio senza eliminare file cloud o cartelle locali. Non garantisce il blocco delle reinstallazioni. Annullare il criterio prima di riutilizzare OneDrive."
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "id": "debloat.recall.off",
+    "category": "debloat",
+    "risk": "high",
+    "bulkSafe": false,
+    "requiresAdmin": true,
+    "name": {
+      "de": "Recall-Momentaufnahmen deaktivieren",
+      "en": "Disable Recall snapshots",
+      "it": "Disattiva istantanee Recall"
+    },
+    "description": {
+      "de": "Windows beendet die Aufnahme UND loescht vorhandene Recall-Momentaufnahmen. Die Richtlinie ist rueckgaengig machbar, geloeschte Aufnahmen nicht. Nur auf unterstuetzten Windows-11-Pro/Enterprise/Education-Versionen.",
+      "en": "Windows stops saving AND deletes existing Recall snapshots. The policy can be undone; deleted snapshots cannot be recovered. Requires supported Windows 11 Pro/Enterprise/Education.",
+      "it": "Windows interrompe il salvataggio ED elimina le istantanee Recall esistenti. Il criterio e reversibile, le istantanee eliminate no. Richiede Windows 11 Pro/Enterprise/Education supportato."
+    },
+    "dataLoss": true,
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "id": "debloat.suggestions.off",
+    "category": "debloat",
+    "risk": "medium",
+    "bulkSafe": false,
+    "requiresAdmin": true,
+    "name": {
+      "de": "Automatische App-Vorschlaege reduzieren",
+      "en": "Reduce automatic app suggestions",
+      "it": "Riduci suggerimenti automatici app"
+    },
+    "description": {
+      "de": "Deaktiviert vorgeschlagene und automatisch beworbene Apps fuer diesen Benutzer. Kein garantierter Schutz vor Wiederinstallation durch Updates, OEMs oder eigene Store-Installationen. Store und App-Updates bleiben aktiv.",
+      "en": "Disables suggested and promoted app installations for this user. Does not guarantee prevention of reinstalls by updates, OEMs or user Store installs. Store and app updates remain enabled.",
+      "it": "Disattiva app suggerite e promosse per questo utente. Non garantisce il blocco di reinstallazioni da aggiornamenti, OEM o Store. Store e aggiornamenti app restano attivi."
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
   }
 ];
   if (typeof module !== "undefined" && module.exports) module.exports = catalog;

@@ -4,10 +4,11 @@ contextBridge.exposeInMainWorld('tweaker', {
   // request: { action, id?, lang, backupId?, confirmPurge? }
   call: (request) => ipcRenderer.invoke('tweaker:call', request),
   mode: () => ipcRenderer.invoke('tweaker:mode'),
-  // what: 'safemode' | 'backup' (mit backupId) – speichert per Dialog als JSON
+  // what: 'safemode' | 'backup' (mit backupId) â€“ speichert per Dialog als JSON
   exportJson: (what, backupId) => ipcRenderer.invoke('tweaker:export', what, backupId),
-  // kind: 'file' | 'folder' – öffnet den Windows-Dialog im Hauptprozess
+  // kind: 'file' | 'folder' â€“ Ã¶ffnet den Windows-Dialog im Hauptprozess
   importMod: (category, kind) => ipcRenderer.invoke('tweaker:mod-import', category, kind),
+  openDebloatTarget: (id) => ipcRenderer.invoke('tweaker:debloat-target', id),
   openModsFolder: () => ipcRenderer.invoke('tweaker:open-mods-folder'),
   lastSafeMode: () => ipcRenderer.invoke('tweaker:safemode-last'),
   onSafeMode: (cb) => ipcRenderer.on('tweaker:safemode', (_e, msg) => cb(msg)),
@@ -27,3 +28,4 @@ contextBridge.exposeInMainWorld('tweaker', {
   showExe: () => ipcRenderer.invoke('tweaker:show-exe'),
   createShortcut: (where) => ipcRenderer.invoke('tweaker:create-shortcut', where),
 });
+

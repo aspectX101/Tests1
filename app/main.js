@@ -6,7 +6,7 @@ const usage = require('./usage');
 const updater = require('./updater');
 const { relaunchElevated } = require('./elevate');
 
-// Installierte Windows-App: ohne Adminrechte gestartet → einmal mit UAC neu starten und diese Instanz beenden.
+// Installierte Windows-App: ohne Adminrechte gestartet â†’ einmal mit UAC neu starten und diese Instanz beenden.
 const relaunched = app.isPackaged && relaunchElevated();
 if (relaunched) app.exit(0);
 
@@ -16,7 +16,7 @@ const LANGS = new Set(['de', 'en', 'it']);
 
 let win;
 let currentLang = 'de';
-let lastSafeMode = null; // letzte Meldung des SafeMode-Monitors, für Fenster die später laden
+let lastSafeMode = null; // letzte Meldung des SafeMode-Monitors, fÃ¼r Fenster die spÃ¤ter laden
 
 const sendToUi = (channel, payload) => win && !win.isDestroyed() && win.webContents.send(channel, payload);
 
@@ -49,7 +49,7 @@ function createWindow() {
     frame: false,
     backgroundColor: '#000000',
     title: 'UND.CC Tweaker',
-    // Fenster-/Taskleisten-Icon zur Laufzeit; das Exe-Icon selbst lässt sich ohne Windows-Build nicht setzen.
+    // Fenster-/Taskleisten-Icon zur Laufzeit; das Exe-Icon selbst lÃ¤sst sich ohne Windows-Build nicht setzen.
     icon: path.join(__dirname, 'assets', 'icon.ico'),
     show: false,
     webPreferences: {
@@ -67,25 +67,25 @@ function createWindow() {
   win.webContents.once('did-finish-load', () => updater.start((st) => sendToUi('tweaker:update', st)));
 }
 
-// Nur Anfragen aus unserer eigenen, lokal geladenen Oberfläche annehmen.
+// Nur Anfragen aus unserer eigenen, lokal geladenen OberflÃ¤che annehmen.
 const trusted = (e) => e.senderFrame && e.senderFrame.url.split('#')[0] === INDEX_URL;
 
 ipcMain.handle('tweaker:call', async (e, request) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
   if (!request || typeof request !== 'object') return { ok: false, error: 'invalid_action' };
-  // Nur die bekannten Felder weiterreichen; Pfade und Skripte kann die Oberfläche nicht setzen.
+  // Nur die bekannten Felder weiterreichen; Pfade und Skripte kann die OberflÃ¤che nicht setzen.
   // modPath fehlt bewusst: Mod-Pfade kommen nur aus dem Datei-Dialog (tweaker:mod-import).
-  const { action, id, lang, backupId, confirmPurge, modId, category, width, height, windowed } = request;
+  const { action, id, lang, backupId, confirmPurge, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss } = request;
   if (action === 'mods-import') return { ok: false, error: 'invalid_action' };
   if (LANGS.has(lang)) currentLang = lang;
   try {
-    return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true, modId, category, width, height, windowed });
+    return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss: confirmDataLoss === true });
   } catch (err) {
     return { ok: false, error: err.message };
   }
 });
 
-// SafeMode-Bericht oder Wiederherstellungs-Nachweis als JSON speichern; den Ort wählt der Nutzer im Windows-Dialog.
+// SafeMode-Bericht oder Wiederherstellungs-Nachweis als JSON speichern; den Ort wÃ¤hlt der Nutzer im Windows-Dialog.
 ipcMain.handle('tweaker:export', async (e, what, backupId) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
   let req;
@@ -135,7 +135,7 @@ ipcMain.on('tweaker:update-check', (e) => trusted(e) && updater.check());
 ipcMain.on('tweaker:update-install', (e) => trusted(e) && updater.install());
 ipcMain.on('tweaker:update-log', (e) => trusted(e) && updater.openLog());
 ipcMain.on('tweaker:update-page', (e) => trusted(e) && updater.openReleases());
-// Mod importieren: Datei oder Ordner im Windows-Dialog wählen, dann ans Backend geben.
+// Mod importieren: Datei oder Ordner im Windows-Dialog wÃ¤hlen, dann ans Backend geben.
 ipcMain.handle('tweaker:mod-import', async (e, category, kind) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
   const folder = kind === 'folder';
@@ -150,7 +150,7 @@ ipcMain.handle('tweaker:mod-import', async (e, category, kind) => {
   }
 });
 
-// FiveM-Mods-Ordner im Explorer öffnen (Pfad kommt vom Backend, nicht von der Oberfläche).
+// FiveM-Mods-Ordner im Explorer Ã¶ffnen (Pfad kommt vom Backend, nicht von der OberflÃ¤che).
 ipcMain.handle('tweaker:open-mods-folder', async (e) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
   try {
@@ -173,4 +173,14 @@ if (!relaunched) app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
   usage.stop();
   app.quit();
+});
+
+
+// Only fixed first-party destinations; the renderer never supplies a URI.
+ipcMain.handle('tweaker:debloat-target', async (e, id) => {
+  if (!trusted(e)) return { ok:false, error:'untrusted_sender' };
+  const url = require('./debloat-links').getInstallUrl(id);
+  if (!url) return { ok:false, error:'invalid_debloat_selection' };
+  try { await shell.openExternal(url); return {ok:true}; }
+  catch { return {ok:false,error:'debloat_open_failed'}; }
 });

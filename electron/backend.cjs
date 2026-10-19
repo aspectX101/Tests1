@@ -3,8 +3,9 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { createSafeModeMonitor } = require('./safemode-monitor.cjs');
 
-const tweakIds = new Set(["windows.power.profile", "windows.cpu.unpark", "windows.sync.off", "windows.explorer.startup", "windows.menu.instant", "windows.hibernate.off", "windows.gpu.tdr", "windows.mmcss.games", "windows.mmcss.latency", "windows.foreground", "windows.prefetch.off", "windows.service.sysmain.off", "windows.service.diagtrack.off", "windows.service.wappush.off", "windows.service.wer.off", "windows.service.diagnosticshub.off", "windows.service.xbgm.off", "windows.svchost.group", "windows.ceip.off", "windows.power.extras", "windows.office.telemetry.off", "windows.suggestions.off", "windows.legacy.fps", "windows.io.realtime", "windows.close.faster", "windows.mmcss.on", "windows.assistance.off", "windows.autoplay.off", "windows.tooltip.fast", "windows.activity.off", "windows.storage.off", "windows.explorer.defaults", "windows.spotlight.off", "windows.gamebar.quiet", "windows.clipboard.off", "windows.copilot.off", "windows.ink.off", "windows.capture.off", "windows.gamemode.on", "windows.audio.ducking.off", "windows.power.high", "fivem.priority.high", "keyboard.repeat.fast", "keyboard.filterkeys.off", "keyboard.stickykeys.off"]);
-const actions = new Set(['info', 'list', 'status', 'apply', 'revert', 'cache-info', 'cache-clean', 'cache-restore', 'cache-purge', 'safemode-scan', 'safemode-report', 'safemode-enable', 'safemode-disable', 'safemode-enforce', 'backup-list', 'backup-preview', 'backup-export', 'backup-restore', 'backup-restore-all',
+const tweakIds = new Set(["windows.power.profile", "windows.cpu.unpark", "windows.sync.off", "windows.explorer.startup", "windows.menu.instant", "windows.hibernate.off", "windows.gpu.tdr", "windows.mmcss.games", "windows.mmcss.latency", "windows.foreground", "windows.prefetch.off", "windows.service.sysmain.off", "windows.service.diagtrack.off", "windows.service.wappush.off", "windows.service.wer.off", "windows.service.diagnosticshub.off", "windows.service.xbgm.off", "windows.svchost.group", "windows.ceip.off", "windows.power.extras", "windows.office.telemetry.off", "windows.suggestions.off", "windows.legacy.fps", "windows.io.realtime", "windows.close.faster", "windows.mmcss.on", "windows.assistance.off", "windows.autoplay.off", "windows.tooltip.fast", "windows.activity.off", "windows.storage.off", "windows.explorer.defaults", "windows.spotlight.off", "windows.gamebar.quiet", "windows.clipboard.off", "windows.copilot.off", "windows.ink.off", "windows.capture.off", "windows.gamemode.on", "windows.audio.ducking.off", "windows.power.high", "fivem.priority.high", "keyboard.repeat.fast", "keyboard.filterkeys.off", "keyboard.stickykeys.off", "debloat.widgets.hide", "debloat.onedrive.block", "debloat.recall.off", "debloat.suggestions.off"]);
+const appIdsAllowed = new Set(require('../DebloatApps.json').map(a => a.id));
+const actions = new Set(['debloat-list','debloat-preview','debloat-remove','startup-list','startup-disable','startup-restore','info', 'list', 'status', 'apply', 'revert', 'cache-info', 'cache-clean', 'cache-restore', 'cache-purge', 'safemode-scan', 'safemode-report', 'safemode-enable', 'safemode-disable', 'safemode-enforce', 'backup-list', 'backup-preview', 'backup-export', 'backup-restore', 'backup-restore-all',
   'mods-list', 'mods-import', 'mods-enable', 'mods-disable', 'mods-remove', 'res-get', 'res-set', 'res-reset']);
 const modCategories = new Set(['graphics', 'sound', 'weapons', 'minimap', 'other']);
 
@@ -20,11 +21,27 @@ function createBackendClient(app, options = {}) {
 
   const invokeBackend = function (request) {
     if (!request || typeof request !== 'object' || !actions.has(request.action)) return Promise.reject(new Error('invalid_action'));
-    const { action, id, lang = 'de', fiveMPath, backupId, confirmPurge = false, modId, modPath, category, name, width, height, windowed } = request;
+    const { action, id, lang = 'de', fiveMPath, backupId, confirmPurge = false, modId, modPath, category, name, width, height, windowed, appIds, previewToken, confirmDataLoss = false } = request;
     if (!['de', 'en', 'it'].includes(lang)) return Promise.reject(new Error('invalid_language'));
     if (['status', 'apply', 'revert'].includes(action) && !tweakIds.has(id)) return Promise.reject(new Error('invalid_tweak_id'));
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, '-Action', action, '-Lang', lang];
     if (['status', 'apply', 'revert'].includes(action)) args.push('-Id', id);
+    if (['debloat-preview', 'debloat-remove'].includes(action)) {
+      if (!Array.isArray(appIds) || !appIds.length || appIds.length > 24 || new Set(appIds).size !== appIds.length || appIds.some(x => !appIdsAllowed.has(x))) return Promise.reject(new Error('invalid_debloat_selection'));
+      args.push('-AppIds', appIds.join(','));
+    }
+    if (['startup-disable','startup-restore'].includes(action)) {
+      if (typeof id !== 'string' || !/^[a-f0-9]{32}$/.test(id)) return Promise.reject(new Error('invalid_startup_entry'));
+      args.push('-Id',id);
+    }
+    if (['debloat-remove','startup-disable'].includes(action)) {
+      if (typeof previewToken !== 'string' || !/^[a-f0-9]{64}$/.test(previewToken)) return Promise.reject(new Error('debloat_preview_changed'));
+      args.push('-PreviewToken',previewToken);
+    }
+    if (action === 'debloat-remove' || (action === 'apply' && id === 'debloat.recall.off')) {
+      if (confirmDataLoss !== true) return Promise.reject(new Error('explicit_debloat_confirmation_required'));
+      args.push('-ConfirmDataLoss');
+    }
     // Mod Manager (ModManager.ps1): nur feste Felder, Pfade nur lokal-absolut (kommen aus dem Datei-Dialog im Hauptprozess)
     if (action.startsWith('mods-') || action.startsWith('res-')) {
       if (['mods-enable', 'mods-disable', 'mods-remove'].includes(action)) {

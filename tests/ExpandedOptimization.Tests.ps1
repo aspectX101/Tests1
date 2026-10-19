@@ -1,4 +1,4 @@
-# Full catalog transactions against simulated OS values; never changes real Windows settings.
+﻿# Full catalog transactions against simulated OS values; never changes real Windows settings.
 $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
 & (Get-Module Tweaker) {
@@ -48,9 +48,9 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
     }
     try {
         $catalog=@(Get-TweakerCatalog)
-        Assert ($catalog.Count -eq 45) '45 catalog entries'
+        Assert ($catalog.Count -eq 49) '49 catalog entries'
         Assert (@($catalog | Where-Object category -eq performance).Count -eq 41) '40 screenshot entries plus existing plan'
-        Assert (@($catalog.id | Select-Object -Unique).Count -eq 45) 'Unique IDs'
+        Assert (@($catalog.id | Select-Object -Unique).Count -eq 49) 'Unique IDs'
         foreach ($item in Get-OptimizationCatalog) {
             foreach ($language in @('de','en','it')) {Assert ($item.name[$language] -and $item.description[$language]) 'All translations required'}
             Assert (-not $item.bulkSafe) 'Extended settings require individual choice'
@@ -65,7 +65,7 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
             foreach ($field in $fields) {$script:values[$field]=Seed $field}
             $before=@{};foreach ($field in $fields) {$before[$field]=$script:values[$field]}
             if ($item.id -eq 'windows.ceip.off') {$script:values.ceipKernelCeipTask=[pscustomobject]@{exists=$false;kind=$null;value=$null};$before.ceipKernelCeipTask=$script:values.ceipKernelCeipTask}
-            $null=Invoke-TweakerPerformance apply $item.id
+            $null=Invoke-TweakerPerformance apply $item.id -ConfirmDataLoss
             Assert (Test-TweakerOptimizationApplied $item.id) ('Live target '+$item.id)
             $backup=@((Invoke-TweakerBackup backup-list).backups | Where-Object { $_.tweakId -eq $item.id -and $_.status -eq 'applied' })
             Assert ($backup.Count -eq 1 -and $backup[0].canRestore) ('Shared backup '+$item.id)

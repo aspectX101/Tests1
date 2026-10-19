@@ -1,4 +1,4 @@
-# Fixed adapters only. All persistence and operation locks live in Optimization.ps1.
+﻿# Fixed adapters only. All persistence and operation locks live in Optimization.ps1.
 $script:ExtendedOptimization = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'OptimizationCatalog.json') -Raw | ConvertFrom-Json
 $script:ExtendedCatalogCache=@()
 
@@ -29,6 +29,11 @@ function Assert-OptimizationAvailable([string]$Id) {
     $e=$entry[0]
     if ($e.PSObject.Properties['unavailable']) {throw $e.unavailable}
     if ($e.PSObject.Properties['feature']) {
+        if ($e.feature -eq 'recall') {
+            $platform=Get-SafeModePlatform
+            $version=Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+            if ($platform.build -lt 26100 -or ($platform.build -eq 26100 -and [int]$version.UBR -lt 3915) -or $platform.edition -notmatch '^(Professional|Enterprise|Education|IoTEnterprise)') {throw 'recall_policy_unavailable'}
+        }
         if ($e.feature -eq 'legacyCopilot' -and (Get-SafeModePlatform).build -ge 26100) {throw 'legacy_feature_unavailable'}
         if ($e.feature -eq 'office' -and -not (Test-Path 'HKLM:\SOFTWARE\Microsoft\Office\16.0') -and -not (Test-Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Office\16.0')) {throw 'optional_component_missing'}
     }

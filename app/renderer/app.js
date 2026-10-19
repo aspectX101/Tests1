@@ -7,6 +7,7 @@ const bridge = window.tweaker || {
   mode: async () => 'browser',
   exportJson: async () => ({ ok: true, path: 'tweaker-export.json' }),
   importMod: (category, kind) => window.TweakerMock.call({ action: 'mods-import', category, modPath: kind === 'folder' ? 'C:\\Mods\\Neuer Ordner' : 'C:\\Downloads\\Neue Mod.zip' }),
+  openDebloatTarget: async () => ({ ok: true }),
   openModsFolder: async () => ({ ok: true }),
   lastSafeMode: async () => null,
   onSafeMode() {},
@@ -71,6 +72,7 @@ const state = {
   route: { page: 'home' },
   filter: 'all',
   collapsed: store.get('collapsed') === '1',
+  db: { data:null, startup:null, error:null, startupError:null, busy:false, selected:new Set(), result:null, startupOpen:false },
   tweaks: [],
   info: null,
   mode: null,
@@ -267,6 +269,7 @@ function tweakRow(tw) {
 }
 
 function renderCategory(c, parent) {
+  if (c === 'debloat') return renderDebloat();
   const all = tweaksIn(c);
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);
@@ -393,6 +396,8 @@ function renderSafeMode() {
 }
 
 function backupName(b) {
+  if (b.kind === 'debloat') return t().debloat.removalRecord;
+  if (b.kind === 'startup') return t().debloat.startup;
   if (b.kind === 'cache') return t().bkCacheName;
   if (b.kind === 'services') return t().bkServicesName;
   return state.tweaks.find((x) => x.id === b.tweakId)?.name || b.tweakId || b.backupId;
@@ -721,7 +726,7 @@ async function setTweak(id, apply, { quiet = false } = {}) {
   if (!tw || tw.available === false || state.busy.has(id)) return false;
   state.busy.add(id);
   render();
-  const res = await call(apply ? 'apply' : 'revert', id);
+  const res = await call(apply ? 'apply' : 'revert', id, { confirmDataLoss: apply && id === 'debloat.recall.off' });
   state.busy.delete(id);
   if (res?.ok) {
     tw.applied = !!res.applied;
@@ -952,6 +957,7 @@ function go(route) {
   state.enter = true;
   render();
   $('#content').scrollTop = 0;
+  if (route.cat === 'debloat') debloatLoad();
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
   if (route.page === 'safemode' && !state.safeBusy) safeAction('scan');
   if (route.page === 'settings') bridge.checkUpdate();

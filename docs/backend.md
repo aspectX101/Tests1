@@ -40,7 +40,7 @@ Keyboard changes also require administrator validation and a verified restore po
 
 The keyboard implementation loads `Keyboard.ps1` and compiles the included `native/Keyboard.cs` with built-in Add-Type. Ship these alongside Tweaker.psm1 and tweaker.ps1. It calls the documented SystemParametersInfo API with persistent user settings and a change broadcast. Affected applications may need to be reopened. All settings apply to the current Windows user and all keys, not just W/A/S/D; the app must elevate as that same user. No reboot is required. If apply fails after the first field, the `pending` journal is preserved; call revert before retrying. Conflict checks run before restore writes, and unchanged fields are not restored over later user changes.
 
-No FPS improvement is promised. High performance can increase heat and power use; priority changes can reduce responsiveness elsewhere. The optimization tab now includes the screenshot-derived catalog with explicit risks, availability checks and exact shared recovery. Optional service shutdowns are blocked by SafeMode. See [optimization](optimization.md) for all 45 catalog entries, two disabled informational cards, native adapter limitations and verification. FiveM naming variants outside the explicit allowlist are unsupported.
+No FPS improvement is promised. High performance can increase heat and power use; priority changes can reduce responsiveness elsewhere. The optimization tab now includes the screenshot-derived catalog with explicit risks, availability checks and exact shared recovery. Optional service shutdowns are blocked by SafeMode. See [optimization](optimization.md) for the optimization entries, two disabled informational cards, native adapter limitations and verification. FiveM naming variants outside the explicit allowlist are unsupported.
 
 ## Validation
 
@@ -91,7 +91,12 @@ FiveM source context: [client cache layout](https://github.com/citizenfx/fivem/b
 
 ## Tweak categories and risk
 
-`list` uses explicit per-tweak metadata, including the new `keyboard` category. `windows.power.high`: performance/low; `keyboard.repeat.fast`: keyboard/low; `fivem.priority.high`: gaming/medium; Filter Keys and Sticky Keys: keyboard/medium. There are no high-risk tweaks in the current catalog. Risk is relative impact, not a guarantee of safety or performance benefit.
+`list` uses explicit per-tweak metadata, including the new `keyboard` category. `windows.power.high`: performance/low; `keyboard.repeat.fast`: keyboard/low; `fivem.priority.high`: gaming/medium; Filter Keys and Sticky Keys: keyboard/medium. The expanded catalog includes high-risk entries; use each entry’s actual metadata. Risk is relative impact, not a guarantee of safety or performance benefit.
 
 The additional boolean `bulkSafe` is true only for the energy plan and keyboard repeat preset. Use `available !== false && risk === 'low' && bulkSafe === true` for user-requested bulk actions. Handle failures per item. Never automatically batch-disable accessibility, recording or audio preferences. Persistent changes require a verified recent Tweaker checkpoint or a newly verified one, plus an exact per-operation backup. Windows' checkpoint frequency limit is unchanged. Optimization risks are assigned per entry; scheduling, TDR, service shutdowns and svchost grouping are high risk. `list` includes `available`/`stateError`; failed reads use `applied=null` instead of falsely reporting disabled.
 
+
+
+## Debloat
+
+The four reversible Debloat policy entries bring the settings catalog to 49. App removal and startup management use dedicated preview/confirmation actions; see [Debloat contract and limitations](debloat.md). App-removal records contain inventory only and are excluded from automatic restore.

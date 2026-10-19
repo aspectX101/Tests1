@@ -33,7 +33,7 @@ function Invoke-JsonCli([string]$Arguments, [int]$ExpectedExit) {
 }
 foreach ($language in @('de','en','it')) {
     $result = Invoke-JsonCli "-Action list -Lang $language" 0
-    if (-not $result.ok -or @($result.tweaks).Count -ne 45) { throw 'Invalid catalog' }
+    if (-not $result.ok -or @($result.tweaks).Count -ne 49) { throw 'Invalid catalog' }
     foreach ($tweak in $result.tweaks) {
         foreach ($property in @('id','name','description','category','risk','requiresRestart','reversible','applied')) {
             if ($tweak.PSObject.Properties.Name -notcontains $property) { throw "Missing $property" }

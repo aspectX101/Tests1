@@ -1,4 +1,4 @@
-# Shared recovery catalog. Domain journals remain authoritative for actual restore.
+﻿# Shared recovery catalog. Domain journals remain authoritative for actual restore.
 $script:BackupDirectory = Join-Path $env:LOCALAPPDATA 'Tweaker\Backups'
 $script:PerformanceStateDirectory = Join-Path $env:LOCALAPPDATA 'Tweaker\Performance'
 
@@ -13,6 +13,13 @@ function Assert-BackupStore {
 }
 
 function Get-RecoveryPayload($State) {
+    if ($State.PSObject.Properties['kind'] -and $State.kind -in @('debloat','startup')) {
+        $payload=[ordered]@{version=1;kind=$State.kind;id=$State.id;userSid=$State.userSid;createdUtc=([DateTimeOffset]$State.createdUtc).ToUniversalTime().ToString('o')}
+        if ($State.kind -eq 'debloat') {$payload.apps=@($State.apps)}
+        else {$payload.name=$State.name;$payload.before=$State.before}
+        return [pscustomobject]$payload
+    }
+
     if ($State.id -in @((Get-TweakerCatalog).id)) {
         $created = ([DateTimeOffset]$State.createdUtc).ToUniversalTime().ToString('o')
         $payload = [ordered]@{version=[int]$State.version;kind='tweak';id=[string]$State.id;createdUtc=$created}
@@ -101,6 +108,14 @@ function Read-RecoveryRecord([string]$Path) {
 
 function Read-RecoverySource($Record) {
     switch ($Record.kind) {
+        {$_ -in @('debloat','startup')} {
+            if ($Record.payload.id -cnotmatch '^[a-f0-9]{32}$' -or $Record.payload.userSid -cne (Get-DebloatUser)) {throw 'invalid_backup_source'}
+            $directory=if ($Record.kind -eq 'startup') {$script:StartupDirectory} else {$script:DebloatDirectory}
+            $expected=Join-Path $directory ($Record.payload.id+'.json')
+            if ([IO.Path]::GetFullPath($expected) -cne $Record.source) {throw 'invalid_backup_source'}
+            $null=Assert-CachePath $Record.source $directory
+        }
+
         'tweak' {
             if ($Record.payload.id -notin @((Get-TweakerCatalog).id)) { throw 'invalid_tweak_id' }
             $expected = Join-Path $script:PerformanceStateDirectory ($Record.payload.id + '.json')
@@ -133,6 +148,9 @@ function Test-RecoveryReady($Record) {
     if ($Record.kind -eq 'services') { return 'service_evidence_only' }
     Assert-ExpectedRecovery $state $Record.source $Record.backupId
     if ($state.status -eq 'restored') { return 'already_restored' }
+    if ($Record.kind -eq 'debloat') {return 'app_reinstall_required'}
+    if ($Record.kind -eq 'startup') {Assert-StartupRestore $state;return ''}
+
     if ($Record.kind -eq 'cache') {
         if ($state.status -in @('purging','purged')) { return 'cache_backup_purged' }
         Assert-FiveMClosed
@@ -192,6 +210,13 @@ function Get-RecoveryInventory([string]$FiveMPath) {
     # Read-only discovery keeps journals created by earlier versions recoverable.
     $sources = @((Get-TweakerCatalog).id | ForEach-Object { Join-Path $script:PerformanceStateDirectory ($_ + '.json') })
     $sources += Join-Path $script:SafeModeDirectory 'state.json'
+    foreach ($directory in @($script:DebloatDirectory,$script:StartupDirectory)) {
+        if (Test-Path -LiteralPath $directory) {
+            $null=Assert-CachePath $directory $script:DebloatDirectory
+            $sources += @(Get-ChildItem -LiteralPath $directory -Filter '*.json' -File | ForEach-Object {$_.FullName})
+        }
+    }
+
     $candidate = if ($FiveMPath) {$FiveMPath} else {Join-Path $env:LOCALAPPDATA 'FiveM\FiveM.app'}
     if (Test-Path -LiteralPath $candidate) {
         try {
@@ -227,6 +252,7 @@ function Get-RecoveryInventory([string]$FiveMPath) {
 function Restore-RecoveryRecord($Record) {
     $reason = Test-RecoveryReady $Record
     if ($reason) { throw $reason }
+    if ($Record.kind -eq 'startup') {return Invoke-TweakerStartup 'startup-restore' $Record.payload.id '' $Record.backupId}
     if ($Record.kind -eq 'tweak') {
         return Invoke-TweakerPerformance -Action restore -Id $Record.payload.id -StateDirectory $script:PerformanceStateDirectory -ExpectedRecoveryId $Record.backupId -Confirm:$false
     }
@@ -259,7 +285,7 @@ function Invoke-TweakerBackup {
     try {
         $results=@(); $restartRequired=$false
         foreach ($item in $items) {
-            $terminal = $item.reason -in @('already_restored','backup_superseded','service_evidence_only','cache_backup_purged')
+            $terminal = $item.reason -in @('already_restored','backup_superseded','service_evidence_only','cache_backup_purged','app_reinstall_required')
             if ($Action -eq 'backup-restore-all' -and $terminal) {
                 $results += [pscustomobject]@{backupId=$item.backupId;status='skipped';reason=$item.reason}
                 continue

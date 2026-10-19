@@ -45,3 +45,8 @@ Neustart („Jetzt neu starten“) oder beim Beenden. Protokoll: Einstellungen �
    gh release create v0.6.1 dist/UNDCC-Tweaker-0.6.1.exe --target codex/performance-backend --title "UND.CC Tweaker 0.6.1"
    ```
    Das Release darf kein Entwurf und keine Vorabversion sein.
+
+
+## Debloat
+
+Der Debloat-Tab bietet acht Bereiche mit gezielter App-Auswahl, Vorschau und Datenverlust-Bestätigung sowie eine Autostart-Verwaltung. App-Entfernungen werden als Nachweis archiviert; die Neuinstallation erfolgt über verlinkte Microsoft-Seiten. App-Daten werden nicht gesichert. Einstellungen und Autostart-Einträge nutzen das gemeinsame Wiederherstellungssystem. Details: [docs/debloat.md](docs/debloat.md).

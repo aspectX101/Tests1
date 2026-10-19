@@ -1,6 +1,6 @@
 # Optimization catalog
 
-The Optimierung / Optimization / Ottimizzazione tab contains 40 screenshot-derived entries plus the existing High performance plan. The full application catalog has 45 entries: 43 implemented settings/presets and two informational, disabled cards. Optional components may be unavailable on a particular PC. All names, descriptions and new error codes are provided in German, English and Italian.
+The Optimierung / Optimization / Ottimizzazione tab contains 40 screenshot-derived entries plus the existing High performance plan. The full application catalog has 49 entries: 47 implemented settings/presets and two informational, disabled cards. Optional components may be unavailable on a particular PC. All names, descriptions and new error codes are provided in German, English and Italian.
 
 The user authorized our own definitions rather than a clone of the pictured utility. The UND.CC performance preset changes the active plan's AC minimum processor state to 100% and sleep timeout to Never; it does not install an Elux/Ultimate plan. Battery indices are preserved. The multimedia latency option uses documented SystemResponsiveness=10, not an unused custom task. The No-lazy-mode alternative enables the real MMCSS service. Consumer suggestions are disabled without suppressing WUDF driver logs. Prefetch configuration and SysMain service control are separate.
 

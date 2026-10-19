@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
@@ -8,6 +8,7 @@ $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
 . (Join-Path $PSScriptRoot 'Backup.ps1')
 . (Join-Path $PSScriptRoot 'Optimization.ps1')
 . (Join-Path $PSScriptRoot 'ModManager.ps1')
+. (Join-Path $PSScriptRoot 'Debloat.ps1')
 
 function Get-TweakerCatalog {
     Get-OptimizationCatalog
@@ -118,8 +119,10 @@ function Invoke-TweakerPerformance {
         [Parameter(Mandatory)][ValidateSet('apply','restore')][string]$Action,
         [Parameter(Mandatory)][string]$Id,
         [string]$StateDirectory = $script:PerformanceStateDirectory,
-        [string]$ExpectedRecoveryId
+        [string]$ExpectedRecoveryId,
+        [switch]$ConfirmDataLoss
     )
+    if ($Action -eq 'apply' -and $Id -eq 'debloat.recall.off' -and -not $ConfirmDataLoss) {throw 'explicit_debloat_confirmation_required'}
     if ($Id -notin @((Get-TweakerCatalog).id)) { throw 'invalid_tweak_id' }
     if (-not $PSCmdlet.ShouldProcess($Id, $Action)) { return }
     if ($Id -in @((Get-OptimizationCatalog).id)) { return Invoke-TweakerOptimization $Action $Id $StateDirectory $ExpectedRecoveryId }
@@ -200,5 +203,5 @@ function Get-TweakerSystemInfo {
     [pscustomobject]@{ok=$true;os=$os.Caption;cpu=$cpu;gpu=$gpu;ramGB=[math]::Round($memory / 1GB, 1);isAdmin=$admin}
 }
 
-Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Test-TweakerOptimizationApplied,Get-OptimizationCatalog,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup,Invoke-TweakerMods
+Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Test-TweakerOptimizationApplied,Get-OptimizationCatalog,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup,Invoke-TweakerMods,Invoke-TweakerDebloat,Invoke-TweakerStartup
 
