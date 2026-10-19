@@ -108,6 +108,28 @@ ipcMain.handle('tweaker:export', async (e, what, backupId) => {
 });
 
 ipcMain.handle('tweaker:version', (e) => (trusted(e) ? app.getVersion() : null));
+
+// Wo liegt die portable Exe? (Der Updater ersetzt sie an Ort und Stelle, der Dateiname bleibt der alte.)
+const portableExe = () => process.env.PORTABLE_EXECUTABLE_FILE || null;
+ipcMain.handle('tweaker:app-location', (e) => (trusted(e) ? { exe: portableExe() } : null));
+ipcMain.handle('tweaker:show-exe', (e) => {
+  if (!trusted(e) || !portableExe()) return { ok: false, error: 'not_portable' };
+  shell.showItemInFolder(portableExe());
+  return { ok: true };
+});
+// Verknüpfung auf dem Desktop oder im Startmenü; zeigt auf die portable Exe und bleibt nach Updates gültig.
+ipcMain.handle('tweaker:create-shortcut', (e, where) => {
+  if (!trusted(e) || !portableExe()) return { ok: false, error: 'not_portable' };
+  const dir = where === 'startmenu'
+    ? path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs')
+    : app.getPath('desktop');
+  const lnk = path.join(dir, 'UND.CC Tweaker.lnk');
+  // 'create' legt an oder überschreibt eine vorhandene Verknüpfung
+  const ok = shell.writeShortcutLink(lnk, 'create', {
+    target: portableExe(), cwd: path.dirname(portableExe()), icon: portableExe(), iconIndex: 0, description: 'UND.CC Tweaker',
+  });
+  return ok ? { ok: true, path: lnk } : { ok: false, error: 'shortcut_failed' };
+});
 ipcMain.handle('tweaker:update-state', (e) => (trusted(e) ? updater.getState() : null));
 ipcMain.on('tweaker:update-check', (e) => trusted(e) && updater.check());
 ipcMain.on('tweaker:update-install', (e) => trusted(e) && updater.install());

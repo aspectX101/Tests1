@@ -22,4 +22,8 @@ contextBridge.exposeInMainWorld('tweaker', {
   installUpdate: () => ipcRenderer.send('tweaker:update-install'),
   openUpdateLog: () => ipcRenderer.send('tweaker:update-log'),
   openReleasePage: () => ipcRenderer.send('tweaker:update-page'),
+  // Portable Exe: Speicherort, im Explorer zeigen, Verknüpfung ('desktop' | 'startmenu')
+  appLocation: () => ipcRenderer.invoke('tweaker:app-location'),
+  showExe: () => ipcRenderer.invoke('tweaker:show-exe'),
+  createShortcut: (where) => ipcRenderer.invoke('tweaker:create-shortcut', where),
 });

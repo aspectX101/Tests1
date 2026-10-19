@@ -13,6 +13,9 @@ const bridge = window.tweaker || {
   version: async () => 'dev',
   updateState: async () => ({ status: 'unsupported' }),
   onUpdate() {}, checkUpdate() {}, installUpdate() {}, openUpdateLog() {}, openReleasePage() {},
+  appLocation: async () => ({ exe: 'C:\\Users\\Spieler\\Downloads\\UNDCC-Tweaker-0.6.0.exe' }),
+  showExe: async () => ({ ok: true }),
+  createShortcut: async (where) => ({ ok: true, path: where }),
   minimize() {}, close() {},
   onUsage(cb) {
     let u = { cpu: 9, gpu: 8, ram: 37 };
@@ -92,6 +95,7 @@ const state = {
   bkResult: null,    // letzte Wiederherstellungs-Antwort mit Einzelergebnissen
   version: '',
   update: { status: 'unsupported' },
+  exe: null,         // Pfad der portablen Exe (null = nicht portabel, z. B. Entwicklung)
   mods: null,        // letzte mods-list-Antwort
   modsError: null,
   modsBusy: null,    // 'list' | 'import' | modId
@@ -572,6 +576,11 @@ function renderSettings() {
         <div class="row-desc">${esc(updateText())}</div></div>${upBtn}</div>
       ${u.status === 'unsupported' ? '' : `<div class="card row"><div class="row-body"><div class="row-title">${t().upHelp}</div><div class="row-desc">${t().upHelpDesc}</div></div>
         <button class="pill dark" id="up-log">${t().upLog}</button><button class="pill dark" id="up-page">${t().upPage}</button></div>`}
+      ${state.exe ? `<div class="card row app-loc"><div class="row-body"><div class="row-title">${t().appLocTitle}</div>
+        <div class="row-desc">${t().appLocDesc}</div><div class="mono app-path" title="${esc(state.exe)}">${esc(state.exe)}</div></div>
+        <div class="app-loc-actions"><button class="pill dark" id="app-show">${t().appShow}</button>
+        <button class="pill dark" id="app-lnk-desktop">${t().appLnkDesktop}</button>
+        <button class="pill dark" id="app-lnk-start">${t().appLnkStart}</button></div></div>` : ''}
       <div class="card row"><div class="row-body"><div class="row-title">${t().language}</div><div class="row-desc">${t().languageDesc}</div></div>
         <div class="seg">${langBtn('de', 'Deutsch')}${langBtn('en', 'English')}${langBtn('it', 'Italiano')}</div></div>
       <div class="card row"><div class="row-body"><div class="row-title">${t().backend}</div><div class="row-desc">${t().backendDesc}</div></div>
@@ -989,6 +998,11 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'up-check') bridge.checkUpdate();
   else if (el.id === 'up-install') bridge.installUpdate();
   else if (el.id === 'up-log') bridge.openUpdateLog();
+  else if (el.id === 'app-show') bridge.showExe().then((r) => { if (!r?.ok) toast(errorText(r?.error), 'error'); });
+  else if (el.id === 'app-lnk-desktop' || el.id === 'app-lnk-start') {
+    const where = el.id === 'app-lnk-start' ? 'startmenu' : 'desktop';
+    bridge.createShortcut(where).then((r) => toast(r?.ok ? t().appLnkDone(where) : errorText(r?.error), r?.ok ? 'info' : 'error'));
+  }
   else if (el.id === 'up-page') bridge.openReleasePage();
   else if (el.id === 'bk-all') bkRestore(null, true);
   else if (el.dataset.bkPreview) bkTogglePreview(el.dataset.bkPreview);
@@ -1052,6 +1066,7 @@ function onUpdate(st) {
 }
 bridge.onUpdate(onUpdate);
 bridge.updateState().then(onUpdate);
+bridge.appLocation().then((l) => { state.exe = l?.exe || null; if (state.route.page === 'settings') render(); });
 bridge.version().then((v) => {
   state.version = v;
   document.querySelector('.brand-ver').textContent = `V${v}`;

@@ -29,6 +29,7 @@ window.I18N = {
     working: 'Einstellungen werden geprüft und gesichert …',
     statusMsg: { unchanged: 'war bereits aktiv', no_change: 'kein laufender FiveM-Prozess gefunden' },
     errors: {
+      not_portable: 'Nur in der portablen Exe verfügbar.', shortcut_failed: 'Die Verknüpfung konnte nicht erstellt werden.',
       unsupported_optimization_recipe: "Fuer diesen Eintrag gibt es keinen unterstuetzten globalen Windows-Schalter.",
       legacy_feature_unavailable: "Diese alte Windows-Funktion ist auf dieser Version nicht verfuegbar.",
       optional_component_missing: "Der benoetigte optionale Windows-/Office-Bestandteil ist nicht installiert.",
@@ -176,7 +177,7 @@ window.I18N = {
     bkWarnings: 'Warnungen im Sicherungs-Katalog', bkExported: 'Sicherung exportiert',
     updates: 'Updates', version: (v) => `Version ${v}`,
     upStatus: {
-      unsupported: 'Automatische Updates gibt es nur in der installierten Windows-App.',
+      unsupported: 'Automatische Updates gibt es nur in der UND.CC-Tweaker-Exe unter Windows.',
       idle: 'Bereit', checking: 'Suche nach Updates …', latest: 'Du hast die neueste Version.',
       downloading: (v, p) => `Update ${v} wird geladen … ${p}%`, ready: (v) => `Update ${v} ist bereit.`,
       error: (e) => `Update-Prüfung fehlgeschlagen: ${e}`,
@@ -208,6 +209,9 @@ window.I18N = {
     resHint: 'Für Stretched-Auflösungen im NVIDIA-/AMD-Treiber die Skalierung auf „Vollbild“ stellen. FiveM muss beim Übernehmen geschlossen sein.',
     resApply: 'Übernehmen', resReset: 'Original wiederherstellen',
     resApplied: (w, h) => `Auflösung ${w} × ${h} gesetzt`, resResetDone: 'Original-Auflösung wiederhergestellt',
+    appLocTitle: 'Programm-Datei', appLocDesc: 'Hier liegt deine UND.CC-Tweaker-Exe. Updates ersetzen genau diese Datei, der Dateiname bleibt dabei gleich.',
+    appShow: 'Im Explorer zeigen', appLnkDesktop: 'Desktop-Verknüpfung', appLnkStart: 'Ins Startmenü',
+    appLnkDone: (w) => (w === 'startmenu' ? 'Verknüpfung im Startmenü erstellt' : 'Verknüpfung auf dem Desktop erstellt'),
     cats: {
       performance: ['Optimierung', 'CPU, Energie und Systemreaktion'],
       gaming: ['Gaming Tweaks', 'FPS, Input-Lag und Spielprozesse'],
@@ -250,6 +254,7 @@ window.I18N = {
     working: 'Checking settings and backups …',
     statusMsg: { unchanged: 'was already active', no_change: 'no running FiveM process found' },
     errors: {
+      not_portable: 'Only available in the portable exe.', shortcut_failed: 'The shortcut could not be created.',
       unsupported_optimization_recipe: "This entry has no supported global Windows switch.",
       legacy_feature_unavailable: "This legacy feature is unavailable on this Windows version.",
       optional_component_missing: "The required optional Windows/Office component is not installed.",
@@ -397,7 +402,7 @@ window.I18N = {
     bkWarnings: 'Warnings in the backup catalog', bkExported: 'Backup exported',
     updates: 'Updates', version: (v) => `Version ${v}`,
     upStatus: {
-      unsupported: 'Automatic updates are only available in the installed Windows app.',
+      unsupported: 'Automatic updates are only available in the UND.CC Tweaker exe on Windows.',
       idle: 'Ready', checking: 'Checking for updates …', latest: 'You have the latest version.',
       downloading: (v, p) => `Downloading update ${v} … ${p}%`, ready: (v) => `Update ${v} is ready.`,
       error: (e) => `Update check failed: ${e}`,
@@ -429,6 +434,9 @@ window.I18N = {
     resHint: 'For stretched resolutions set scaling to “Full-screen” in the NVIDIA/AMD driver. FiveM must be closed when applying.',
     resApply: 'Apply', resReset: 'Restore original',
     resApplied: (w, h) => `Resolution ${w} × ${h} set`, resResetDone: 'Original resolution restored',
+    appLocTitle: 'Program file', appLocDesc: 'This is where your UND.CC Tweaker exe lives. Updates replace exactly this file; the file name stays the same.',
+    appShow: 'Show in Explorer', appLnkDesktop: 'Desktop shortcut', appLnkStart: 'Add to Start menu',
+    appLnkDone: (w) => (w === 'startmenu' ? 'Start menu shortcut created' : 'Desktop shortcut created'),
     cats: {
       performance: ['Optimisation', 'CPU, power and responsiveness'],
       gaming: ['Gaming Tweaks', 'FPS, input lag and game processes'],
@@ -471,6 +479,7 @@ window.I18N = {
     working: 'Verifica delle impostazioni e delle copie …',
     statusMsg: { unchanged: 'era già attivo', no_change: 'nessun processo FiveM attivo' },
     errors: {
+      not_portable: 'Disponibile solo nell’exe portatile.', shortcut_failed: 'Impossibile creare il collegamento.',
       unsupported_optimization_recipe: "Non esiste un comando Windows globale supportato per questa voce.",
       legacy_feature_unavailable: "Funzione legacy non disponibile su questa versione Windows.",
       optional_component_missing: "Il componente opzionale Windows/Office richiesto non e installato.",
@@ -618,7 +627,7 @@ window.I18N = {
     bkWarnings: 'Avvisi nel catalogo dei backup', bkExported: 'Backup esportato',
     updates: 'Aggiornamenti', version: (v) => `Versione ${v}`,
     upStatus: {
-      unsupported: 'Gli aggiornamenti automatici sono disponibili solo nella app Windows installata.',
+      unsupported: 'Gli aggiornamenti automatici sono disponibili solo nell’exe di UND.CC Tweaker su Windows.',
       idle: 'Pronto', checking: 'Ricerca aggiornamenti …', latest: 'Hai la versione più recente.',
       downloading: (v, p) => `Download aggiornamento ${v} … ${p}%`, ready: (v) => `L’aggiornamento ${v} è pronto.`,
       error: (e) => `Controllo aggiornamenti non riuscito: ${e}`,
@@ -650,6 +659,9 @@ window.I18N = {
     resHint: 'Per risoluzioni stretched imposta il ridimensionamento su “Schermo intero” nel driver NVIDIA/AMD. FiveM deve essere chiuso.',
     resApply: 'Applica', resReset: 'Ripristina originale',
     resApplied: (w, h) => `Risoluzione ${w} × ${h} impostata`, resResetDone: 'Risoluzione originale ripristinata',
+    appLocTitle: 'File del programma', appLocDesc: 'Qui si trova l’exe di UND.CC Tweaker. Gli aggiornamenti sostituiscono proprio questo file; il nome resta uguale.',
+    appShow: 'Mostra in Esplora file', appLnkDesktop: 'Collegamento sul desktop', appLnkStart: 'Aggiungi a Start',
+    appLnkDone: (w) => (w === 'startmenu' ? 'Collegamento nel menu Start creato' : 'Collegamento sul desktop creato'),
     cats: {
       performance: ['Ottimizzazione', 'CPU, energia e reattività'],
       gaming: ['Gaming Tweaks', 'FPS, input lag e processi di gioco'],
