@@ -1,0 +1,56 @@
+/* UND.CC Ignition — vector-only startup, no network, video or authentication. */
+.splash.ignition {
+  display:block; background:#060608; isolation:isolate;
+  transition:opacity .65s ease, visibility .65s;
+}
+.ignition.out { opacity:0; transform:none; filter:none; visibility:hidden; }
+.ignition-grid { position:absolute; inset:0; opacity:.12;
+  background:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);
+  background-size:72px 72px; mask-image:radial-gradient(ellipse,#000,transparent 65%); }
+.ignition-halo { position:absolute; inset:0; background:radial-gradient(ellipse at 50% 48%,#7d0a252f,transparent 55%);
+  animation:ignition-atmosphere 3.9s ease both; }
+.ignition-emblem { position:absolute; width:100px; height:100px; left:calc(50% - 50px); top:calc(46% - 50px);
+  filter:drop-shadow(0 0 14px #ff2549) drop-shadow(0 0 45px #e3112b66);
+  animation:ignition-core 3.9s cubic-bezier(.16,1,.3,1) both; }
+.ignition-emblem svg { width:100%; height:100%; overflow:visible; }
+.ignition-shard { fill:#e3112b; stroke:#ff667e; stroke-width:.8; }
+.shard-left { animation:ignition-left 1.4s cubic-bezier(.16,1,.3,1) both; }
+.shard-right { animation:ignition-right 1.4s cubic-bezier(.16,1,.3,1) both; }
+.ignition-edge { stroke:#fff3ef; stroke-width:1.3; stroke-dasharray:260; stroke-dashoffset:260;
+  animation:ignition-edge 1s ease .7s both; }
+.ignition-orbit { position:absolute; left:50%; top:46%; width:270px; height:270px; margin:-135px;
+  border:1px solid #e3112b30; border-radius:50%;
+  animation:ignition-orbit 2.5s ease both; }
+.orbit-b { width:340px; height:340px; margin:-170px; border-style:dashed; opacity:.35; animation-delay:.15s; }
+.ignition-wave { position:absolute; width:160px; height:160px; left:calc(50% - 80px); top:calc(46% - 80px);
+  border:2px solid #ff8a9e; border-radius:50%; box-shadow:0 0 38px #e3112b, inset 0 0 38px #e3112b;
+  animation:ignition-wave 1.25s cubic-bezier(.12,.65,.2,1) 1.65s both; }
+.ignition-flare { position:absolute; left:0; right:0; top:46%; height:2px;
+  background:linear-gradient(90deg,transparent,#e3112b,#fff3ef,#e3112b,transparent);
+  box-shadow:0 0 24px #ff3155,0 0 70px #e3112b;
+  animation:ignition-flare 1.3s ease 1.6s both; }
+.ignition-wordmark { position:absolute; left:0; right:0; top:43%; text-align:center;
+  font-family:Arial,sans-serif; font-size:clamp(42px,6vw,76px); line-height:1; font-weight:900;
+  letter-spacing:-.065em; color:#fff5f6; text-shadow:0 0 40px #e3112b30;
+  animation:ignition-name 1.2s cubic-bezier(.16,1,.3,1) 2s both; }
+.ignition-wordmark b { color:#e3112b; }
+.ignition-wordmark small { display:block; margin-top:22px; font-size:10px; font-weight:500;
+  letter-spacing:.65em; padding-left:.65em; color:#c9b6bd; }
+.ignition-horizon { position:absolute; width:180px; height:1px; left:calc(50% - 90px); top:calc(43% + 118px);
+  background:linear-gradient(90deg,transparent,#e3112b,transparent);
+  box-shadow:0 0 18px #e3112b; animation:ignition-name 1s ease 2.3s both; }
+.ignition-signature { position:absolute; bottom:30px; width:100%; text-align:center; color:#87606b;
+  font:9px Arial,sans-serif; letter-spacing:.4em; animation:ignition-name 1s ease 2.5s both; }
+@keyframes ignition-left { from { opacity:0; transform:translate(-85px,-25px) rotate(-16deg); } to { opacity:1; transform:none; } }
+@keyframes ignition-right { from { opacity:0; transform:translate(85px,25px) rotate(16deg); } to { opacity:1; transform:none; } }
+@keyframes ignition-edge { to { stroke-dashoffset:0; } }
+@keyframes ignition-core { 0% { opacity:0; transform:scale(.55); } 20%,40% { opacity:1; transform:scale(1); } 48% { opacity:1; transform:scale(.87); filter:drop-shadow(0 0 22px #fff); } 59%,100% { opacity:0; transform:scale(.15); } }
+@keyframes ignition-wave { 0% { opacity:0; transform:scale(.3); } 10% { opacity:.9; } 100% { opacity:0; transform:scale(14); } }
+@keyframes ignition-flare { 0% { opacity:0; transform:scaleX(0); } 25% { opacity:.85; transform:scaleX(.7); } 100% { opacity:0; transform:scaleX(1); } }
+@keyframes ignition-name { from { opacity:0; transform:translateY(14px) scale(.95); filter:blur(8px); } to { opacity:1; transform:none; filter:none; } }
+@keyframes ignition-orbit { 0% { opacity:0; transform:scale(.65) rotate(-35deg); } 40% { opacity:.6; } 100% { opacity:0; transform:scale(1.5) rotate(35deg); } }
+@keyframes ignition-atmosphere { 0% { opacity:0; } 45% { opacity:1; } 58% { opacity:.65; } 100% { opacity:.4; } }
+@media (prefers-reduced-motion:reduce) {
+  .ignition *, .ignition.out { animation:none !important; transition:none !important; }
+  .ignition-emblem, .ignition-orbit, .ignition-wave, .ignition-flare { display:none; }
+}
