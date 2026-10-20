@@ -1,7 +1,7 @@
 {
   "name": "tweaker",
   "productName": "UND.CC Tweaker",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "UND.CC Tweaker",
   "author": "Tweaker",
   "private": true,
@@ -18,4 +18,3 @@
     "resedit": "3.1.0"
   }
 }
-

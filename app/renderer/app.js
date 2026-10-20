@@ -1079,7 +1079,7 @@ bridge.version().then((v) => {
 });
 
 // Start-Animation: mindestens so lange zeigen, bis sie einmal durchgelaufen ist; spätestens nach 6 s weg.
-const SPLASH_MIN = 2200;
+const SPLASH_MIN = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 3900;
 const splashStart = performance.now();
 let splashDone = false;
 function hideSplash() {
