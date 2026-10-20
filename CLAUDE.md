@@ -43,8 +43,8 @@ npm run dist            # dist/UNDCC-Tweaker-<version>.exe
 
 ## Neue Version veröffentlichen
 
-Nur nach ausdrücklichem OK des Nutzers. Branch `codex/performance-backend` (PR #1).
-1. `version` in `package.json` erhöhen, `npm run dist`, testen.
-2. Commit + Push (vorher `git fetch` – auf dem Branch wurde auch von ChatGPT gepusht).
-3. `gh release create v<version> dist/UNDCC-Tweaker-<version>.exe --target codex/performance-backend --title "UND.CC Tweaker <version>" --notes-file <notizen.md>`
-4. Prüfen, dass `https://api.github.com/repos/aspectX101/Tests1/releases/latest` die neue Exe mit `digest` zeigt.
+Der Nutzer hat am 21.10.2026 dauerhaft autorisiert: Nach jeder abgeschlossenen, geprüften Änderung automatisch pushen und ein App-Update veröffentlichen, ohne erneute Freigabe. Branch `codex/performance-backend` (PR #1). Keine unfertigen Zwischenstände veröffentlichen.
+1. Aktuellen Branch und neuestes Release prüfen; parallele Änderungen erhalten. Patch-Version in `package.json` und `package-lock.json` erhöhen und `release-notes/v<version>.md` schreiben.
+2. Passende Tests ausführen, Commit + Push. `.github/workflows/publish-update.yml` startet bei Änderungen an `package.json` automatisch den Windows-Build samt Node-Tests.
+3. Workflow bis zum Abschluss prüfen; Fehler beheben. Eine EXE wird erst nach erfolgreichen Tests und Build veröffentlicht. Keine zusätzlichen versionsspezifischen Release-Workflows anlegen.
+4. Prüfen, dass `https://api.github.com/repos/aspectX101/Tests1/releases/latest` die neue Version und `UNDCC-Tweaker-<version>.exe` mit Größe und `digest` zeigt. Erst dann das Update als verfügbar melden.
