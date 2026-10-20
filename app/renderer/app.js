@@ -270,6 +270,7 @@ function tweakRow(tw) {
 
 function renderCategory(c, parent) {
   if (c === 'debloat') return renderDebloat();
+  if (c === 'performance') return renderOptimization();
   const all = tweaksIn(c);
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);

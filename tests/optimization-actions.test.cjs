@@ -1,0 +1,25 @@
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+function setup({consent=true,fail=false,conflict=false,refreshFail=false}={}) {
+ const calls=[],dialogs=[];
+ const tweaks=[{id:'power',category:'performance',name:'Power',description:'Power description',risk:'low',available:true,bulkSafe:true},{id:'high',category:'performance',name:'High',description:'High warning',risk:'high',available:true},{id:'absent',category:'performance',available:false},{id:'active',category:'performance',applied:true},{id:'debloat',category:'debloat'},{id:'gaming',category:'gaming'}];
+ for(const x of tweaks){x.name??=x.id;x.description??='Description';x.risk??='low';x.stateError??='unsupported';}
+ const state={lang:'de',tweaks,busy:new Set(),db:{},filter:'all'};
+ const ctx={state,document:{addEventListener(){}},window:{},render(){},esc:x=>String(x??''),errorText:String,tweaksIn:c=>state.tweaks.filter(x=>x.category===c),bulkOk:x=>x.available!==false&&x.risk==='low'&&x.bulkSafe===true,confirmDialog:async(...args)=>{dialogs.push(args);return consent;},call:async(action,id,extra)=>{
+  calls.push({action,id,extra});
+  if(action==='list')return refreshFail?{ok:false,error:'offline'}:{ok:true,tweaks};
+  if(action==='backup-list')return {ok:true,backups:[{kind:'tweak',tweakId:'power',backupId:'p',canRestore:!conflict,reason:conflict?'conflict':null},{kind:'tweak',tweakId:'high',backupId:'h',canRestore:true},{kind:'tweak',tweakId:'debloat',backupId:'d',canRestore:true},{kind:'tweak',tweakId:'gaming',backupId:'g',canRestore:true},{kind:'cache',tweakId:'power',backupId:'c',canRestore:true},{kind:'startup',backupId:'s',canRestore:true},{kind:'tweak',tweakId:'power',backupId:'old',canRestore:true,status:'superseded'}]};
+  return fail?{ok:false,error:'blocked'}:{ok:true,restartRequired:true};
+ }};
+ vm.createContext(ctx);vm.runInContext(fs.readFileSync(path.join(__dirname,'../app/renderer/i18n.js'),'utf8'),ctx);ctx.t=()=>ctx.window.I18N[state.lang];
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../app/renderer/optimization.js'),'utf8')+'\nthis.optState=opt;',ctx);
+ for(const id of ['power','high','absent','active','debloat'])ctx.optState.selected.add(id);
+ return {ctx,state,calls,dialogs};
+}
+test('Start applies only selected eligible optimisation tweaks with risk descriptions and restart flag',async()=>{const {ctx,calls,dialogs,state}=setup();await ctx.optimizationRun();assert.deepEqual(calls.filter(x=>x.action==='apply').map(x=>x.id),['power','high']);assert.match(dialogs[0][1],/High warning/);assert.equal(state.restartPending,true);assert.equal(ctx.optState.busy,false);});
+test('cancel performs no writes',async()=>{const {ctx,calls}=setup({consent:false});await ctx.optimizationRun();await ctx.optimizationRun(true);assert.equal(calls.some(x=>['apply','backup-restore'].includes(x.action)),false);});
+test('Revert All only restores current optimisation backups, including changes not selected',async()=>{const {ctx,calls}=setup();ctx.optState.selected.clear();await ctx.optimizationRun(true);assert.deepEqual(calls.filter(x=>x.action==='backup-restore').map(x=>x.extra.backupId),['p','h']);assert.equal(calls.some(x=>x.action==='backup-restore-all'),false);});
+test('apply stops on first failure and preserves remaining selection',async()=>{const {ctx,calls}=setup({fail:true});await ctx.optimizationRun();assert.equal(calls.filter(x=>x.action==='apply').length,1);assert.equal(ctx.optState.result.ok,false);assert.equal(ctx.optState.selected.has('high'),true);});
+test('restore reports conflict and continues with independent restorable records',async()=>{const {ctx,calls}=setup({conflict:true});await ctx.optimizationRun(true);assert.deepEqual(calls.filter(x=>x.action==='backup-restore').map(x=>x.extra.backupId),['h']);assert.equal(ctx.optState.result.ok,false);});
+test('status failure blocks changes and releases busy state',async()=>{const {ctx,calls}=setup({refreshFail:true});await ctx.optimizationRun();assert.equal(calls.some(x=>x.action==='apply'),false);assert.equal(ctx.optState.result.ok,false);assert.equal(ctx.optState.busy,false);});
+test('repeated start while busy cannot duplicate requests',async()=>{const {ctx,calls}=setup();ctx.optState.busy=true;await ctx.optimizationRun();assert.equal(calls.length,0);});
+test('selection controls and both actions are available in all three languages',()=>{const {ctx,state}=setup();for(const lang of ['de','en','it']){state.lang=lang;const html=ctx.renderOptimization();assert.match(html,/Start Optimisations/);assert.match(html,/Revert All/);assert.match(html,/data-opt-select/);assert.doesNotMatch(html,/data-toggle=/);assert.doesNotMatch(html,/undefined/);}});

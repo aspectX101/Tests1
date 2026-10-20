@@ -77,3 +77,11 @@ Automated tests cover the complete catalog, three languages, fixed IPC IDs, exac
 - [Microsoft: SYSTEM_POWER_CAPABILITIES](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-system_power_capabilities)
 - [Microsoft: Office Telemetry Agent](https://learn.microsoft.com/en-us/deployoffice/compat/deploy-telemetry-dashboard)
 - Local Windows policy definitions checked for SettingSync, StorageSense, OSPolicy, WindowsCopilot and WindowsInkWorkspace. These describe configured policy values, not a guarantee of enforcement on every edition.
+
+## Selected optimisation actions
+
+The Optimisation tab uses selection checkboxes. Start Optimisations refreshes the real catalogue, confirms the chosen names, descriptions and risk levels, then applies only available, inactive selected performance tweaks sequentially. Select safe tweaks only selects entries explicitly marked low risk and bulkSafe by the backend. Apply stops on the first failure and reports completed entries. No change is applied by selection alone.
+
+Revert All reads the shared backup inventory and restores only current tweak backups whose IDs belong to the performance category. It excludes superseded/restored records and all Debloat, startup, cache and other-category backups. Conflicts are reported without overwriting; other eligible records can continue. Original values come from the existing backup-restore backend, not assumed Windows defaults. Both actions retain backend SafeMode enforcement, refresh actual state and surface restart requirements. Navigation is locked during the operation and confirmation to avoid overlapping UI actions.
+
+Validation: eight optimisation action tests plus four Debloat action regression tests; browser mock apply and restore flow. No native Windows modifications were performed for this UI change.
