@@ -8,6 +8,7 @@ const base = require('./packaging/electron-builder.cjs');
 module.exports = {
   ...base,
   productName: 'UND.CC Tweaker',
+  extraResources: [...base.extraResources, { from: 'app/spotify-session.ps1', to: 'media/spotify-session.ps1' }],
   directories: { output: 'dist' },
   files: ['package.json', 'app/**/*'],
   win: {
@@ -28,3 +29,4 @@ module.exports = {
   // Keine latest.yml/app-update.yml mehr – app/updater.js fragt die GitHub-API direkt.
   publish: null,
 };
+

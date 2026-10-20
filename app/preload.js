@@ -27,6 +27,12 @@ contextBridge.exposeInMainWorld('tweaker', {
   appLocation: () => ipcRenderer.invoke('tweaker:app-location'),
   showExe: () => ipcRenderer.invoke('tweaker:show-exe'),
   createShortcut: (where) => ipcRenderer.invoke('tweaker:create-shortcut', where),
+  spotifyActive: (active) => ipcRenderer.send('tweaker:spotify-active', active === true),
+  spotifyState: () => ipcRenderer.invoke('tweaker:spotify-state'),
+  spotifyCommand: (action) => ipcRenderer.invoke('tweaker:spotify-command', action),
+  openSpotify: () => ipcRenderer.invoke('tweaker:spotify-open'),
+  onSpotify: (cb) => ipcRenderer.on('tweaker:spotify', (_e, value) => cb(value)),
   restartPc: () => ipcRenderer.invoke('tweaker:restart-pc'),
 });
+
 

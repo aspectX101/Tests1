@@ -247,7 +247,7 @@ function renderHome() {
   const seg = (k) => `<button data-metric="${k}" class="${state.metric === k ? 'active' : ''}">${k.toUpperCase()}</button>`;
   const adminTxt = i.isAdmin === false ? t().noAdmin : i.isAdmin ? t().admin : '';
 
-  return `
+  return `<div class="dashboard-home">
     <div class="card hero">
       <img src="assets/logo-icon.png" alt="">
       <div>
@@ -255,19 +255,6 @@ function renderHome() {
         <p>${esc([i.os, adminTxt].filter(Boolean).join(' · '))}</p>
       </div>
       <span class="badge">UND.CC</span>
-    </div>
-    <div class="stats">
-      ${stat('profiles', t().statActive, on, `/ ${total}`)}
-      ${stat('bolt', t().statOptimized, pct, '%')}
-      ${stat('mods', t().statMods, state.mods ? state.mods.enabledCount : '—', state.mods ? `/ ${state.mods.mods.length}` : '')}
-      ${stat('safemode', t().statSafe, state.safe ? (state.safe.enabled ? t().smOn : t().smOff) : '—', '', state.safe?.enabled ? 'ok' : '')}
-    </div>
-    <h3 class="section-title">${t().quickTitle}</h3>
-    <div class="quick">
-      <button class="qa qa-main" data-go="profiles">${icon('profiles')}<b>${t().qaProfiles}</b><span>${t().qaProfilesSub}</span></button>
-      <button class="qa" id="qa-safe">${icon('bolt')}<b>${t().qaSafe}</b><span>${t().qaSafeSub(state.tweaks.filter((x) => bulkOk(x) && !x.applied).length)}</span></button>
-      <button class="qa" id="qa-revert">${icon('revert')}<b>${t().qaRevert}</b><span>${t().qaRevertSub}</span></button>
-      <button class="qa qa-warn" id="qa-restart">${icon('restartpc')}<b>${t().qaRestart}</b><span>${state.restartPending ? t().qaRestartPending : t().qaRestartSub}</span></button>
     </div>
     <div class="rings">${ring('cpu', t().cpu)}${ring('gpu', t().gpu)}${ring('ram', t().ram)}</div>
     <div class="home-row">
@@ -287,20 +274,34 @@ function renderHome() {
           </svg>
         </div>
       </div>
-      <div class="card status-card">
-        <h3>UND.CC Tweaker</h3>
-        <div><div class="stat-big">${pct}%</div><div class="stat-sub">${t().optimized} · ${t().tweaksActive(on, total)}</div></div>
+      ${window.DashboardMedia.html(state.lang)}
+    </div>
+    <div class="stats">
+      ${stat('profiles', t().statActive, on, `/ ${total}`)}
+      ${stat('bolt', t().statOptimized, pct, '%')}
+      ${stat('mods', t().statMods, state.mods ? state.mods.enabledCount : '—', state.mods ? `/ ${state.mods.mods.length}` : '')}
+      ${stat('safemode', t().statSafe, state.safe ? (state.safe.enabled ? t().smOn : t().smOff) : '—', '', state.safe?.enabled ? 'ok' : '')}
+    </div>
+    <h3 class="section-title">${t().quickTitle}</h3>
+    <div class="quick">
+      <button class="qa qa-main" data-go="profiles">${icon('profiles')}<b>${t().qaProfiles}</b><span>${t().qaProfilesSub}</span></button>
+      <button class="qa" id="qa-safe">${icon('bolt')}<b>${t().qaSafe}</b><span>${t().qaSafeSub(state.tweaks.filter((x) => bulkOk(x) && !x.applied).length)}</span></button>
+      <button class="qa" id="qa-revert">${icon('revert')}<b>${t().qaRevert}</b><span>${t().qaRevertSub}</span></button>
+      <button class="qa qa-warn" id="qa-restart">${icon('restartpc')}<b>${t().qaRestart}</b><span>${state.restartPending ? t().qaRestartPending : t().qaRestartSub}</span></button>
+    </div>
+    <div class="dashboard-lower">
+      <section class="card dashboard-system"><h3>Hardware</h3>
         <div class="kv">
           <div><span>${t().processor}</span><b title="${esc(i.cpu)}">${esc(i.cpu || '—')}</b></div>
           <div><span>${t().graphics}</span><b title="${esc(i.gpu)}">${esc(i.gpu || '—')}</b></div>
           <div><span>${t().memory}</span><b>${i.ramGB != null ? esc(i.ramGB) + ' GB' : '—'}</b></div>
         </div>
-        <button class="pill light" data-go="profiles">${t().qaProfiles}</button>
-      </div>
-    </div>
-    <h3 class="section-title">${t().activityTitle}</h3>
+      </section>
+      <section> <h3 class="dashboard-activity-title">${t().activityTitle}</h3>
     <div class="card activity">${state.activity.length ? state.activity.slice(0, 8).map((a) => `
-      <div class="act act-${esc(a.kind)}"><i></i><span>${esc(a.text)}</span><time>${esc(fmtDate(a.at))}</time></div>`).join('') : `<div class="muted act-empty">${t().activityEmpty}</div>`}</div>`;
+      <div class="act act-${esc(a.kind)}"><i></i><span>${esc(a.text)}</span><time>${esc(fmtDate(a.at))}</time></div>`).join('') : `<div class="muted act-empty">${t().activityEmpty}</div>`}</div></section>
+    </div>
+  </div>`;
 }
 
 function stat(ic, label, value, suffix, cls = '') {
@@ -781,6 +782,7 @@ function render() {
   }
   content.querySelectorAll('[data-pct]').forEach((el) => { requestAnimationFrame(() => { el.style.width = `${el.dataset.pct}%`; }); });
   renderStatus();
+  window.DashboardMedia.mount(state.lang);
   // Ringe erst im nächsten Frame setzen, damit sie sichtbar von 0 aus hochlaufen
   if (r.page === 'home') requestAnimationFrame(paintUsage);
 }
@@ -1355,5 +1357,7 @@ function hideSplash() {
 setTimeout(hideSplash, 6000);
 
 bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings') render(); });
+window.DashboardMedia.bind(bridge);
 load();
+
 

@@ -14,6 +14,7 @@ const INDEX = path.join(__dirname, 'renderer', 'index.html');
 const INDEX_URL = pathToFileURL(INDEX).href;
 const LANGS = new Set(['de', 'en', 'it']);
 
+const spotify = require('./spotify').createSpotify(app);
 let win;
 let currentLang = 'de';
 let lastSafeMode = null; // letzte Meldung des SafeMode-Monitors, für Fenster die später laden
@@ -69,6 +70,15 @@ function createWindow() {
 
 // Nur Anfragen aus unserer eigenen, lokal geladenen Oberfläche annehmen.
 const trusted = (e) => e.senderFrame && e.senderFrame.url.split('#')[0] === INDEX_URL;
+spotify.onChange((value) => sendToUi('tweaker:spotify', value));
+ipcMain.on('tweaker:spotify-active', (e, active) => { if (trusted(e)) spotify.setActive(active === true); });
+ipcMain.handle('tweaker:spotify-state', (e) => trusted(e) ? spotify.getState() : null);
+ipcMain.handle('tweaker:spotify-command', (e, action) => trusted(e) ? spotify.command(action) : {ok:false});
+ipcMain.handle('tweaker:spotify-open', async (e) => {
+  if (!trusted(e)) return {ok:false};
+  try { await shell.openExternal('spotify:'); return {ok:true}; } catch { return {ok:false}; }
+});
+app.on('before-quit', () => spotify.stop());
 
 ipcMain.handle('tweaker:call', async (e, request) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
@@ -181,6 +191,7 @@ ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 if (!relaunched) app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
   usage.stop();
+  spotify.stop();
   app.quit();
 });
 
@@ -193,3 +204,4 @@ ipcMain.handle('tweaker:debloat-target', async (e, id) => {
   try { await shell.openExternal(url); return {ok:true}; }
   catch { return {ok:false,error:'debloat_open_failed'}; }
 });
+
