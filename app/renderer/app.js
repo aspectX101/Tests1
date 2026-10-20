@@ -353,17 +353,11 @@ function tweakRow(tw) {
     </div>`;
 }
 
-function renderCategory(c, parent) {
-  if (c === 'debloat') return renderDebloat();
-  if (c === 'performance') return renderOptimization();
+// Kopfkarte einer Kategorie (auch für ChatGPTs Leistungs- und Debloat-Seiten)
+function catHero(c, parent) {
   const all = tweaksIn(c);
-  let list = all;
-  if (state.filter === 'on') list = list.filter((x) => x.applied);
-  if (state.filter === 'off') list = list.filter((x) => !x.applied);
-  const safe = all.filter((x) => bulkOk(x) && !x.applied);
   const active = all.filter((x) => x.applied);
   const pct = all.length ? Math.round((active.length / all.length) * 100) : 0;
-  const chip = (k) => `<button data-filter="${k}" class="${state.filter === k ? 'active' : ''}">${t()[k]}</button>`;
   return `
     <div class="card detail-head cat-hero">
       <div class="tile-icon">${icon(c)}</div>
@@ -372,7 +366,21 @@ function renderCategory(c, parent) {
         ${all.length ? `<div class="cat-meter"><i data-pct="${pct}"></i></div><div class="cat-stats">${t().catStats(all.length, active.length)}</div>` : ''}
       </div>
       ${parent ? `<button class="pill dark big" data-go="${parent}">${t().back}</button>` : `<div class="cat-pct"><b data-count="${pct}">${pct}</b><span>%</span></div>`}
-    </div>
+    </div>`;
+}
+
+function renderCategory(c, parent) {
+  if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
+  if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
+  const all = tweaksIn(c);
+  let list = all;
+  if (state.filter === 'on') list = list.filter((x) => x.applied);
+  if (state.filter === 'off') list = list.filter((x) => !x.applied);
+  const safe = all.filter((x) => bulkOk(x) && !x.applied);
+  const active = all.filter((x) => x.applied);
+  const pct = all.length ? Math.round((active.length / all.length) * 100) : 0;
+  const chip = (k) => `<button data-filter="${k}" class="${state.filter === k ? 'active' : ''}">${t()[k]}</button>`;
+  return `${catHero(c, parent)}
     ${all.length ? `
       <div class="toolbar">
         <div class="seg">${chip('all')}${chip('on')}${chip('off')}</div>
