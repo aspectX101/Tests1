@@ -2,7 +2,7 @@ name: Publish app update
 on:
   push:
     branches: ['codex/performance-backend']
-    paths: ['package.json']
+    paths: ['package.json', '.github/workflows/publish-update.yml']
 permissions:
   contents: write
 concurrency:
@@ -21,8 +21,8 @@ jobs:
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid version' }
-          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json
-          if ($lock.version -ne $version -or $lock.packages.''.version -ne $version) { throw 'Lockfile version mismatch' }
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
+          if ($lock.version -ne $version -or $lock.packages[''].version -ne $version) { throw 'Lockfile version mismatch' }
           if (-not (Test-Path "release-notes/v$version.md")) { throw 'Release notes missing' }
           "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
       - run: npm ci
