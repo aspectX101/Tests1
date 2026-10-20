@@ -8,6 +8,7 @@ const bridge = window.tweaker || {
   exportJson: async () => ({ ok: true, path: 'tweaker-export.json' }),
   importMod: (category, kind) => window.TweakerMock.call({ action: 'mods-import', category, modPath: kind === 'folder' ? 'C:\\Mods\\Neuer Ordner' : 'C:\\Downloads\\Neue Mod.zip' }),
   openDebloatTarget: async () => ({ ok: true }),
+  restartPc: async () => ({ ok: true }),
   openModsFolder: async () => ({ ok: true }),
   lastSafeMode: async () => null,
   onSafeMode() {},
@@ -43,6 +44,11 @@ const ICONS = {
   cleanup: '<path d="M6 6l12 12M18 6 6 18"/>',
   safemode: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
   mods: '<path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>',
+  profiles: '<path d="M12 2c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.6 1.2 2.6 2.3 3C10.6 7.8 11.2 4.6 12 2Z"/><path d="M12 22a2.5 2.5 0 0 1-2.5-2.5c0-1.6 1.4-2.4 2.5-4 1.1 1.6 2.5 2.4 2.5 4A2.5 2.5 0 0 1 12 22Z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  restartpc: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+  revert: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   graphics: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
   sound: '<path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>',
   weapons: '<circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1.5"/>',
@@ -79,6 +85,12 @@ const state = {
   loading: true,
   busy: new Set(),
   restartPending: false,
+  search: '',
+  navClosed: new Set((store.get('navClosed') || '').split(',').filter(Boolean)),
+  profileOff: new Set(),   // vom Nutzer abgewählte Tweaks in Profilen
+  profileRun: null,        // { tier, i, n, current }
+  profileResult: null,
+  activity: (() => { try { return JSON.parse(store.get('activity') || '[]'); } catch { return []; } })(),
   metric: 'cpu',
   usage: { cpu: 0, gpu: 0, ram: 0 },
   history: { cpu: [], gpu: [], ram: [] },
@@ -117,7 +129,33 @@ const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const t = () => window.I18N[state.lang];
 
-const catOf = (tw) => tw.category || 'other';
+// UI-Bereiche: der Backend-Katalog führt fast alle Windows-Tweaks unter "performance" – für die Oberfläche nach ID aufteilen.
+const UI_CAT_RULES = [
+  [/^windows\.(service|svchost)\./, 'services'],
+  [/^windows\.(ceip|office|activity|assistance|storage|clipboard|copilot|ink|sync|suggestions|spotlight)\./, 'privacy'],
+  [/^windows\.(menu|tooltip|autoplay|explorer|close)\./, 'visuals'],
+  [/^windows\.(gamebar|capture|gamemode|audio|legacy)\./, 'gaming'],
+];
+const catOf = (tw) => {
+  if (tw.category !== 'performance') return tw.category || 'other';
+  const hit = UI_CAT_RULES.find(([re]) => re.test(tw.id));
+  return hit ? hit[1] : 'performance';
+};
+// Seitenleiste in Gruppen
+const NAV_GROUPS = [
+  ['overview', [['home'], ['profiles']]],
+  ['system', [['cat', 'performance'], ['cat', 'services'], ['cat', 'privacy'], ['cat', 'visuals'], ['cat', 'network'], ['cat', 'debloat']]],
+  ['gaming', [['cat', 'gaming'], ['mods'], ['cleanup']]],
+  ['protect', [['safemode'], ['backups']]],
+  ['more', [['extra']]],
+];
+// Nie automatisch im Paket ändern (Backend-Vorgabe): Bedienungshilfen, Aufnahme, Audio, Prozess-Priorität, Debloat.
+const NEVER_BULK = new Set(['keyboard.filterkeys.off', 'keyboard.stickykeys.off', 'windows.capture.off', 'windows.audio.ducking.off', 'fivem.priority.high']);
+const PROFILE_TIERS = [['safe', ['low']], ['aggressive', ['low', 'medium']], ['hardcore', ['low', 'medium', 'high']]];
+const profileCandidates = (tier) => {
+  const risks = PROFILE_TIERS.find(([k]) => k === tier)[1];
+  return state.tweaks.filter((tw) => tw.available !== false && risks.includes(tw.risk) && !NEVER_BULK.has(tw.id) && catOf(tw) !== 'debloat');
+};
 // Sammelaktion nur für Tweaks, die das Backend ausdrücklich freigibt (nie Bedienungshilfen).
 const bulkOk = (tw) => tw.available !== false && tw.risk === 'low' && tw.bulkSafe === true;
 const catName = (c) => t().cats[c]?.[0] || c;
@@ -148,28 +186,43 @@ function errorText(code) {
 function renderNav() {
   const r = state.route;
   const activeKey = r.page === 'cat' ? (r.parent || r.cat) : r.page;
-  const item = (key, label, attrs) =>
+  const count = (c) => {
+    const list = tweaksIn(c);
+    if (!list.length) return '';
+    const on = list.filter((x) => x.applied).length;
+    return `<span class="nav-count${on ? ' on' : ''}">${on}/${list.length}</span>`;
+  };
+  const item = (key, label, attrs, extra = '') =>
     `<button class="nav-item${activeKey === key ? ' active' : ''}" ${attrs} title="${esc(label)}">
-       ${icon(key)}<span class="nav-label">${esc(label)}</span></button>`;
-  $('#nav').innerHTML =
-    item('collapse', t().collapse, 'data-collapse') +
-    item('home', t().home, 'data-go="home"') +
-    MAIN_CATS.map((c) => item(c, catName(c), `data-cat="${c}"`)).join('') +
-    item('mods', t().modsPage, 'data-go="mods"') +
-    item('cleanup', t().cleanup, 'data-go="cleanup"') +
-    item('safemode', t().safemode, 'data-go="safemode"') +
-    item('backups', t().backupsPage, 'data-go="backups"') +
-    item('extra', t().extra, 'data-go="extra"') +
-    '<div class="nav-spacer"></div>' +
-    item('settings', t().settings, 'data-go="settings"');
+       ${icon(key)}<span class="nav-label">${esc(label)}</span>${extra}</button>`;
+  const entry = ([kind, c]) => {
+    if (kind === 'cat') {
+      if (c !== 'debloat' && !tweaksIn(c).length) return ''; // leere Bereiche ausblenden
+      return item(c, catName(c), `data-cat="${c}"`, count(c));
+    }
+    const label = kind === 'mods' ? t().modsPage : kind === 'backups' ? t().backupsPage : kind === 'profiles' ? t().profilesPage : t()[kind];
+    return item(kind, label, `data-go="${kind}"`);
+  };
+  const groups = NAV_GROUPS.map(([g, items]) => {
+    const html = items.map(entry).join('');
+    if (!html) return '';
+    const closed = state.navClosed.has(g);
+    return `<div class="nav-group${closed ? ' closed' : ''}">
+      <button class="nav-head" data-navgroup="${g}"><span>${esc(t().navGroups[g])}</span><i></i></button>
+      <div class="nav-items">${html}</div></div>`;
+  }).join('');
+  $('#nav').innerHTML = item('collapse', t().collapse, 'data-collapse') + groups +
+    '<div class="nav-spacer"></div>' + item('settings', t().settings, 'data-go="settings"');
   $('#app').classList.toggle('collapsed', state.collapsed);
+  const sb = $('#nav-search');
+  if (sb) { sb.placeholder = t().searchPh; if (document.activeElement !== sb) sb.value = state.search; }
 }
 
 function renderCrumbs() {
   const r = state.route;
   let parts;
   if (r.page === 'cat') parts = r.parent ? [t().extra, catName(r.cat)] : [catName(r.cat)];
-  else parts = [r.page === 'mods' ? t().modsPage : t()[r.page]];
+  else parts = [r.page === 'mods' ? t().modsPage : r.page === 'profiles' ? t().profilesPage : r.page === 'search' ? t().searchTitle : t()[r.page]];
   $('#crumbs').innerHTML = parts.map(esc).join('<span class="sep">·</span>');
 }
 
@@ -203,6 +256,19 @@ function renderHome() {
       </div>
       <span class="badge">UND.CC</span>
     </div>
+    <div class="stats">
+      ${stat('profiles', t().statActive, on, `/ ${total}`)}
+      ${stat('bolt', t().statOptimized, pct, '%')}
+      ${stat('mods', t().statMods, state.mods ? state.mods.enabledCount : '—', state.mods ? `/ ${state.mods.mods.length}` : '')}
+      ${stat('safemode', t().statSafe, state.safe ? (state.safe.enabled ? t().smOn : t().smOff) : '—', '', state.safe?.enabled ? 'ok' : '')}
+    </div>
+    <h3 class="section-title">${t().quickTitle}</h3>
+    <div class="quick">
+      <button class="qa qa-main" data-go="profiles">${icon('profiles')}<b>${t().qaProfiles}</b><span>${t().qaProfilesSub}</span></button>
+      <button class="qa" id="qa-safe">${icon('bolt')}<b>${t().qaSafe}</b><span>${t().qaSafeSub(state.tweaks.filter((x) => bulkOk(x) && !x.applied).length)}</span></button>
+      <button class="qa" id="qa-revert">${icon('revert')}<b>${t().qaRevert}</b><span>${t().qaRevertSub}</span></button>
+      <button class="qa qa-warn" id="qa-restart">${icon('restartpc')}<b>${t().qaRestart}</b><span>${state.restartPending ? t().qaRestartPending : t().qaRestartSub}</span></button>
+    </div>
     <div class="rings">${ring('cpu', t().cpu)}${ring('gpu', t().gpu)}${ring('ram', t().ram)}</div>
     <div class="home-row">
       <div class="card chart-card">
@@ -229,9 +295,24 @@ function renderHome() {
           <div><span>${t().graphics}</span><b title="${esc(i.gpu)}">${esc(i.gpu || '—')}</b></div>
           <div><span>${t().memory}</span><b>${i.ramGB != null ? esc(i.ramGB) + ' GB' : '—'}</b></div>
         </div>
-        <button class="pill light" data-cat="performance">${t().toTweaks}</button>
+        <button class="pill light" data-go="profiles">${t().qaProfiles}</button>
       </div>
-    </div>`;
+    </div>
+    <h3 class="section-title">${t().activityTitle}</h3>
+    <div class="card activity">${state.activity.length ? state.activity.slice(0, 8).map((a) => `
+      <div class="act act-${esc(a.kind)}"><i></i><span>${esc(a.text)}</span><time>${esc(fmtDate(a.at))}</time></div>`).join('') : `<div class="muted act-empty">${t().activityEmpty}</div>`}</div>`;
+}
+
+function stat(ic, label, value, suffix, cls = '') {
+  const num = typeof value === 'number';
+  return `<div class="card stat ${cls}"><div class="stat-icon">${icon(ic)}</div>
+    <div class="stat-body"><div class="stat-val"><b ${num ? `data-count="${value}"` : ''}>${esc(value)}</b><small>${esc(suffix)}</small></div><span>${esc(label)}</span></div></div>`;
+}
+
+function logActivity(kind, text) {
+  state.activity.unshift({ kind, text, at: new Date().toISOString() });
+  state.activity = state.activity.slice(0, 30);
+  store.set('activity', JSON.stringify(state.activity));
 }
 
 function renderExtra() {
@@ -252,19 +333,23 @@ function renderExtra() {
 function tweakRow(tw) {
   const busy = state.busy.has(tw.id);
   const risk = t().risk[tw.risk];
+  const off = tw.available === false;
   return `
-    <div class="card row">
-      <div class="row-body">
-        <div class="row-title">${esc(tw.name)}
-          ${risk ? `<span class="tag${tw.risk === 'high' ? ' high' : ''}">${risk}</span>` : ''}
-          ${tw.requiresRestart ? `<span class="tag">${t().restart}</span>` : ''}
-        </div>
-        <div class="row-desc">${busy ? t().working : esc(tw.description)}${tw.available === false ? `<br>${esc(errorText(tw.stateError))}` : ''}</div>
+    <div class="card tile2 risk-${esc(tw.risk)}${tw.applied ? ' on' : ''}${busy ? ' busy' : ''}${off ? ' na' : ''}">
+      <div class="tile2-top">
+        <span class="risk-dot" title="${esc(risk || '')}"></span>
+        <div class="tile2-name">${esc(tw.name)}</div>
+        <label class="switch${busy ? ' busy' : ''}">
+          <input type="checkbox" data-toggle="${esc(tw.id)}" ${tw.applied ? 'checked' : ''} ${busy || off ? 'disabled' : ''} aria-label="${esc(tw.name)}">
+          <span></span>
+        </label>
       </div>
-      <label class="switch${busy ? ' busy' : ''}">
-        <input type="checkbox" data-toggle="${esc(tw.id)}" ${tw.applied ? 'checked' : ''} ${busy || tw.available === false ? 'disabled' : ''} aria-label="${esc(tw.name)}">
-        <span></span>
-      </label>
+      <div class="tile2-desc">${busy ? t().working : esc(tw.description)}${off ? `<br><b>${esc(errorText(tw.stateError))}</b>` : ''}</div>
+      <div class="tile2-tags">
+        ${risk ? `<span class="tag${tw.risk === 'high' ? ' high' : ''}">${risk}</span>` : ''}
+        ${tw.requiresRestart ? `<span class="tag">${t().restart}</span>` : ''}
+        ${tw.applied ? `<span class="tag live">${t().on}</span>` : ''}
+      </div>
     </div>`;
 }
 
@@ -275,23 +360,77 @@ function renderCategory(c, parent) {
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);
   if (state.filter === 'off') list = list.filter((x) => !x.applied);
-  const safeOpen = all.some((x) => bulkOk(x) && !x.applied);
+  const safe = all.filter((x) => bulkOk(x) && !x.applied);
+  const active = all.filter((x) => x.applied);
+  const pct = all.length ? Math.round((active.length / all.length) * 100) : 0;
   const chip = (k) => `<button data-filter="${k}" class="${state.filter === k ? 'active' : ''}">${t()[k]}</button>`;
-
   return `
-    <div class="card detail-head">
+    <div class="card detail-head cat-hero">
       <div class="tile-icon">${icon(c)}</div>
-      <div><h1>${esc(catName(c))}</h1><p>${esc(catDesc(c))}</p></div>
-      ${parent ? `<button class="pill dark big" data-go="${parent}">${t().back}</button>` : ''}
+      <div class="cat-hero-body">
+        <h1>${esc(catName(c))}</h1><p>${esc(catDesc(c))}</p>
+        ${all.length ? `<div class="cat-meter"><i data-pct="${pct}"></i></div><div class="cat-stats">${t().catStats(all.length, active.length)}</div>` : ''}
+      </div>
+      ${parent ? `<button class="pill dark big" data-go="${parent}">${t().back}</button>` : `<div class="cat-pct"><b data-count="${pct}">${pct}</b><span>%</span></div>`}
     </div>
     ${all.length ? `
-      <p class="hint">${t().hint}</p>
       <div class="toolbar">
         <div class="seg">${chip('all')}${chip('on')}${chip('off')}</div>
-        ${safeOpen ? `<button class="pill dark" id="apply-safe">${t().applySafe}</button>` : ''}
+        <div class="legend"><span><i class="risk-dot l"></i>${t().risk.low}</span><span><i class="risk-dot m"></i>${t().risk.medium}</span><span><i class="risk-dot h"></i>${t().risk.high}</span></div>
       </div>
-      <div class="rows">${list.map(tweakRow).join('') || `<div class="card empty">—</div>`}</div>`
+      <p class="hint">${t().hint}</p>
+      <div class="tgrid">${list.map(tweakRow).join('') || `<div class="card empty">—</div>`}</div>
+      <div class="cat-actions">
+        <button class="pill light big glow" id="apply-safe" ${safe.length ? '' : 'disabled'}>${icon('bolt')}<span>${t().applySafeN(safe.length)}</span></button>
+        <button class="pill dark big" id="revert-cat" ${active.length ? '' : 'disabled'}>${icon('revert')}<span>${t().revertCatN(active.length)}</span></button>
+      </div>`
     : `<div class="card empty">${t().empty}</div>`}`;
+}
+
+// Suche über alle Tweaks
+function renderSearch() {
+  const q = state.search.toLowerCase();
+  const hits = state.tweaks.filter((tw) => `${tw.name} ${tw.description} ${catName(catOf(tw))}`.toLowerCase().includes(q));
+  return `
+    <div class="card detail-head"><div class="tile-icon">${icon('search')}</div>
+      <div><h1>${t().searchTitle}</h1><p>${esc(t().searchHits(hits.length, state.search))}</p></div></div>
+    <div class="tgrid">${hits.map(tweakRow).join('') || `<div class="card empty">${t().searchNone}</div>`}</div>`;
+}
+
+// Profile: Stufen aus echten Tweaks; einzelne Einträge abwählbar
+function renderProfiles() {
+  const run = state.profileRun;
+  const tierCard = ([tier], idx) => {
+    const cands = profileCandidates(tier);
+    const todo = cands.filter((tw) => !tw.applied && !state.profileOff.has(tw.id));
+    const done = cands.filter((tw) => tw.applied).length;
+    const mine = run?.tier === tier;
+    const chips = cands.map((tw) => {
+      const offSel = state.profileOff.has(tw.id);
+      return `<button class="pchip risk-${esc(tw.risk)}${tw.applied ? ' done' : ''}${offSel ? ' off' : ''}" data-pchip="${esc(tw.id)}" ${tw.applied || run ? 'disabled' : ''} title="${esc(tw.description)}">${esc(tw.name)}</button>`;
+    }).join('');
+    return `
+      <div class="card tier tier-${tier}${mine ? ' running' : ''}">
+        <div class="tier-head">
+          <div class="tier-badge">${t().tierStep(idx + 1)}</div>
+          <h2>${t().tiers[tier][0]}</h2>
+          <p>${t().tiers[tier][1]}</p>
+        </div>
+        <div class="tier-count"><b data-count="${todo.length}">${todo.length}</b><span>${t().tierTodo(done, cands.length)}</span></div>
+        <div class="pchips">${chips || `<span class="muted">${t().empty}</span>`}</div>
+        ${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div>
+          <span>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span></div>` : ''}
+        <button class="pill ${tier === 'safe' ? 'dark' : 'light'} big tier-go" data-tier="${tier}" ${run || !todo.length ? 'disabled' : ''}>${icon('bolt')}<span>${t().tierGo(todo.length)}</span></button>
+      </div>`;
+  };
+  const res = state.profileResult;
+  return `
+    <div class="card detail-head cat-hero"><div class="tile-icon">${icon('profiles')}</div>
+      <div><h1>${t().profilesPage}</h1><p>${t().profilesDesc}</p></div></div>
+    ${res ? `<div class="card cache-card bk-result"><div class="${res.failed.length ? 'sm-alert' : 'muted'}">${t().tierDone(res.ok, res.n, res.failed.length)}</div>
+      ${res.failed.length ? `<div class="cache-list">${res.failed.map((f) => `<div><span>${esc(f.name)}</span><span class="muted">${esc(errorText(f.error))}</span><b class="res-failed">✕</b></div>`).join('')}</div>` : ''}</div>` : ''}
+    <div class="tiers">${PROFILE_TIERS.map(tierCard).join('')}</div>
+    <p class="hint">${t().profilesNote}</p>`;
 }
 
 function renderCleanup() {
@@ -604,10 +743,8 @@ function render() {
   const upReady = state.update?.status === 'ready'
     ? `<div class="restart"><span>${esc(t().upBanner(state.update.version || ''))}</span><button class="pill" id="up-install">${t().upInstall}</button></div>`
     : '';
-  let html = upReady + (state.restartPending
-    ? `<div class="restart"><span>${t().needsRestart}</span><button class="pill" id="restart-later">${t().later}</button></div>`
-    : '');
-  if (state.loading && !['settings', 'cleanup', 'safemode', 'backups', 'mods'].includes(r.page)) {
+  let html = upReady;
+  if (state.loading && !['settings', 'cleanup', 'safemode', 'backups', 'mods', 'profiles', 'search'].includes(r.page)) {
     html += '<div class="rows">' + '<div class="skeleton"></div>'.repeat(5) + '</div>';
   } else if (r.page === 'home') html += renderHome();
   else if (r.page === 'extra') html += renderExtra();
@@ -616,6 +753,8 @@ function render() {
   else if (r.page === 'safemode') html += renderSafeMode();
   else if (r.page === 'backups') html += renderBackups();
   else if (r.page === 'mods') html += renderMods();
+  else if (r.page === 'profiles') html += renderProfiles();
+  else if (r.page === 'search') html += renderSearch();
   else html += renderCategory(r.cat, r.parent);
   const content = $('#content');
   content.innerHTML = html;
@@ -627,12 +766,48 @@ function render() {
     content.classList.add('enter');
     const stagger = (els) => els.forEach((el, i) => el.style.setProperty('--i', Math.min(i, 14)));
     stagger([...content.children]);
-    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings').forEach((g) => stagger([...g.children]));
+    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers').forEach((g) => stagger([...g.children]));
+    countUp(content);
     clearTimeout(state.enterTimer);
     state.enterTimer = setTimeout(() => content.classList.remove('enter'), 1600);
   }
+  content.querySelectorAll('[data-pct]').forEach((el) => { requestAnimationFrame(() => { el.style.width = `${el.dataset.pct}%`; }); });
+  renderStatus();
   // Ringe erst im nächsten Frame setzen, damit sie sichtbar von 0 aus hochlaufen
   if (r.page === 'home') requestAnimationFrame(paintUsage);
+}
+
+// Kennzahlen hochzählen lassen (nur beim Seitenwechsel)
+function countUp(root) {
+  root.querySelectorAll('[data-count]').forEach((el) => {
+    const end = Number(el.dataset.count) || 0;
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / 900);
+      el.textContent = Math.round(end * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    el.textContent = '0';
+    requestAnimationFrame(step);
+  });
+}
+
+// Statusleiste unten: SafeMode, Neustart, laufendes Profil, Rechte, Version
+function renderStatus() {
+  const el = $('#statusbar');
+  if (!el) return;
+  const sm = state.safe;
+  const run = state.profileRun;
+  const i = state.info || {};
+  const smCls = sm ? (sm.enabled ? (sm.health === 'red' ? 'bad' : 'ok') : 'idle') : 'idle';
+  el.innerHTML = `
+    <button class="sb-item" data-go="safemode"><i class="dot ${smCls}"></i>${t().safemode}: ${sm ? (sm.enabled ? t().smOn : t().smOff) : '—'}</button>
+    ${run ? `<span class="sb-item sb-run"><i class="dot live"></i>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span>` : ''}
+    ${state.restartPending ? `<button class="sb-item sb-restart" id="sb-restart">${icon('restartpc')}${t().needsRestartShort}</button>` : ''}
+    <span class="sb-spacer"></span>
+    <span class="sb-item muted">${i.isAdmin === false ? t().noAdmin : t().admin}</span>
+    <span class="sb-item muted">${esc(t().modes[state.mode] || '')}</span>
+    <span class="sb-item sb-ver">UND.CC · v${esc(state.version || '')}</span>`;
 }
 
 // Live-Werte nur im DOM nachziehen, damit die Seite nicht jede Sekunde neu gebaut wird.
@@ -732,22 +907,25 @@ async function setTweak(id, apply, { quiet = false } = {}) {
   if (res?.ok) {
     tw.applied = !!res.applied;
     if (res.restartRequired) state.restartPending = true;
+    logActivity(tw.applied ? 'on' : 'off', tw.applied ? t().applied(tw.name) : t().reverted(tw.name));
     if (!quiet) {
       const extra = t().statusMsg[res.status];
       toast(extra ? `${tw.name}: ${extra}` : (tw.applied ? t().applied(tw.name) : t().reverted(tw.name)));
     }
   } else {
-    toast(`${tw.name}: ${errorText(res?.error)}`, 'error');
+    if (!quiet) toast(`${tw.name}: ${errorText(res?.error)}`, 'error');
+    logActivity('fail', `${tw.name}: ${errorText(res?.error)}`);
       // A failed native call may have rolled back or left a recoverable partial change.
       const refreshed = await call('list');
       if (refreshed?.ok) state.tweaks = refreshed.tweaks;
   }
   render();
+  state.lastError = res?.ok ? null : res?.error;
   return !!res?.ok;
 }
 
-async function applySafe() {
-  const list = tweaksIn(state.route.cat).filter((x) => bulkOk(x) && !x.applied);
+async function applySafe(global) {
+  const list = (global ? state.tweaks : tweaksIn(state.route.cat)).filter((x) => bulkOk(x) && !x.applied);
   let ok = 0;
   for (const x of list) if (await setTweak(x.id, true, { quiet: true })) ok++;
   toast(t().safeDone(ok, list.length), ok === list.length ? 'info' : 'error');
@@ -939,12 +1117,54 @@ async function resApply(reset) {
   render();
 }
 
+async function revertCategory() {
+  const list = tweaksIn(state.route.cat).filter((x) => x.applied);
+  if (!(await confirmDialog(t().revertCatTitle, t().revertCatText(list.length, catName(state.route.cat)), t().revertCatN(list.length)))) return;
+  let ok = 0;
+  for (const x of list) if (await setTweak(x.id, false, { quiet: true })) ok++;
+  toast(t().revertCatDone(ok, list.length), ok === list.length ? 'info' : 'error');
+}
+
+// Profil ausführen: nacheinander anwenden, Fortschritt zeigen; bei Rechte-/Wiederherstellungspunkt-Fehler abbrechen.
+async function runProfile(tier) {
+  const list = profileCandidates(tier).filter((tw) => !tw.applied && !state.profileOff.has(tw.id));
+  if (!list.length) return;
+  const warn = tier === 'hardcore' ? ' ' + t().tierHardWarn : '';
+  if (!(await confirmDialog(t().tierConfirmTitle(t().tiers[tier][0]), t().tierConfirmText(list.length) + warn, t().tierGo(list.length)))) return;
+  state.profileResult = null;
+  state.profileRun = { tier, i: 0, n: list.length, current: '' };
+  const failed = [];
+  let ok = 0;
+  for (const tw of list) {
+    state.profileRun.current = tw.name;
+    render();
+    if (await setTweak(tw.id, true, { quiet: true })) ok++;
+    else {
+      failed.push({ name: tw.name, error: state.lastError });
+      if (['restore_point_not_created', 'admin_required', 'close_fivem_first'].includes(state.lastError)) break;
+    }
+    state.profileRun.i++;
+  }
+  state.profileRun = null;
+  state.profileResult = { ok, n: list.length, failed };
+  logActivity(failed.length ? 'fail' : 'on', `${t().tiers[tier][0]}: ${t().tierDone(ok, list.length, failed.length)}`);
+  toast(t().tierDone(ok, list.length, failed.length), failed.length ? 'error' : 'info');
+  render();
+}
+
+async function restartPc() {
+  if (!(await confirmDialog(t().restartTitle, t().restartText, t().qaRestart))) return;
+  const r = await bridge.restartPc();
+  toast(r?.ok ? t().restartSoon : errorText(r?.error), r?.ok ? 'info' : 'error');
+}
+
 async function load() {
   state.loading = true;
   render();
-  const [info, list] = await Promise.all([call('info'), call('list')]);
+  const [info, list, mods] = await Promise.all([call('info'), call('list'), call('mods-list')]);
   state.loading = false;
   if (info?.ok) state.info = info;
+  if (mods?.ok) state.mods = mods;
   if (list?.ok) state.tweaks = list.tweaks || [];
   else toast(`${t().loadFailed}: ${errorText(list?.error)}`, 'error');
   state.enter = true;
@@ -956,6 +1176,7 @@ function go(route) {
   state.route = route;
   state.filter = 'all';
   state.enter = true;
+  if (route.page !== 'search') state.search = '';
   render();
   $('#content').scrollTop = 0;
   if (route.cat === 'debloat') debloatLoad();
@@ -987,6 +1208,18 @@ document.addEventListener('click', (e) => {
     state.mods = null;
     load();
   } else if (el.id === 'apply-safe') applySafe();
+  else if (el.id === 'revert-cat') revertCategory();
+  else if (el.id === 'qa-safe') applySafe(true);
+  else if (el.id === 'qa-revert') { go({ page: 'backups' }); setTimeout(() => bkRestore(null, true), 700); }
+  else if (el.id === 'qa-restart' || el.id === 'sb-restart') restartPc();
+  else if (el.dataset.tier) runProfile(el.dataset.tier);
+  else if (el.dataset.pchip) { const id = el.dataset.pchip; if (state.profileOff.has(id)) state.profileOff.delete(id); else state.profileOff.add(id); render(); }
+  else if (el.dataset.navgroup) {
+    const g = el.dataset.navgroup;
+    if (state.navClosed.has(g)) state.navClosed.delete(g); else state.navClosed.add(g);
+    store.set('navClosed', [...state.navClosed].join(','));
+    renderNav();
+  }
   else if (el.id === 'cache-info') cacheInfo();
   else if (el.id === 'cache-clean') cacheClean();
   else if (el.dataset.restore) cacheRestore(el.dataset.restore);
@@ -1018,6 +1251,21 @@ document.addEventListener('click', (e) => {
   else if (el.id.startsWith('sm-')) safeAction(el.id.slice(3));
   else if (el.id === 'reload') load();
   else if (el.id === 'restart-later') { state.restartPending = false; render(); }
+});
+
+// Suche in der Seitenleiste (Strg+F)
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'nav-search') return;
+  const q = e.target.value.trim();
+  const was = state.search;
+  state.search = q;
+  if (q && state.route.page !== 'search') { state.prevRoute = state.route; state.route = { page: 'search' }; state.enter = true; }
+  if (!q && was && state.route.page === 'search') { state.route = state.prevRoute || { page: 'home' }; state.enter = true; }
+  render();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.id === 'nav-search' && e.key === 'Escape') { e.target.value = ''; e.target.dispatchEvent(new Event('input', { bubbles: true })); }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') { e.preventDefault(); $('#nav-search')?.focus(); }
 });
 
 // Eigene Auflösung: Eingaben ohne Neuzeichnen übernehmen, nur den Übernehmen-Knopf aktualisieren.
@@ -1060,7 +1308,7 @@ function onSafeMode(msg) {
   if (!msg) return;
   if (msg.report) { state.safe = msg.report; state.safeMonitorError = null; }
   if (msg.error) state.safeMonitorError = msg.error;
-  if (state.route.page === 'safemode' && !state.safeBusy) render();
+  if (state.route.page === 'safemode' && !state.safeBusy) render(); else renderStatus();
 }
 bridge.onSafeMode(onSafeMode);
 bridge.lastSafeMode().then(onSafeMode);
@@ -1089,11 +1337,11 @@ function hideSplash() {
   const wait = Math.max(0, SPLASH_MIN - (performance.now() - splashStart));
   setTimeout(() => {
     const el = $('#splash');
-    el.classList.add('out');
+    el?.classList.add('out');
     document.body.classList.remove('booting');
     state.enter = true;
     render();
-    setTimeout(() => el.remove(), 800);
+    setTimeout(() => el?.remove(), 800);
   }, wait);
 }
 setTimeout(hideSplash, 6000);
