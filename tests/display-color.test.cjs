@@ -7,7 +7,7 @@ const path = require('node:path');
 const {createDisplayColor, cleanLook} = require('../app/display-color');
 function setup(platform='win32', stored=null){
   const files={}, launches=[], lines=[];let kills=0;
-  if(stored)files['/u/color-look.json']=stored;
+  if(stored)files[path.join('/u','color-look.json')]=stored;
   const fs={readFile:async f=>{if(!(f in files))throw Error('missing');return files[f];},writeFile:async(f,d)=>{files[f]=d;},rm:async f=>{delete files[f];}};
   const app={isPackaged:false,getPath:()=>'/u'};
   let child;
