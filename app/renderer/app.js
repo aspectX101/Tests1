@@ -468,7 +468,7 @@ function renderProfiles() {
       <div><h1>${t().profilesPage}</h1><p>${t().profilesDesc}</p></div></div>
     ${res ? `<div class="card cache-card bk-result"><div class="${res.failed.length ? 'sm-alert' : 'muted'}">${t().tierDone(res.ok, res.n, res.failed.length)}</div>
       ${res.failed.length ? `<div class="cache-list">${res.failed.map((f) => `<div><span>${esc(f.name)}</span><span class="muted">${esc(errorText(f.error))}</span><b class="res-failed">✕</b></div>`).join('')}</div>` : ''}</div>` : ''}
-    <div class="tiers">${PROFILE_TIERS.map(tierCard).join('')}</div>
+    <div class="tiers">${window.Recommend.card()}${PROFILE_TIERS.map(tierCard).join('')}</div>
     <p class="hint">${t().profilesNote}</p>`;
 }
 
@@ -1190,7 +1190,8 @@ async function revertCategory() {
 
 // Profil ausführen: nacheinander anwenden, Fortschritt zeigen; bei Rechte-/Wiederherstellungspunkt-Fehler abbrechen.
 async function runProfile(tier) {
-  const list = profileCandidates(tier).filter((tw) => !tw.applied && !state.profileOff.has(tw.id));
+  // "Recommended": Auswahl aus der Systemprüfung (recommend.js), sonst nach Risikostufe
+  const list = (tier === 'recommended' ? window.Recommend.candidates() : profileCandidates(tier)).filter((tw) => !tw.applied && !state.profileOff.has(tw.id));
   if (!list.length) return;
   const warn = tier === 'hardcore' ? ' ' + t().tierHardWarn : '';
   if (!(await confirmDialog(t().tierConfirmTitle(t().tiers[tier][0]), t().tierConfirmText(list.length) + warn, t().tierGo(list.length)))) return;
@@ -1249,6 +1250,7 @@ function go(route) {
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
   if (route.page === 'safemode' && !state.safeBusy) safeAction('scan');
   if (route.page === 'settings') bridge.checkUpdate();
+  if (route.page === 'profiles' && !window.Recommend.state.facts && !window.Recommend.state.busy) window.Recommend.check();
   if (route.page === 'mods' && !state.modsBusy) modsLoad();
   if (route.page === 'backups' && !state.bkBusy) { state.bkResult = null; state.bkOpen = null; bkList(); }
 }

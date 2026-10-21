@@ -7,7 +7,7 @@ $ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 try {
-    if ($Action -notin @('debloat-list','debloat-preview','debloat-remove','startup-list','startup-disable','startup-restore','info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all','mods-list','mods-import','mods-enable','mods-disable','mods-remove','res-get','res-set','res-reset')) { throw 'invalid_action' }
+    if ($Action -notin @('debloat-list','debloat-preview','debloat-remove','startup-list','startup-disable','startup-restore','system-check','info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all','mods-list','mods-import','mods-enable','mods-disable','mods-remove','res-get','res-set','res-reset')) { throw 'invalid_action' }
     if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
     Import-Module (Join-Path $PSScriptRoot 'Tweaker.psm1') -Force -WarningAction Stop
     if ($Action.StartsWith('debloat-') -or $Action.StartsWith('startup-')) {
@@ -69,6 +69,7 @@ try {
     }
     $result = switch ($Action) {
         'info' { Get-TweakerSystemInfo }
+        'system-check' { Get-TweakerSystemCheck }
         'list' {
             $live = Get-TweakerStatus
             $items = @($catalog | ForEach-Object {

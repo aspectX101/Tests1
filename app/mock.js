@@ -241,6 +241,10 @@
     if (String(action).startsWith('safemode-')) return safemode(action, lang);
     if (String(action).startsWith('backup-')) return backup(action, backupId, lang);
     if (/^(mods|res)-/.test(String(action))) return modsAction(action, req, lang);
+    if (action === 'system-check') {
+      // Beispiel-PC für die Vorschau: Desktop mit SSD, WLAN-Karte, ohne eigenen DNS und ohne Xbox-App.
+      return { ok: true, facts: { laptop: false, cpu: { name: 'AMD Ryzen 7 7800X3D 8-Core Processor', cores: 8, threads: 16 }, gpu: ['NVIDIA GeForce RTX 4070'], ramGB: 31.9, systemDisk: 'SSD', wifi: true, ethernetUp: true, customDns: false, xboxApp: false, build: 26100 } };
+    }
     if (action === 'info') {
       return { ok: true, os: 'Microsoft Windows 11 Home (Mock)', cpu: 'AMD Ryzen 7 7800X3D', gpu: 'NVIDIA GeForce RTX 4070 Ti', ramGB: 32, isAdmin: true };
     }

@@ -9,6 +9,7 @@ $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
 . (Join-Path $PSScriptRoot 'Optimization.ps1')
 . (Join-Path $PSScriptRoot 'ModManager.ps1')
 . (Join-Path $PSScriptRoot 'Debloat.ps1')
+. (Join-Path $PSScriptRoot 'SystemCheck.ps1')
 
 function Get-TweakerCatalog {
     Get-OptimizationCatalog
@@ -215,5 +216,5 @@ function Get-TweakerSystemInfo {
     [pscustomobject]@{ok=$true;os=$os.Caption;cpu=$cpu;gpu=$gpu;ramGB=[math]::Round($memory / 1GB, 1);isAdmin=$admin}
 }
 
-Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Test-TweakerOptimizationApplied,Get-OptimizationCatalog,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup,Invoke-TweakerMods,Invoke-TweakerDebloat,Invoke-TweakerStartup
+Export-ModuleMember -Function Get-TweakerCatalog,Get-TweakerStatus,Get-TweakerSystemInfo,Get-TweakerSystemCheck,Invoke-TweakerPerformance,Test-TweakerKeyboardApplied,Test-TweakerOptimizationApplied,Get-OptimizationCatalog,Invoke-TweakerCache,Invoke-TweakerSafeMode,Invoke-TweakerBackup,Invoke-TweakerMods,Invoke-TweakerDebloat,Invoke-TweakerStartup
 
