@@ -28,6 +28,7 @@ jobs:
       - run: npm ci
       # Run all cross-platform and Windows integration checks before packaging.
       - run: npm test
+      # Validate the logo hash in tests before generating multi-size Windows icons.
       - name: Prepare H1T.CC branding for Windows
         shell: pwsh
         run: ./build/generate-h1t-icon.ps1
