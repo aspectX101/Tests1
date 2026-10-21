@@ -179,13 +179,13 @@ body::before{animation:none}
 /* Original H1T.CC globe artwork, optimized as an embedded offline image. */
 .h1t-globe{width:36%;min-width:250px;isolation:isolate}
 .h1t-globe .h1t-orb{position:absolute;z-index:-1;inset:50% auto auto 50%;transform:translate(-50%,-50%);}
-.h1t-globe img{height:245px;max-width:100%;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 6px 30px #2ce77a35);opacity:.95;}
+.h1t-globe img{mix-blend-mode:screen;height:245px;max-width:100%;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 6px 30px #2ce77a35);opacity:.95;}
 .h1t-globe strong{display:none}
 .splash.ignition{background:radial-gradient(ellipse at 50% 43%,#135d2b2d,transparent 44%),#050b07;}
 .ignition-grid{opacity:.16}
 .ignition-emblem{width:180px;height:230px;left:calc(50% - 90px);top:calc(43% - 120px);
  filter:drop-shadow(0 0 25px #39dc6f55);animation:h1t-logo-intro 3.8s var(--h1t-ease) both;}
-.ignition-emblem img{width:100%;height:100%;object-fit:contain;display:block}
+.ignition-emblem img{mix-blend-mode:screen;width:100%;height:100%;object-fit:contain;display:block}
 .ignition-wordmark{top:44%;letter-spacing:-.035em;font-size:clamp(43px,6.2vw,76px);color:#effff4;animation-delay:2s}
 .ignition-wordmark b{color:#68e695}
 .ignition-wordmark small{color:#8ba996;font-size:10px;letter-spacing:.4em}
