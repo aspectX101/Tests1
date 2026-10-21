@@ -26,6 +26,7 @@ jobs:
           if (-not (Test-Path "release-notes/v$version.md")) { throw 'Release notes missing' }
           "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
       - run: npm ci
+      # Run all cross-platform and Windows integration checks before packaging.
       - run: npm test
       - name: Prepare H1T.CC branding for Windows
         shell: pwsh
