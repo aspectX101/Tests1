@@ -288,7 +288,7 @@ function renderHome() {
 function stat(ic, label, value, suffix, cls = '') {
   const num = typeof value === 'number';
   return `<div class="card stat ${cls}"><div class="stat-icon">${icon(ic)}</div>
-    <div class="stat-body"><div class="stat-val"><b ${num ? `data-count="${value}"` : ''}>${esc(value)}</b><small>${esc(suffix)}</small></div><span>${esc(label)}</span></div></div>`;
+    <div class="stat-body"><div class="stat-val"><b ${num ? `data-count="${value}"` : 'class="txt"'}>${esc(value)}</b>${suffix ? `<small>${esc(suffix)}</small>` : ''}</div><span>${esc(label)}</span></div></div>`;
 }
 
 function logActivity(kind, text) {

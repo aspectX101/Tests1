@@ -18,7 +18,7 @@ try {
         return $task.GetAwaiter().GetResult()
     }
     $manager=Await ($managerType::RequestAsync()) $managerType
-    $artKey='';$art=$null
+    $artKey='';$art=$null;$artTries=0
     do {
         try {
             $sessions=@($manager.GetSessions() | Where-Object { $_.SourceAppUserModelId -match '^(Spotify(?:\.exe)?|SpotifyAB\.SpotifyMusic_[^!]+!Spotify)$' })
@@ -36,21 +36,28 @@ try {
                 $properties=Await ($session.TryGetMediaPropertiesAsync()) $propertiesType
                 $playback=$session.GetPlaybackInfo();$timeline=$session.GetTimelineProperties()
                 $key=$session.SourceAppUserModelId+'|'+$properties.Title+'|'+$properties.Artist+'|'+$properties.AlbumTitle
-                if ($artKey -cne $key) {
-                    $artKey=$key;$art=$null
-                    if ($properties.Thumbnail) {
-                        $stream=$null;$reader=$null
-                        try {
-                            $stream=Await ($properties.Thumbnail.OpenReadAsync()) $streamType
-                            $mime=$stream.ContentType
-                            if ($mime -in @('image/jpeg','image/png') -and $stream.Size -gt 0 -and $stream.Size -le 1048576) {
-                                $reader=$readerType::new($stream.GetInputStreamAt(0))
-                                $size=Await ($reader.LoadAsync([uint32]$stream.Size)) ([uint32])
+                # Cover: Spotify liefert Titel/Interpret oft vor dem Bild. Fehlt es, bei jeder Abfrage erneut versuchen
+                # (max. 15 Versuche pro Song). Bildtyp zusaetzlich an den Bytes erkennen, Groesse ggf. unbekannt.
+                if ($artKey -cne $key) { $artKey=$key;$art=$null;$artTries=0 }
+                if (-not $art -and $artTries -lt 15 -and $properties.Thumbnail) {
+                    $artTries++
+                    $stream=$null;$reader=$null
+                    try {
+                        $stream=Await ($properties.Thumbnail.OpenReadAsync()) $streamType
+                        $want=if ($stream.Size -gt 0) { [uint32][Math]::Min([double]$stream.Size,1048576) } else { [uint32]1048576 }
+                        if ($stream.Size -le 1048576) {
+                            $reader=$readerType::new($stream.GetInputStreamAt(0))
+                            $reader.InputStreamOptions=[Windows.Storage.Streams.InputStreamOptions,Windows.Storage.Streams,ContentType=WindowsRuntime]::Partial
+                            $size=Await ($reader.LoadAsync($want)) ([uint32])
+                            if ($size -gt 0) {
                                 $bytes=New-Object byte[] ([int]$size);$reader.ReadBytes($bytes)
-                                $art='data:'+$mime+';base64,'+[Convert]::ToBase64String($bytes)
+                                $mime=$null
+                                if ($bytes.Length -gt 3 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xD8 -and $bytes[2] -eq 0xFF) { $mime='image/jpeg' }
+                                elseif ($bytes.Length -gt 7 -and $bytes[0] -eq 0x89 -and $bytes[1] -eq 0x50 -and $bytes[2] -eq 0x4E -and $bytes[3] -eq 0x47) { $mime='image/png' }
+                                if ($mime) { $art='data:'+$mime+';base64,'+[Convert]::ToBase64String($bytes) }
                             }
-                        } catch { $art=$null } finally { if ($reader) {$reader.Dispose()};if ($stream) {$stream.Dispose()} }
-                    }
+                        }
+                    } catch { $art=$null } finally { if ($reader) {$reader.Dispose()};if ($stream) {$stream.Dispose()} }
                 }
                 $playing=$playback.PlaybackStatus.ToString() -eq 'Playing'
                 $start=$timeline.StartTime.TotalSeconds

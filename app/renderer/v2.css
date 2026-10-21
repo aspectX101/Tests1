@@ -225,3 +225,10 @@ button.sb-item:hover { background: rgba(255, 255, 255, .05); color: #fff; }
 .opt-v2 #opt-start:not(:disabled) { background: linear-gradient(180deg, var(--red-hi), var(--red)); color: #fff; border-color: transparent; animation: glowPulse 2.6s ease-in-out infinite; }
 .opt-v2 .db-result { order: 11; }
 .enter .opt-v2 .rows > * { animation: rise .55s var(--ease-out) both; }
+
+/* Kennzahlen: einheitliche Schrift – Zahlen kräftig, Text-Werte (z. B. „Schutz aus“) ruhiger und gleich hoch */
+.dashboard-home .stat-val, .stat-val { min-height: 30px; align-items: baseline; }
+.dashboard-home .stat-val b, .stat-val b { font-size: 24px; font-weight: 800; letter-spacing: -.01em; line-height: 30px; }
+.dashboard-home .stat-val b.txt, .stat-val b.txt { font-size: 16px; font-weight: 700; letter-spacing: 0; color: #f4f4f5; }
+.stat-val small { font-size: 12px; font-weight: 700; color: var(--dim); }
+.stat-body > span { font-size: 10.5px; font-weight: 800; letter-spacing: .14em; }
