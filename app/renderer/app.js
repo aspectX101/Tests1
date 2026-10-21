@@ -263,7 +263,7 @@ function renderHome() {
         <p>${esc([i.os,adminTxt].filter(Boolean).join(' · '))} · ${state.lang==='de'?'Präzise Anpassungen, transparent und jederzeit kontrollierbar.':state.lang==='it'?'Ottimizzazioni precise, trasparenti e reversibili.':'Precision tuning with clear control and reversible changes.'}</p>
         <div class="h1t-hero-pills"><span><i></i>${state.lang==='de'?'SYSTEM BEREIT':state.lang==='it'?'SISTEMA PRONTO':'SYSTEM READY'}</span><span>${on} / ${total} ${state.lang==='de'?'TWEAKS AKTIV':state.lang==='it'?'MODIFICHE ATTIVE':'TWEAKS ACTIVE'}</span></div>
       </div>
-      <div class="h1t-globe" aria-hidden="true"><div class="h1t-orb"></div><strong>H1T.CC</strong></div>
+      <div class="h1t-globe" aria-hidden="true"><div class="h1t-orb"></div><img src="assets/h1t-emblem.svg" alt=""></div>
     </div>
     <div class="h1t-overview-label">${state.lang==='de'?'LIVE SYSTEM MONITOR':state.lang==='it'?'MONITOR SISTEMA':'LIVE SYSTEM MONITOR'}</div>
     <div class="rings">${ring('cpu', t().cpu)}${ring('gpu', t().gpu)}${ring('ram', t().ram)}</div>
