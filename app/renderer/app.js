@@ -282,25 +282,6 @@ function renderHome() {
       ${stat('mods', t().statMods, state.mods ? state.mods.enabledCount : '—', state.mods ? `/ ${state.mods.mods.length}` : '')}
       ${stat('safemode', t().statSafe, state.safe ? (state.safe.enabled ? t().smOn : t().smOff) : '—', '', state.safe?.enabled ? 'ok' : '')}
     </div>
-    <h3 class="section-title">${t().quickTitle}</h3>
-    <div class="quick">
-      <button class="qa qa-main" data-go="profiles">${icon('profiles')}<b>${t().qaProfiles}</b><span>${t().qaProfilesSub}</span></button>
-      <button class="qa" id="qa-safe">${icon('bolt')}<b>${t().qaSafe}</b><span>${t().qaSafeSub(state.tweaks.filter((x) => bulkOk(x) && !x.applied).length)}</span></button>
-      <button class="qa" id="qa-revert">${icon('revert')}<b>${t().qaRevert}</b><span>${t().qaRevertSub}</span></button>
-      <button class="qa qa-warn" id="qa-restart">${icon('restartpc')}<b>${t().qaRestart}</b><span>${state.restartPending ? t().qaRestartPending : t().qaRestartSub}</span></button>
-    </div>
-    <div class="dashboard-lower">
-      <section class="card dashboard-system"><h3>Hardware</h3>
-        <div class="kv">
-          <div><span>${t().processor}</span><b title="${esc(i.cpu)}">${esc(i.cpu || '—')}</b></div>
-          <div><span>${t().graphics}</span><b title="${esc(i.gpu)}">${esc(i.gpu || '—')}</b></div>
-          <div><span>${t().memory}</span><b>${i.ramGB != null ? esc(i.ramGB) + ' GB' : '—'}</b></div>
-        </div>
-      </section>
-      <section> <h3 class="dashboard-activity-title">${t().activityTitle}</h3>
-    <div class="card activity">${state.activity.length ? state.activity.slice(0, 8).map((a) => `
-      <div class="act act-${esc(a.kind)}"><i></i><span>${esc(a.text)}</span><time>${esc(fmtDate(a.at))}</time></div>`).join('') : `<div class="muted act-empty">${t().activityEmpty}</div>`}</div></section>
-    </div>
   </div>`;
 }
 
