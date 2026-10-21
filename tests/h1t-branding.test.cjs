@@ -25,6 +25,13 @@ test('the provided globe logo is embedded locally and used for splash and dashbo
   const app = read('app/renderer/app.js');
   assert.match(logo, /^<svg[^>]+>/);
   assert.match(logo, /data:image\/jpeg;base64,/);
+  const payload = logo.match(/data:image\/jpeg;base64,([^"]+)/)?.[1];
+  assert.ok(payload, 'embedded offline logo must be present');
+  const bytes = Buffer.from(payload, 'base64');
+  assert.equal(bytes.length, 4655);
+  assert.equal(require('node:crypto').createHash('sha256').update(bytes).digest('hex'),
+    '9d3702f4213f79caa88eb0c193cddeb7caf03d6c873c827c7a93f03fdbd60a02');
+
   assert.match(index, /class="h1t-splash-emblem"/);
   assert.match(app, /class="h1t-globe"/);
   assert.match(app, /assets\/h1t-emblem\.svg/);
