@@ -23,3 +23,14 @@ test('restore reports conflict and continues with independent restorable records
 test('status failure blocks changes and releases busy state',async()=>{const {ctx,calls}=setup({refreshFail:true});await ctx.optimizationRun();assert.equal(calls.some(x=>x.action==='apply'),false);assert.equal(ctx.optState.result.ok,false);assert.equal(ctx.optState.busy,false);});
 test('repeated start while busy cannot duplicate requests',async()=>{const {ctx,calls}=setup();ctx.optState.busy=true;await ctx.optimizationRun();assert.equal(calls.length,0);});
 test('selection controls and both actions are available in all three languages',()=>{const {ctx,state}=setup();for(const lang of ['de','en','it']){state.lang=lang;const html=ctx.renderOptimization();assert.match(html,/Start Optimisations/);assert.match(html,/Revert All/);assert.doesNotMatch(html,/data-opt-select/);assert.doesNotMatch(html,/data-toggle=/);assert.doesNotMatch(html,/undefined/);}});
+
+test('Start Network applies only network tweaks; Revert All restores only network backups',async()=>{
+ const {ctx,calls,state,dialogs}=setup();
+ state.tweaks.push({id:'net.a',category:'network',name:'Net A',description:'A',risk:'medium',available:true},{id:'net.b',category:'network',name:'Net B',description:'B',risk:'low',available:true,applied:true});
+ const html=ctx.renderOptimization('network');assert.match(html,/id="net-start"/);assert.match(html,/Start Network/);assert.match(html,/id="net-revert"/);assert.doesNotMatch(html,/opt-start/);
+ await ctx.optimizationRun(false,'network');
+ assert.deepEqual(calls.filter(x=>x.action==='apply').map(x=>x.id),['net.a']);assert.equal(dialogs[0][0],'Start Network');
+ assert.equal(ctx.optState.result.cat,'network');assert.doesNotMatch(ctx.renderOptimization(),/db-result/);
+ calls.length=0;await ctx.optimizationRun(true,'network');
+ assert.equal(calls.some(x=>x.action==='backup-restore'),false);assert.match(ctx.optState.result.note,/Netzwerk/);
+});

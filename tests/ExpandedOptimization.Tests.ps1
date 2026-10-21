@@ -21,10 +21,20 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
     function Initialize-SafeModeStorage {$null=New-Item -ItemType Directory -Path $script:SafeModeDirectory -Force}
     function Read-SafeModeState {[pscustomobject]@{enabled=$script:safe}}
     function New-TweakerRestorePoint {}
+    $script:dnsMeasured=0
+    function Update-NetworkDnsChoice {$script:dnsMeasured++}
+    $script:failPartialNet=''
     function Get-OptimizationValue([string]$Field) {return $script:values[$Field]}
     function Set-OptimizationValue([string]$Field,$Value) {
         Assert-OptimizationValue $Field $Value
         $script:writes++
+        if ($script:failPartialNet -eq $Field) {
+            # First network card already written, second one fails.
+            $script:failPartialNet=''
+            $parts=$Value.value.Split('|')
+            $script:values[$Field]=[pscustomobject]@{exists=$true;kind=$Value.kind;value=($parts[0]+'|'+$script:values[$Field].value.Split('|')[1])}
+            throw 'simulated_partial_network_failure'
+        }
         if ($script:failAlways -eq $Field) {throw 'simulated_failure'}
         if ($script:failOnce -eq $Field) {
             $script:failOnce=''
@@ -44,13 +54,16 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
             'task' {[pscustomobject]@{exists=$true;kind='DWord';value=1}}
             'power' {[pscustomobject]@{exists=$true;kind='Power';value='381b4222-f694-41f0-9685-ff5bb260df2e|50'}}
             'hibernate' {[pscustomobject]@{exists=$true;kind='Hibernate';value='1|1|2|40'}}
+            'ifreg' {[pscustomobject]@{exists=$true;kind='Interfaces';value='{11111111-2222-3333-4444-555555555555}=x|{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE}=0'}}
+            'dns' {[pscustomobject]@{exists=$true;kind='Dns';value='{11111111-2222-3333-4444-555555555555}=|{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE}=192.168.1.2'}}
         }
     }
     try {
         $catalog=@(Get-TweakerCatalog)
-        Assert ($catalog.Count -eq 49) '49 catalog entries'
+        Assert ($catalog.Count -eq 61) '61 catalog entries'
         Assert (@($catalog | Where-Object category -eq performance).Count -eq 41) '40 screenshot entries plus existing plan'
-        Assert (@($catalog.id | Select-Object -Unique).Count -eq 49) 'Unique IDs'
+        Assert (@($catalog | Where-Object category -eq network).Count -eq 12) '12 network entries'
+        Assert (@($catalog.id | Select-Object -Unique).Count -eq 61) 'Unique IDs'
         foreach ($item in Get-OptimizationCatalog) {
             foreach ($language in @('de','en','it')) {Assert ($item.name[$language] -and $item.description[$language]) 'All translations required'}
             Assert (-not $item.bulkSafe) 'Extended settings require individual choice'
@@ -73,6 +86,17 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
             Assert $result.ok ('Shared restore '+$item.id)
             foreach ($field in $fields) {Assert (Test-OptimizationValueEqual $before[$field] $script:values[$field]) ('Exact original '+$field)}
         }
+        Assert ($script:dnsMeasured -eq 1) 'DNS speed measured once when applying the DNS tweak'
+        # Partial write across network cards is recognised and rolled back exactly.
+        foreach ($field in @('nagleAck','nagleNoDelay')) {$script:values[$field]=Seed $field}
+        $script:failPartialNet='nagleNoDelay'
+        Expect {Invoke-TweakerPerformance apply network.nagle.off} 'simulated_partial_network_failure'
+        Assert ($script:values.nagleAck.value -eq (Seed nagleAck).value -and $script:values.nagleNoDelay.value -eq (Seed nagleNoDelay).value) 'Partial network write rolled back'
+        Assert ((Get-Content (Join-Path $script:PerformanceStateDirectory 'network.nagle.off.json') -Raw | ConvertFrom-Json).status -eq 'restored') 'Network rollback recorded'
+        foreach ($bad in @(
+            @{f='nagleAck';v=[pscustomobject]@{exists=$true;kind='Interfaces';value='{11111111-2222-3333-4444-555555555555}=1;reg add'}},
+            @{f='dnsServers';v=[pscustomobject]@{exists=$true;kind='Dns';value='{11111111-2222-3333-4444-555555555555}=1.1.1.1 & calc'}}
+        )) {Expect {Assert-OptimizationValue $bad.f $bad.v} 'unsupported_optimization_value'}
         $script:safe=$true;$writes=$script:writes
         foreach ($id in @('windows.service.sysmain.off','windows.service.diagtrack.off','windows.service.wer.off','windows.service.wappush.off','windows.service.diagnosticshub.off','windows.service.xbgm.off')) {
             Expect {Invoke-TweakerPerformance apply $id} 'safemode_protects_service'

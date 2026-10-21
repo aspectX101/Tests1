@@ -1,6 +1,7 @@
 ﻿# Fixed adapters only. All persistence and operation locks live in Optimization.ps1.
 $script:ExtendedOptimization = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'OptimizationCatalog.json') -Raw | ConvertFrom-Json
 $script:ExtendedCatalogCache=@()
+. (Join-Path $PSScriptRoot 'OptimizationNetwork.ps1')
 
 function Get-ExtendedOptimizationCatalog {
     if ($script:ExtendedCatalogCache.Count -gt 0) {return $script:ExtendedCatalogCache}
@@ -102,6 +103,7 @@ function New-OptimizationServiceController([string]$Name) {
 }
 function Get-OptimizationNativeValue($D) {
     switch ($D.adapter) {
+        {$_ -in @('ifreg','dns')} {return Get-NetworkNativeValue $D}
         'service' {
             $service=Get-SafeModeService $D.service
             if (-not $service.exists) {throw 'optional_component_missing'}
@@ -149,6 +151,7 @@ function Get-OptimizationNativeValue($D) {
     }
 }
 function Get-OptimizationNativeTarget($D,$Current) {
+    if ($D.adapter -in @('ifreg','dns')) {return Get-NetworkNativeTarget $D $Current}
     if ($D.adapter -eq 'task' -and -not $Current.exists) {return $Current}
     $value=$D.target
     switch ($D.kind) {
@@ -160,6 +163,7 @@ function Get-OptimizationNativeTarget($D,$Current) {
 }
 function Set-OptimizationNativeValue($D,$Value) {
     switch ($D.adapter) {
+        {$_ -in @('ifreg','dns')} {Set-NetworkNativeValue $D $Value}
         'service' {
             # Critical services are never members of this fixed adapter allowlist.
             $protected=@((Get-SafeModePolicy | Where-Object critical).name)

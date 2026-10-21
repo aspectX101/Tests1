@@ -135,6 +135,7 @@ const UI_CAT_RULES = [
   [/^windows\.(ceip|office|activity|assistance|storage|clipboard|copilot|ink|sync|suggestions|spotlight)\./, 'privacy'],
   [/^windows\.(menu|tooltip|autoplay|explorer|close)\./, 'visuals'],
   [/^windows\.(gamebar|capture|gamemode|audio|legacy)\./, 'gaming'],
+  [/^windows\.mmcss\.latency$/, 'network'], // SystemResponsiveness gehört zu den Netzwerk-Tweaks (MMCSS-Netzwerkdrossel)
 ];
 const catOf = (tw) => {
   if (tw.category !== 'performance') return tw.category || 'other';
@@ -354,6 +355,7 @@ function catHero(c, parent) {
 function renderCategory(c, parent) {
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
+  if (c === 'network') return catHero(c) + `<div class="opt-v2">${renderOptimization('network')}</div>`;
   const all = tweaksIn(c);
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);

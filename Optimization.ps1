@@ -59,6 +59,7 @@ function Assert-OptimizationValue([string]$Field, $Value) {
         'String' {$Value.value -is [string] -and $Value.value.Length -le 1024 -and $Value.value -notmatch '[\x00-\x1f]'}
         'ServiceStart' {$Value.value -is [string] -and $Value.value -cmatch '^[234]\|[x01]$'}
         'Power' {$Value.value -is [string] -and $Value.value -cmatch '^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\|[0-9]{1,10}$' -and [decimal]$Value.value.Split('|')[1] -le 4294967295}
+        {$_ -in @('Interfaces','Dns')} {Test-NetworkValue $d $Value.value}
         'Hibernate' {$Value.value -is [string] -and $Value.value -cmatch '^[01]\|[x01]\|[x012]\|(x|[0-9]{1,3})$' -and ($Value.value.Split('|')[3] -eq 'x' -or [int]$Value.value.Split('|')[3] -le 100)}
         default {$false}
     }
@@ -117,6 +118,8 @@ function Set-OptimizationTrackedValue($Entry,$Value,$State,[string]$Path) {
 
 function Test-OptimizationIntermediate($Entry,$Value) {
     $d=Get-OptimizationDefinition $Entry.field
+    # Per network card values: every card is either still original or already at the target.
+    if ($Value.kind -in @('Interfaces','Dns')) {return Test-NetworkIntermediate $Entry $Value}
     # A single registry/task/power write is atomic. An unexpected third value
     # must remain a conflict, never become owned merely because a write failed.
     if ($d.adapter -ne 'hibernate' -or $Value.kind -ne 'Hibernate') {return $false}
@@ -205,6 +208,8 @@ function Invoke-TweakerOptimization([string]$Action,[string]$Id,[string]$StateDi
         if ($ExpectedRecoveryId) { Assert-ExpectedRecovery $state $path $ExpectedRecoveryId }
         if ($Action -eq 'apply') {
             if ($null -ne $state -and $state.status -ne 'restored') { throw 'existing_backup_restore_first' }
+            # Fastest public DNS is measured once per apply and then fixed for this backup.
+            if (@($fields | Where-Object {(Get-OptimizationDefinition $_).adapter -eq 'dns'}).Count -gt 0) {Update-NetworkDnsChoice}
             $entries = @($fields | ForEach-Object { $before=Get-OptimizationValue $_; [pscustomobject]@{field=$_;before=$before;target=(Get-OptimizationTarget $_ $before)} })
             foreach ($entry in $entries) {
                 $d=Get-OptimizationDefinition $entry.field

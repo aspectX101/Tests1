@@ -1032,6 +1032,258 @@
     "reversible": true,
     "available": true,
     "stateError": null
+  },
+  {
+    "description": {
+      "de": "Hebt die Fast-Send-Grenze des Windows-Socket-Treibers (AFD) auf 1500 Byte. Typische Spielpakete bis zur Ethernet-Paketgr\u00f6\u00dfe gehen dann \u00fcber den schnellen Kopierpfad. Kleiner Effekt, kein garantierter Ping-Gewinn. Neustart erforderlich.",
+      "en": "Raises the Windows socket driver (AFD) fast-send threshold to 1500 bytes, so typical game packets up to Ethernet packet size use the fast copy path. Small effect, no guaranteed ping gain. Restart required.",
+      "it": "Alza a 1500 byte la soglia fast-send del driver socket di Windows (AFD): i pacchetti di gioco tipici fino alla dimensione Ethernet usano il percorso di copia rapido. Effetto ridotto, nessun miglioramento del ping garantito. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.winsock.udp",
+    "risk": "medium",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Winsock: schneller UDP-Versand",
+      "en": "Winsock: fast UDP sends",
+      "it": "Winsock: invio UDP rapido"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Setzt NetworkThrottlingIndex auf aus. Windows begrenzt dann den Netzwerkdurchsatz nicht mehr, w\u00e4hrend Audio oder Video \u00fcber MMCSS l\u00e4uft. Hilft vor allem bei Musik im Hintergrund; etwas mehr CPU-Last f\u00fcr Netzwerkpakete m\u00f6glich. Neustart erforderlich.",
+      "en": "Sets NetworkThrottlingIndex to off, so Windows no longer limits network throughput while audio or video runs through MMCSS. Mainly helps with music in the background; slightly more CPU work for network packets is possible. Restart required.",
+      "it": "Imposta NetworkThrottlingIndex su disattivato: Windows non limita pi\u00f9 la rete mentre audio o video usano MMCSS. Utile soprattutto con musica in sottofondo; possibile un leggero aumento del carico CPU. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.throttle.off",
+    "risk": "medium",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Multimedia-Netzwerkdrossel aus",
+      "en": "Disable multimedia network throttling",
+      "it": "Disattiva limitazione rete multimediale"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Misst beim Anwenden Cloudflare (1.1.1.1) und Google (8.8.8.8) und tr\u00e4gt den schnelleren als IPv4-DNS f\u00fcr alle Ethernet- und WLAN-Karten ein. Beschleunigt Namensaufl\u00f6sung, nicht den Ping im Spiel. Ersetzt eigene DNS-Server (z. B. Pi-hole, Firmen-DNS); Revert stellt sie exakt wieder her.",
+      "en": "Measures Cloudflare (1.1.1.1) and Google (8.8.8.8) when applied and sets the faster one as IPv4 DNS for all Ethernet and Wi-Fi cards. Speeds up name lookups, not in-game ping. Replaces custom DNS servers (e.g. Pi-hole, company DNS); Revert restores them exactly.",
+      "it": "Misura Cloudflare (1.1.1.1) e Google (8.8.8.8) e imposta il pi\u00f9 veloce come DNS IPv4 per tutte le schede Ethernet e Wi-Fi. Velocizza la risoluzione dei nomi, non il ping in gioco. Sostituisce DNS personalizzati (es. Pi-hole, DNS aziendale); Revert li ripristina esattamente."
+    },
+    "bulkSafe": false,
+    "id": "network.dns.fast",
+    "risk": "medium",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Schnellster \u00f6ffentlicher DNS (1.1.1.1 oder 8.8.8.8)",
+      "en": "Fastest public DNS (1.1.1.1 or 8.8.8.8)",
+      "it": "DNS pubblico pi\u00f9 veloce (1.1.1.1 o 8.8.8.8)"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Setzt TCPNoDelay und TcpAckFrequency=1 f\u00fcr alle Ethernet- und WLAN-Karten: kleine TCP-Pakete werden ohne Sammelverz\u00f6gerung gesendet und sofort best\u00e4tigt. Wirkt nur auf TCP (z. B. Server-Downloads, Chats); FiveM-Spielverkehr l\u00e4uft \u00fcberwiegend \u00fcber UDP. Etwas mehr Pakete im Netz. Neustart erforderlich.",
+      "en": "Sets TCPNoDelay and TcpAckFrequency=1 on all Ethernet and Wi-Fi cards: small TCP packets are sent without batching delay and acknowledged immediately. Only affects TCP (e.g. server downloads, chats); FiveM gameplay traffic is mostly UDP. Slightly more packets on the network. Restart required.",
+      "it": "Imposta TCPNoDelay e TcpAckFrequency=1 su tutte le schede Ethernet e Wi-Fi: i piccoli pacchetti TCP partono senza attesa e vengono confermati subito. Vale solo per TCP (es. download dal server, chat); il traffico di gioco FiveM \u00e8 quasi tutto UDP. Leggermente pi\u00f9 pacchetti in rete. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.nagle.off",
+    "risk": "medium",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Nagle aus (TCPNoDelay + sofortige ACKs)",
+      "en": "Disable Nagle (TCPNoDelay + immediate ACKs)",
+      "it": "Disattiva Nagle (TCPNoDelay + ACK immediati)"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Verhindert, dass Windows sich automatisch mit offenen oder vorgeschlagenen Hotspots verbindet. Gespeicherte eigene WLANs verbinden weiter automatisch. Auf PCs ohne WLAN ohne Wirkung. Neustart erforderlich.",
+      "en": "Stops Windows connecting automatically to open or suggested hotspots. Your own saved Wi-Fi networks still connect automatically. No effect on PCs without Wi-Fi. Restart required.",
+      "it": "Impedisce a Windows di connettersi automaticamente a hotspot aperti o suggeriti. Le reti Wi-Fi salvate continuano a connettersi da sole. Nessun effetto senza Wi-Fi. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.wifisense.off",
+    "risk": "low",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "WLAN-Optimierung / Hotspot-Autoverbindung aus",
+      "en": "Disable Wi-Fi Sense / hotspot auto-connect",
+      "it": "Disattiva Wi-Fi Sense / connessione automatica hotspot"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Entfernt f\u00fcr alle Ethernet- und WLAN-Karten die Option, dass Windows die Karte zum Energiesparen abschaltet. Verhindert Verbindungsabbr\u00fcche nach Leerlauf. Wake-on-LAN kann danach nicht mehr funktionieren; Laptop-Akku h\u00e4lt etwas k\u00fcrzer. Neustart erforderlich.",
+      "en": "Removes the option for Windows to turn off Ethernet and Wi-Fi cards to save power. Prevents dropouts after idle periods. Wake-on-LAN may stop working; laptop battery life is slightly shorter. Restart required.",
+      "it": "Rimuove per tutte le schede Ethernet e Wi-Fi la possibilita che Windows le spenga per risparmiare energia. Evita disconnessioni dopo inattivita. Wake-on-LAN potrebbe non funzionare piu; batteria del portatile leggermente pi\u00f9 corta. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.nic.powersave.off",
+    "risk": "medium",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Energiesparen der Netzwerkkarte aus",
+      "en": "Disable network card power saving",
+      "it": "Disattiva risparmio energetico scheda di rete"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Gibt geschlossene Verbindungen nach 30 statt 120 Sekunden frei und nutzt TCP-Fensterskalierung ohne Zeitstempel (12 Byte weniger pro Paket). L\u00e4sst die automatische Empfangsfenster-Abstimmung von Windows unver\u00e4ndert. Kein garantierter Ping-Gewinn. Neustart erforderlich.",
+      "en": "Releases closed connections after 30 instead of 120 seconds and uses TCP window scaling without timestamps (12 bytes less per packet). Leaves Windows receive-window auto-tuning unchanged. No guaranteed ping gain. Restart required.",
+      "it": "Libera le connessioni chiuse dopo 30 invece di 120 secondi e usa il ridimensionamento della finestra TCP senza timestamp (12 byte in meno per pacchetto). Non modifica l'autotuning di Windows. Nessun miglioramento del ping garantito. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.tcp.gaming",
+    "risk": "medium",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "TCP-Stack f\u00fcr Spiele",
+      "en": "TCP stack for gaming",
+      "it": "Stack TCP per il gioco"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet die IPv6-Tunnel Teredo, 6to4 und ISATAP per Richtlinie ab. Echtes IPv6 deines Anschlusses bleibt aktiv. Xbox-App-Partychat und manche Xbox-Mehrspielerfunktionen brauchen Teredo und k\u00f6nnen danach ausfallen. Neustart erforderlich.",
+      "en": "Turns off the Teredo, 6to4 and ISATAP IPv6 tunnels by policy. Your connection's native IPv6 stays active. Xbox app party chat and some Xbox multiplayer features need Teredo and may stop working. Restart required.",
+      "it": "Disattiva via criterio i tunnel IPv6 Teredo, 6to4 e ISATAP. L IPv6 nativo della connessione resta attivo. La chat di gruppo dell app Xbox e alcune funzioni multigiocatore Xbox richiedono Teredo e potrebbero non funzionare. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.teredo.off",
+    "risk": "medium",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Teredo / 6to4 / ISATAP aus",
+      "en": "Disable Teredo / 6to4 / ISATAP",
+      "it": "Disattiva Teredo / 6to4 / ISATAP"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Windows-Updates und Store-Apps werden nur noch direkt von Microsoft geladen, nicht mehr mit anderen PCs im Netz oder Internet geteilt. Spart Upload im Hintergrund. Updates selbst bleiben aktiv. Neustart erforderlich.",
+      "en": "Windows updates and Store apps are downloaded directly from Microsoft only and no longer shared with other PCs on your network or the internet. Saves background upload. Updates stay enabled. Restart required.",
+      "it": "Aggiornamenti Windows e app dello Store vengono scaricati solo da Microsoft e non pi\u00f9 condivisi con altri PC in rete o su internet. Risparmia upload in background. Gli aggiornamenti restano attivi. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.delivery.off",
+    "risk": "low",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "\u00dcbermittlungsoptimierung aus",
+      "en": "Disable Delivery Optimization",
+      "it": "Disattiva Ottimizzazione recapito"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Setzt die Bandbreite, die Windows f\u00fcr priorisierte QoS-Anwendungen zur\u00fccklegen darf, auf 0%. Ehrlich: normale Programme und Spiele werden davon praktisch nie gebremst; der Effekt ist meist nicht messbar. Neustart erforderlich.",
+      "en": "Sets the bandwidth Windows may reserve for prioritised QoS applications to 0%. Honestly: normal programs and games are practically never slowed by it; the effect is usually not measurable. Restart required.",
+      "it": "Imposta allo 0% la banda che Windows pu\u00f2 riservare alle applicazioni QoS prioritarie. Onestamente: programmi e giochi normali non ne sono quasi mai rallentati; l'effetto di solito non \u00e8 misurabile. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.qos.reserve.off",
+    "risk": "low",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "QoS-Bandbreitenreserve auf 0%",
+      "en": "QoS bandwidth reserve to 0%",
+      "it": "Riserva di banda QoS allo 0%"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet LLMNR-Multicast ab und stellt NetBIOS auf Punkt-zu-Punkt (keine Broadcasts). Weniger Namensrundrufe im Netz und mehr Sicherheit in fremden WLANs. Alte Ger\u00e4te, die nur per NetBIOS-Name erreichbar sind, findest du danach nur noch per IP oder DNS. Neustart erforderlich.",
+      "en": "Turns off LLMNR multicast and sets NetBIOS to point-to-point (no broadcasts). Fewer name broadcasts on your network and better security on public Wi-Fi. Old devices reachable only by NetBIOS name must then be reached by IP or DNS. Restart required.",
+      "it": "Disattiva il multicast LLMNR e imposta NetBIOS su punto-punto (nessun broadcast). Meno broadcast di nomi in rete e pi\u00f9 sicurezza nelle reti Wi-Fi pubbliche. I vecchi dispositivi raggiungibili solo per nome NetBIOS andranno raggiunti per IP o DNS. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.llmnr.off",
+    "risk": "medium",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "LLMNR / NetBIOS-Rundrufe aus",
+      "en": "Disable LLMNR / NetBIOS broadcasts",
+      "it": "Disattiva broadcast LLMNR / NetBIOS"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Stellt den Windows-Dateifreigabedienst auf maximalen Durchsatz und schaltet die SMB-Bandbreitendrosselung beim Kopieren aus dem Netzwerk ab. Hilft nur bei Datei\u00fcbertragungen im Heimnetz, nicht in Spielen. Neustart erforderlich.",
+      "en": "Sets the Windows file sharing service to maximum throughput and turns off SMB bandwidth throttling when copying from the network. Only helps file transfers on your home network, not games. Restart required.",
+      "it": "Imposta il servizio di condivisione file di Windows sulla massima velocita e disattiva la limitazione di banda SMB durante le copie in rete. Aiuta solo i trasferimenti di file nella rete domestica, non i giochi. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "network.lanman.lan",
+    "risk": "low",
+    "category": "network",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Dateifreigabe f\u00fcr LAN optimieren",
+      "en": "Optimise file sharing for LAN",
+      "it": "Ottimizza condivisione file in LAN"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
   }
 ];
   if (typeof module !== "undefined" && module.exports) module.exports = catalog;

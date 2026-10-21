@@ -89,3 +89,24 @@ Validation: eight optimisation action tests plus four Debloat action regression 
 ## Start actions since 0.9.4
 
 Start Optimisations now confirms and applies every available, inactive entry in the visible performance category, including high-risk entries; no selection is required. Start Debloat refreshes app, tweak and startup inventories, then confirms all removable apps, available inactive Debloat policies and supported active unmanaged startup entries. App removal and Recall data-loss warnings remain explicit. Each eligible item is attempted once per run; independent actions continue after an error, and failures remain visible. Already-applied/unavailable entries are excluded. Status indicators replace selection controls. Revert All scope and backend safety/backup checks are unchanged. This behavior supersedes the earlier selection-based workflow described above.
+
+## Network tab since 0.9.9
+
+The Netzwerk / Network / Rete tab lists 12 `network.*` entries from `OptimizationCatalog.json` plus `windows.mmcss.latency` (shown there by the UI, still category `performance` in the backend). Start Network and Revert All use the same batch as Start Optimisations, scoped to this tab. All entries use the shared journal, restore point, verification and automatic rollback in `Optimization.ps1`.
+
+| ID | Concrete behavior | Risk |
+|---|---|---|
+| `network.winsock.udp` | AFD `FastSendDatagramThreshold` = 1500. | medium |
+| `network.throttle.off` | MMCSS `NetworkThrottlingIndex` = 0xFFFFFFFF (off). | medium |
+| `network.dns.fast` | Measures Cloudflare and Google (median of five lookups, Cloudflare wins ties) once when applied, stores the choice in `network-dns.txt` next to the journals and sets it as IPv4 DNS on every physical Ethernet/Wi-Fi card via netsh. IPv6 DNS is untouched. | medium |
+| `network.nagle.off` | `TcpAckFrequency` = 1 and `TCPNoDelay` = 1 on every physical card. TCP only. | medium |
+| `network.wifisense.off` | `AutoConnectAllowedOEM` = 0 and PolicyManager `AllowAutoConnectToWiFiSenseHotspots` = 0. | low |
+| `network.nic.powersave.off` | `PnPCapabilities` = 24 in each physical card's driver class key. | medium |
+| `network.tcp.gaming` | `TcpTimedWaitDelay` = 30 and `Tcp1323Opts` = 1. Auto-tuning unchanged; legacy `MaxUserPort`/`DefaultTTL` deliberately not used. | medium |
+| `network.teredo.off` | v6Transition policies `Teredo_State`, `6to4_State`, `ISATAP_State` = Disabled. | medium |
+| `network.delivery.off` | Delivery Optimization policy `DODownloadMode` = 0. | low |
+| `network.qos.reserve.off` | Psched policy `NonBestEffortLimit` = 0 (honestly described as rarely measurable). | low |
+| `network.llmnr.off` | DNS client policy `EnableMulticast` = 0 and NetBT `NodeType` = 2. | medium |
+| `network.lanman.lan` | LanmanServer `Size` = 3 and LanmanWorkstation `DisableBandwidthThrottling` = 1. | low |
+
+Per-card values (`ifreg`/`dns` adapters in `OptimizationNetwork.ps1`) are encoded as `{InterfaceGuid}=value|...` over all physical cards sorted by GUID, so a backup restores every card exactly. A different set of cards at restore time is reported as `external_change_detected`; a write that fails after some cards were changed is recognised as an intermediate state and rolled back. `tests/NetworkLive.Tests.ps1` reads all fields on real Windows and round-trips `TCPNoDelay`; `tests/network-windows.test.cjs` runs it and the full catalog test in the Windows release workflow.
