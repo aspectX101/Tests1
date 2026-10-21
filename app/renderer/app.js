@@ -261,24 +261,15 @@ function renderHome() {
   const ready=all.filter(x=>bulkOk(x) && !x.applied).length;
   const stopped=all.filter(x=>catOf(x)==='services'&&x.applied).length;
   const dict={
-    de:{label:'H1T.CC Tweak Utility',sub:'Übersicht & schnelle Aktionen für ein optimales System.',
+    de:{label:'H1T.CC Tweak Utility',sub:'Übersicht & Live-Monitor für dein System.',
       done:'Angewendete Tweaks',doneSub:'Aktuell aktiviert',available:'Verfügbare Tweaks',availableSub:'Auf deinem System',
-      selected:'Sicher verfügbar',selectedSub:'Bereit zum Anwenden',stopped:'Dienste optimiert',stoppedSub:'Aktive Service-Tweaks',
-      quick:'Schnellaktionen',quickDesc:'Die wichtigsten Funktionen mit einem Klick.',run:'Alles ausführen',runSub:'Sichere Tweaks anwenden',
-      undo:'Alle zurücksetzen',undoSub:'Änderungen aus Sicherungen wiederherstellen',restart:'PC neu starten',restartSub:'Änderungen übernehmen',
-      activities:'Aktivitäten',empty:'Noch keine Aktivitäten',emptyDesc:'Ausgeführte Änderungen und Optimierungen erscheinen hier.',recent:'Letzte Änderungen'},
-    en:{label:'H1T.CC Tweak Utility',sub:'Overview & quick actions for your system.',
+      selected:'Sicher verfügbar',selectedSub:'Bereit zum Anwenden',stopped:'Dienste optimiert',stoppedSub:'Aktive Service-Tweaks',},
+    en:{label:'H1T.CC Tweak Utility',sub:'Overview & live monitor for your system.',
       done:'Applied tweaks',doneSub:'Currently enabled',available:'Available tweaks',availableSub:'On your system',
-      selected:'Safe & ready',selectedSub:'Ready to apply',stopped:'Services optimized',stoppedSub:'Applied service tweaks',
-      quick:'Quick actions',quickDesc:'Important functions in a single click.',run:'Apply all',runSub:'Apply safe tweaks',
-      undo:'Restore all',undoSub:'Restore changes from backups',restart:'Restart PC',restartSub:'Apply pending changes',
-      activities:'Activity',empty:'No activity yet',emptyDesc:'Changes and optimizations will appear here.',recent:'Recent changes'},
-    it:{label:'H1T.CC Tweak Utility',sub:'Panoramica e azioni rapide per il sistema.',
+      selected:'Safe & ready',selectedSub:'Ready to apply',stopped:'Services optimized',stoppedSub:'Applied service tweaks',},
+    it:{label:'H1T.CC Tweak Utility',sub:'Panoramica e monitor dal vivo del sistema.',
       done:'Modifiche applicate',doneSub:'Attualmente attive',available:'Modifiche disponibili',availableSub:'Nel tuo sistema',
-      selected:'Sicure e pronte',selectedSub:'Pronte da applicare',stopped:'Servizi ottimizzati',stoppedSub:'Modifiche attive ai servizi',
-      quick:'Azioni rapide',quickDesc:'Funzioni principali con un clic.',run:'Applica tutte',runSub:'Applica modifiche sicure',
-      undo:'Ripristina tutto',undoSub:'Ripristina modifiche dai backup',restart:'Riavvia PC',restartSub:'Applica le modifiche',
-      activities:'Attività',empty:'Nessuna attività',emptyDesc:'Le modifiche verranno visualizzate qui.',recent:'Modifiche recenti'}
+      selected:'Sicure e pronte',selectedSub:'Pronte da applicare',stopped:'Servizi ottimizzati',stoppedSub:'Modifiche attive ai servizi',}
   }[state.lang];
   const metric=(id,val,label,sub,iconName,cls='')=>`<div class="card h1t-metric ${cls}">
     <div class="h1t-metric-icon">${icon(iconName)}</div>
@@ -287,14 +278,7 @@ function renderHome() {
     <div class="h1t-metric-trend" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="h1t-metric-meter" aria-hidden="true"><i></i></div>
   </div>`;
-  const action=(id,type,ic,name,description,disabled)=>`<button id="${id}" class="h1t-quick ${type}" ${disabled?'disabled':''}>
-    <span class="h1t-quick-icon">${icon(ic)}</span>
-    <span class="h1t-quick-copy"><b>${esc(name)}</b><small>${esc(description)}</small></span><span class="h1t-quick-arr">›</span></button>`;
-  const rows=(state.activity||[]).slice(0,5);
-  const activity=rows.length?`<div class="h1t-activity-list">${rows.map(a=>`<div class="h1t-activity-row">
-      <span class="h1t-act-dot ${a.kind==='fail'?'err':a.kind==='off'?'off':''}"></span>
-      <div><b>${esc(a.text)}</b><small>${esc(fmtDate(a.at))}</small></div></div>`).join('')}</div>`:
-      `<div class="h1t-activity-empty">${icon('backups')}<b>${esc(dict.empty)}</b><p>${esc(dict.emptyDesc)}</p></div>`;
+  const seg=(k)=>`<button data-metric="${k}" class="${state.metric===k?'active':''}">${k.toUpperCase()}</button>`;
   return `<div class="dashboard-home h1t-dashboard">
     <header class="h1t-dash-hero"><div class="h1t-dash-copy">
       <span class="h1t-dash-eyebrow">${esc(dict.label)}</span>
@@ -305,21 +289,28 @@ function renderHome() {
       ${metric('safe',ready,dict.selected,dict.selectedSub,'profiles')}
       ${metric('services',stopped,dict.stopped,dict.stoppedSub,'services','warn')}
     </div>
-    <section class="card h1t-panel h1t-action-panel">
-      <div class="h1t-panel-head"><div class="h1t-panel-name">${icon('bolt')}<span>${esc(dict.quick)}</span></div><p class="h1t-panel-hint">${esc(dict.quickDesc)}</p></div>
-      <div class="h1t-quick-grid">
-       ${action('qa-safe','primary','bolt',dict.run,dict.runSub,!ready)}
-       ${action('qa-revert','secondary','revert',dict.undo,dict.undoSub,false)}
-       ${action('qa-restart','amber','restartpc',dict.restart,dict.restartSub,false)}
-      </div></section>
-    <section class="card h1t-panel h1t-activity-panel">
-      <div class="h1t-panel-head"><div class="h1t-panel-name">${icon('restartpc')}<span>${esc(dict.activities)}</span></div>
-        <p class="h1t-panel-hint">${esc(rows.length?dict.recent:dict.empty)}</p></div>
-      ${activity}
-    </section>
     <section class="h1t-monitor-panel" aria-label="Hardware monitoring">
       <div class="h1t-monitor-label">${esc(state.lang==='de'?'SYSTEMMONITOR':state.lang==='it'?'MONITOR SISTEMA':'SYSTEM MONITOR')}</div>
       <div class="rings">${ring('cpu',t().cpu)}${ring('gpu',t().gpu)}${ring('ram',t().ram)}</div>
+      <div class="home-row">
+        <div class="card chart-card">
+          <div class="chart-head">
+            <div><h2>${t()[state.metric]}</h2><p>${t().current} <span data-current>0</span>% · ${t().last60}</p></div>
+            <div class="seg">${seg('cpu')}${seg('gpu')}${seg('ram')}</div>
+          </div>
+          <div class="chart">
+            <div class="chart-y"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
+            <svg viewBox="0 0 600 200" preserveAspectRatio="none">
+              <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+              </linearGradient></defs>
+              ${[0, 40, 80, 120, 160].map((y) => `<line class="grid" x1="0" x2="600" y1="${y}" y2="${y}"/>`).join('')}
+              <path class="area" data-area/><path class="line" data-line/>
+            </svg>
+          </div>
+        </div>
+        ${window.DashboardMedia.html(state.lang)}
+      </div>
     </section>
   </div>`;
 }

@@ -42,7 +42,10 @@ test('all routes retain navigation while page transitions honor reduced motion',
   const css = read('app/renderer/h1t.css');
   assert.match(app, /function go\(route\)/);
   assert.match(app, /state\.enter = true/);
-  assert.match(app, /class="h1t-quick-grid"/);
+  // Dashboard: live monitor with chart and Spotify instead of quick actions/activity (user request)
+  assert.match(app, /class="card chart-card"/);
+  assert.match(app, /window\.DashboardMedia\.html\(state\.lang\)/);
+  assert.doesNotMatch(app, /class="h1t-quick-grid"|h1t-activity-panel/);
   assert.match(app, /data-go="backups"/);
   assert.match(app, /data-cat="performance"/);
   assert.match(app, /data-cat="network"/);
