@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>UND.CC Tweaker</title>
+  <title>H1T.CC | Tweak Utility</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="v2.css">
   <link rel="stylesheet" href="debloat.css">
@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="ignition.css">
   <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="mods.css">
+  <link rel="stylesheet" href="h1t.css">
 </head>
 <body class="booting">
   <div class="splash ignition" id="splash" aria-hidden="true">
@@ -20,25 +21,21 @@
     <div class="ignition-orbit orbit-a"></div>
     <div class="ignition-orbit orbit-b"></div>
     <div class="ignition-emblem">
-      <svg viewBox="0 0 120 120" fill="none">
-        <path class="ignition-shard shard-left" d="M24 23H47V73C47 83 51 88 60 88V110C36 110 24 97 24 73Z"/>
-        <path class="ignition-shard shard-right" d="M96 23H73V73C73 83 69 88 60 88V110C84 110 96 97 96 73Z"/>
-        <path class="ignition-edge" d="M24 23V73C24 97 36 110 60 110C84 110 96 97 96 73V23"/>
-      </svg>
+      <img src="assets/h1t-emblem.svg" alt="" class="h1t-splash-emblem">
     </div>
     <div class="ignition-wave"></div>
     <div class="ignition-flare"></div>
-    <div class="ignition-wordmark"><span>UND</span><b>.CC</b><small>TWEAKER</small></div>
+    <div class="ignition-wordmark"><span>H1T</span><b>.CC</b><small>TWEAK UTILITY</small></div>
     <div class="ignition-horizon"></div>
-    <div class="ignition-signature">UND.CC</div>
+    <div class="ignition-signature">H1T.CC · PRECISION ENGINEERED</div>
   </div>
   <div class="app" id="app">
     <aside class="sidebar">
       <div class="brand">
-        <img class="logo" src="assets/logo-icon.png" alt="" width="44" height="44">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14"/><path d="M6 20h28M20 6c-10 8-10 20 0 28M20 6c10 8 10 20 0 28M10 12h20M10 28h20"/><path d="M16 15l8 10m0-10-8 10" stroke-width="2.5"/></svg></div>
         <div class="brand-text">
-          <div class="brand-name">UND<span>.CC</span></div>
-          <div class="brand-sub">Tweaker <span class="brand-ver"></span></div>
+          <div class="brand-name">H1T<span>.CC</span></div>
+          <div class="brand-sub">Tweak Utility <span class="brand-ver"></span></div>
         </div>
       </div>
       <label class="nav-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -48,7 +45,7 @@
 
     <main class="main">
       <header class="titlebar">
-        <div class="crumbs" id="crumbs"></div>
+        <div class="crumbs" id="crumbs"></div><div class="h1t-topbar-meta"><span><i></i>PRECISION SOFTWARE</span><span>H1T.CC / 2026</span></div>
         <div class="win-controls">
           <button class="win-btn" id="win-min" aria-label="Minimieren">
             <svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg>
