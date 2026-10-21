@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="mods.css">
   <link rel="stylesheet" href="color.css">
   <link rel="stylesheet" href="h1t.css">
+  <link rel="stylesheet" href="h1t-dashboard.css">
 </head>
 <body class="booting">
   <div class="splash ignition" id="splash" aria-hidden="true">
@@ -36,21 +37,28 @@
         <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14"/><path d="M6 20h28M20 6c-10 8-10 20 0 28M20 6c10 8 10 20 0 28M10 12h20M10 28h20"/><path d="M16 15l8 10m0-10-8 10" stroke-width="2.5"/></svg></div>
         <div class="brand-text">
           <div class="brand-name">H1T<span>.CC</span></div>
-          <div class="brand-sub">Tweak Utility <span class="brand-ver"></span></div>
+          <div class="brand-sub">TWEAK UTILITY <span class="brand-ver"></span></div>
         </div>
       </div>
       <label class="nav-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="nav-search" type="search" autocomplete="off" spellcheck="false"><kbd>Ctrl F</kbd></label>
+        <input id="nav-search" type="search" autocomplete="off" spellcheck="false"><kbd>Ctrl K</kbd></label>
       <nav class="nav" id="nav"></nav>
     </aside>
 
     <main class="main">
       <header class="titlebar">
-        <div class="crumbs" id="crumbs"></div><div class="h1t-topbar-meta"><span><i></i>PRECISION SOFTWARE</span><span>H1T.CC / 2026</span></div>
+        <div class="crumbs" id="crumbs"></div>
+        <div class="h1t-topbar-meta">
+          <label class="h1t-lang"><span aria-hidden="true">🇩🇪</span>
+            <select id="h1t-language" aria-label="Language"><option value="de">Deutsch</option><option value="en">English</option><option value="it">Italiano</option></select>
+          </label>
+          <button id="h1t-ambient" class="h1t-ambient" type="button" aria-pressed="true" aria-label="Ambient effects"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M5 19l1.5-1.5"/></svg></button>
+        </div>
         <div class="win-controls">
           <button class="win-btn" id="win-min" aria-label="Minimieren">
             <svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg>
           </button>
+          <button class="win-btn" id="win-max" aria-label="Maximieren"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></svg></button>
           <button class="win-btn close" id="win-close" aria-label="Schließen">
             <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
           </button>
