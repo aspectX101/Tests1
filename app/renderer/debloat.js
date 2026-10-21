@@ -3,21 +3,21 @@ const dbText = () => t().debloat;
 const DB_GROUPS = ['consumer','xbox','mail-camera','onedrive','ai','widgets','tools','reinstalls'];
 const DB_SETTINGS = {onedrive:'debloat.onedrive.block',ai:'debloat.recall.off',widgets:'debloat.widgets.hide',reinstalls:'debloat.suggestions.off'};
 function dbSelection() {
-  return {apps:(state.db.data?.apps||[]).filter(a=>a.removable&&state.db.selected.has(a.id)),
-    settings:state.tweaks.filter(x=>Object.values(DB_SETTINGS).includes(x.id)&&x.available!==false&&!x.applied&&state.db.selected.has(x.id))};
+  return {startup:(state.db.startup?.entries||[]).filter(a=>a.available&&!a.disabled&&!a.managed),apps:(state.db.data?.apps||[]).filter(a=>a.removable),
+    settings:state.tweaks.filter(x=>Object.values(DB_SETTINGS).includes(x.id)&&x.available!==false&&!x.applied)};
 }
 function renderDebloat() {
   const d=state.db,tr=dbText(),apps=d.data?.apps||[],selection=dbSelection();
   const cards=DB_GROUPS.map(group=>{
     const members=apps.filter(a=>a.group===group),tw=state.tweaks.find(x=>x.id===DB_SETTINGS[group]);
-    const count=members.filter(a=>a.removable&&d.selected.has(a.id)).length+(tw&&d.selected.has(tw.id)?1:0);
+    const count=members.filter(a=>a.removable).length+(tw&&tw.available!==false&&!tw.applied?1:0);
     return `<details class="card db-card" data-db-group="${group}" ${d.openGroups?.has(group)?'open':''}>
       <summary><span><strong>${esc(tr.groups[group][0])}</strong><small>${esc(tr.groups[group][1])}</small></span><span class="db-count">${count||'+'}</span></summary>
-      <div class="db-options">${members.map(a=>`<label class="db-app"><input type="checkbox" data-debloat-select="${esc(a.id)}" ${d.selected.has(a.id)?'checked':''} ${d.busy||!a.removable?'disabled':''}><span>${esc(a.name)}<small>${a.installed?(a.removable?tr.installed:esc(errorText(a.reason))):tr.absent}</small></span></label>`).join('')}
-      ${tw?`<label class="db-app"><input type="checkbox" data-debloat-select="${tw.id}" ${d.selected.has(tw.id)?'checked':''} ${d.busy||tw.available===false||tw.applied?'disabled':''}><span>${esc(tw.name)}<small>${esc(tw.description)}</small><small>${tw.applied?tr.alreadyApplied:tw.available===false?esc(errorText(tw.stateError)):esc(tw.risk)}</small></span></label>`:''}
+      <div class="db-options">${members.map(a=>`<label class="db-app"><span>${esc(a.name)}<small>${a.installed?(a.removable?tr.installed:esc(errorText(a.reason))):tr.absent}</small></span></label>`).join('')}
+      ${tw?`<label class="db-app"><span>${esc(tw.name)}<small>${esc(tw.description)}</small><small>${tw.applied?tr.alreadyApplied:tw.available===false?esc(errorText(tw.stateError)):esc(tw.risk)}</small></span></label>`:''}
       ${!d.data?`<p>${tr.unknown}</p>`:''}</div></details>`;
   }).join('');
-  return `<div class="db-actions"><button class="pill dark" id="db-start" ${d.busy||!selection.apps.length&&!selection.settings.length?'disabled':''}>${tr.start}</button><button class="pill dark" id="db-revert" ${d.busy?'disabled':''}>Revert All</button></div>
+  return `<div class="db-actions"><button class="pill dark" id="db-start" ${d.busy||!selection.apps.length&&!selection.settings.length&&!selection.startup.length?'disabled':''}>${tr.start}</button><button class="pill dark" id="db-revert" ${d.busy?'disabled':''}>Revert All</button></div>
     <div class="db-toolbar"><span>${esc(tr.selectHint)}</span><button class="pill dark" id="db-reload" ${d.busy?'disabled':''}>${tr.refresh}</button></div>
     ${d.error?`<p role="alert">${esc(errorText(d.error))}</p>`:''}
     <details class="card db-startup" ${d.startupOpen?'open':''}><summary>${tr.startup}</summary><p class="row-desc">${esc(tr.startupScope)}</p><button class="pill dark" data-debloat-open="startup-settings">${tr.windowsStartup}</button>
@@ -37,20 +37,39 @@ async function debloatLoad() {
   if(state.route.cat==='debloat')render();
 }
 async function debloatStart() {
-  if(state.db.busy)return;const selected=dbSelection();if(!selected.apps.length&&!selected.settings.length)return;
-  state.db.busy=true;render();
+  if(state.db.busy||state.busy?.size||state.bkBusy||state.safeBusy)return;
+  state.db.busy=true;state.db.result=null;render();
+  const results=[];
   try {
+    const [apps,startup,list]=await Promise.all([call('debloat-list'),call('startup-list'),call('list')]);
+    const failed=[apps,startup,list].find(x=>!x?.ok);if(failed)throw Error(failed.error||dbText().partial);
+    state.db.data=apps;state.db.startup=startup;state.tweaks=list.tweaks;
+    const selected=dbSelection();
+    if(!selected.apps.length&&!selected.settings.length&&!selected.startup.length)return;
     const ids=selected.apps.map(a=>a.id);
     const preview=ids.length?await call('debloat-preview',undefined,{appIds:ids}):null;
-    if(ids.length&&!preview?.ok){toast(errorText(preview?.error),'error');return;}
-    const lines=[...(preview?.apps||[]).map(a=>a.name),...selected.settings.map(x=>`${x.name}: ${x.description}`)].join('\n');
-    const warning=ids.length?dbText().confirmBody:dbText().settingsConfirm;
+    if(ids.length&&!preview?.ok)throw Error(preview?.error||dbText().partial);
+    const lines=[...(preview?.apps||[]).map(a=>a.name),...selected.settings.map(x=>`${x.name}: ${x.description}`),...selected.startup.map(x=>`${dbText().startup}: ${x.name}`)].join('\n');
+    const warning=[dbText().allConfirm,dbText().settingsConfirm,ids.length?dbText().confirmBody:''].filter(Boolean).join('\n\n');
     if(!await confirmDialog(dbText().start,`${warning}\n\n${lines}`,dbText().start))return;
-    const results=[];let ok=true;
-    if(ids.length){const res=await call('debloat-remove',undefined,{appIds:ids,previewToken:preview.previewToken,confirmDataLoss:true});ok=!!res?.ok;results.push(...(res?.results||[{name:dbText().remove,error:res?.error}]));}
-    if(ok)for(const tw of selected.settings){const res=await call('apply',tw.id,{confirmDataLoss:tw.id==='debloat.recall.off'});results.push({id:tw.id,name:tw.name,status:'applied',error:res?.ok?null:res?.error});if(res?.restartRequired)state.restartPending=true;if(!res?.ok){ok=false;break;}}
+    let ok=true;
+    if(ids.length){
+      const res=await call('debloat-remove',undefined,{appIds:ids,previewToken:preview.previewToken,confirmDataLoss:true});
+      ok=!!res?.ok;results.push(...(res?.results||[]));
+      if(!res?.ok)results.push({name:dbText().remove,error:res?.error||dbText().partial});
+    }
+    for(const tw of selected.settings){
+      const res=await call('apply',tw.id,{confirmDataLoss:tw.id==='debloat.recall.off'});
+      results.push({id:tw.id,name:tw.name,status:'applied',error:res?.ok?null:res?.error||dbText().partial});
+      if(res?.restartRequired)state.restartPending=true;if(!res?.ok)ok=false;
+    }
+    for(const entry of selected.startup){
+      const res=await call('startup-disable',entry.id,{previewToken:entry.token});
+      results.push({name:entry.name,status:'disabled',error:res?.ok?null:res?.error||dbText().partial});if(!res?.ok)ok=false;
+    }
     state.db.result={ok,results,note:ids.length?dbText().reinstallNotice:''};
-  } finally {state.db.busy=false;await debloatLoad();}
+  } catch(err){state.db.result={ok:false,results,note:errorText(err.message)};}
+  finally {state.db.busy=false;await debloatLoad();}
 }
 async function debloatRevertAll() {
   if(state.db.busy)return;state.db.busy=true;render();
@@ -84,6 +103,7 @@ async function startupChange(id) {
   state.db.busy=false;await debloatLoad();
 }
 
-document.addEventListener('change',e=>{const id=e.target.dataset?.debloatSelect;if(!id||state.db.busy)return;if(e.target.checked)state.db.selected.add(id);else state.db.selected.delete(id);render();});
 document.addEventListener('toggle',e=>{if(!e.target.isConnected)return;if(e.target.classList?.contains('db-startup'))state.db.startupOpen=e.target.open;const group=e.target.dataset?.dbGroup;if(group){state.db.openGroups??=new Set();if(e.target.open)state.db.openGroups.add(group);else state.db.openGroups.delete(group);}},true);
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='db-reload')debloatLoad();if(b.id==='db-start')debloatStart();if(b.id==='db-revert')debloatRevertAll();if(b.dataset.startupId)startupChange(b.dataset.startupId);if(b.dataset.debloatOpen)bridge.openDebloatTarget(b.dataset.debloatOpen).then(r=>{if(!r?.ok)toast(errorText(r?.error),'error');});});
+
+document.addEventListener('click',e=>{if(state.db.busy&&!e.target.closest('#modal, #win-min, #win-close')){e.preventDefault();e.stopImmediatePropagation();}},true);

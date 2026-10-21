@@ -54,3 +54,7 @@ All actions return one UTF-8 JSON object, exit 0 on success and 1 on failure. El
 - [Turn off or uninstall OneDrive](https://support.microsoft.com/en-us/onedrive/turn-off-disable-or-uninstall-onedrive).
 - [Game Assist FAQ](https://support.microsoft.com/en-gb/edge/microsoft-edge-game-assist-faq).
 - [Launch Microsoft Store](https://learn.microsoft.com/windows/apps/develop/launch/launch-store-app).
+
+## Start actions since 0.9.4
+
+Start Optimisations now confirms and applies every available, inactive entry in the visible performance category, including high-risk entries; no selection is required. Start Debloat refreshes app, tweak and startup inventories, then confirms all removable apps, available inactive Debloat policies and supported active unmanaged startup entries. App removal and Recall data-loss warnings remain explicit. Each eligible item is attempted once per run; independent actions continue after an error, and failures remain visible. Already-applied/unavailable entries are excluded. Status indicators replace selection controls. Revert All scope and backend safety/backup checks are unchanged. This behavior supersedes the earlier selection-based workflow described above.
