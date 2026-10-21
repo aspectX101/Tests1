@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('tweaker', {
   lastSafeMode: () => ipcRenderer.invoke('tweaker:safemode-last'),
   onSafeMode: (cb) => ipcRenderer.on('tweaker:safemode', (_e, msg) => cb(msg)),
   minimize: () => ipcRenderer.send('window:minimize'),
+  maximize: () => ipcRenderer.send('window:maximize'),
   close: () => ipcRenderer.send('window:close'),
   onUsage: (cb) => ipcRenderer.on('tweaker:usage', (_e, u) => cb(u)),
   // Updates (GitHub-Releases)
