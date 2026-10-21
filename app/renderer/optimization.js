@@ -5,21 +5,27 @@ const OPT_TEXT = {
   en: { hint:'Start Optimisations applies all available, inactive tweaks in this tab after confirmation, including high-risk tweaks. Active settings are marked.', select:'Select safe tweaks', confirm:'All the following available settings will be applied. Review their risks and descriptions:', restore:'Only backed-up settings from the Optimisation tab will be restored. Other sections remain unchanged.', empty:'No optimisation backups available to restore.', done:'Completed', partial:'Not fully completed', applied:'Applied', restored:'Restored', active:'Active', failed:'Action failed', refresh:'Could not refresh the current status.' },
   it: { hint:'Start Optimisations applica tutte le modifiche disponibili e inattive della scheda dopo conferma, incluse quelle rischiose. Le impostazioni attive sono indicate.', select:'Seleziona modifiche sicure', confirm:'Verranno applicate tutte le seguenti impostazioni disponibili. Controlla rischi e descrizioni:', restore:'Verranno ripristinate solo le impostazioni salvate della scheda Ottimizzazione. Le altre sezioni restano invariate.', empty:'Nessun backup di ottimizzazione da ripristinare.', done:'Completato', partial:'Non completato interamente', applied:'Applicato', restored:'Ripristinato', active:'Attivo', failed:'Operazione non riuscita', refresh:'Impossibile aggiornare lo stato attuale.' }
 };
-// Same Start/Revert All batch for the Leistung and Netzwerk tabs; only label, ids and texts differ.
-const OPT_TABS = { performance: { start:'Start Optimisations', prefix:'opt' }, network: { start:'Start Network', prefix:'net' } };
+// Same Start/Revert All batch for Leistung, Netzwerk, Dienste, Privatsphäre und Oberfläche; only label, ids and texts differ.
+const OPT_TABS = { performance: { start:'Start Optimisations', prefix:'opt' }, network: { start:'Start Network', prefix:'net' },
+  services: { start:'Enable All', prefix:'svc' }, privacy: { start:'Enable All', prefix:'prv' }, visuals: { start:'Enable All', prefix:'vis' } };
 const NET_TEXT = {
   de: { hint:'Start Network wendet nach Bestätigung alle verfügbaren, noch nicht aktiven Netzwerk-Tweaks an – auch riskante. Jede Änderung wird gesichert und lässt sich mit Revert All exakt zurücksetzen.', restore:'Nur gesicherte Einstellungen aus dem Netzwerk-Tab werden wiederhergestellt. Andere Bereiche bleiben unverändert.', empty:'Keine Netzwerk-Sicherungen zum Wiederherstellen vorhanden.' },
   en: { hint:'Start Network applies all available, inactive network tweaks after confirmation, including high-risk ones. Every change is backed up and Revert All restores it exactly.', restore:'Only backed-up settings from the Network tab will be restored. Other sections remain unchanged.', empty:'No network backups available to restore.' },
   it: { hint:'Start Network applica dopo conferma tutte le modifiche di rete disponibili e inattive, anche quelle rischiose. Ogni modifica viene salvata e Revert All la ripristina esattamente.', restore:'Verranno ripristinate solo le impostazioni salvate della scheda Rete. Le altre sezioni restano invariate.', empty:'Nessun backup di rete da ripristinare.' }
 };
-const optText = (cat='performance') => ({ ...(OPT_TEXT[state.lang] || OPT_TEXT.en), ...(cat === 'network' ? NET_TEXT[state.lang] || NET_TEXT.en : {}) });
+const TAB_TEXT = {
+  de: { hint:'Enable All wendet nach Bestätigung alle verfügbaren, noch nicht aktiven Tweaks dieses Tabs an – auch riskante. Jede Änderung wird gesichert; Revert All setzt nur diesen Tab exakt zurück.', restore:'Nur gesicherte Einstellungen aus diesem Tab werden wiederhergestellt. Andere Bereiche bleiben unverändert.', empty:'Keine Sicherungen aus diesem Tab zum Wiederherstellen vorhanden.' },
+  en: { hint:'Enable All applies all available, inactive tweaks in this tab after confirmation, including high-risk ones. Every change is backed up; Revert All restores only this tab exactly.', restore:'Only backed-up settings from this tab will be restored. Other sections remain unchanged.', empty:'No backups from this tab available to restore.' },
+  it: { hint:'Enable All applica dopo conferma tutte le modifiche disponibili e inattive di questa scheda, anche quelle rischiose. Ogni modifica viene salvata; Revert All ripristina esattamente solo questa scheda.', restore:'Verranno ripristinate solo le impostazioni salvate di questa scheda. Le altre sezioni restano invariate.', empty:'Nessun backup di questa scheda da ripristinare.' }
+};
+const optText = (cat='performance') => ({ ...(OPT_TEXT[state.lang] || OPT_TEXT.en), ...(cat === 'network' ? NET_TEXT[state.lang] || NET_TEXT.en : cat !== 'performance' ? TAB_TEXT[state.lang] || TAB_TEXT.en : {}) });
 const optTweaks = (cat='performance') => tweaksIn(cat);
 const optSelection = (cat='performance') => optTweaks(cat).filter(x => x.available !== false && !x.applied);
 function renderOptimization(cat='performance') {
   const tr=optText(cat), all=optTweaks(cat), tab=OPT_TABS[cat];
   const list=all.filter(x=>state.filter==='on'?x.applied:state.filter==='off'?!x.applied:true);
   const chip=k=>`<button data-filter="${k}" class="${state.filter===k?'active':''}" ${opt.busy?'disabled':''}>${t()[k]}</button>`;
-  return `<div class="db-actions"><button class="pill dark" id="${tab.prefix}-start" ${opt.busy||!optSelection(cat).length?'disabled':''}>${tab.start}</button><button class="pill dark" id="${tab.prefix}-revert" ${opt.busy?'disabled':''}>Revert All</button></div>
+  return `<div class="db-actions"><button class="pill dark opt-go" id="${tab.prefix}-start" ${opt.busy||!optSelection(cat).length?'disabled':''}>${tab.start}</button><button class="pill dark" id="${tab.prefix}-revert" ${opt.busy?'disabled':''}>Revert All</button></div>
     <p class="hint">${esc(opt.busy?t().working:tr.hint)}</p>
     <div class="toolbar"><div class="seg">${chip('all')}${chip('on')}${chip('off')}</div></div>
     <div class="rows" aria-busy="${opt.busy}">${list.map(x=>`<label class="card row"><span class="row-body"><span class="row-title">${esc(x.name)} <span class="tag${x.risk==='high'?' high':''}">${esc(t().risk[x.risk]||x.risk)}</span>${x.requiresRestart?` <span class="tag">${esc(t().restart)}</span>`:''}${x.applied?` <span class="tag">${esc(tr.active)}</span>`:''}</span><span class="row-desc opt-description">${esc(x.description)}${x.available===false?`<br>${esc(errorText(x.stateError))}`:''}</span></span><input type="checkbox" aria-label="${esc(x.name)}" ${x.applied?'checked':''} disabled></label>`).join('')||`<div class="card empty">${esc(t().empty)}</div>`}</div>
@@ -72,8 +78,8 @@ document.addEventListener('click',e=>{
 },true);
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b||opt.busy)return;
-  if(b.id==='opt-start')optimizationRun();
-  if(b.id==='opt-revert')optimizationRun(true);
-  if(b.id==='net-start')optimizationRun(false,'network');
-  if(b.id==='net-revert')optimizationRun(true,'network');
+  for(const [cat,tab] of Object.entries(OPT_TABS)){
+    if(b.id===`${tab.prefix}-start`)optimizationRun(false,cat);
+    if(b.id===`${tab.prefix}-revert`)optimizationRun(true,cat);
+  }
 });

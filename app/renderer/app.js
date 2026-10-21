@@ -44,7 +44,10 @@ const ICONS = {
   cleanup: '<path d="M6 6l12 12M18 6 6 18"/>',
   safemode: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
   mods: '<path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>',
-  profiles: '<path d="M12 2c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.6 1.2 2.6 2.3 3C10.6 7.8 11.2 4.6 12 2Z"/><path d="M12 22a2.5 2.5 0 0 1-2.5-2.5c0-1.6 1.4-2.4 2.5-4 1.1 1.6 2.5 2.4 2.5 4A2.5 2.5 0 0 1 12 22Z"/>',
+  // Profile = Voreinstellungen (Safe / Aggressiv / Hardcore): Schieberegler
+  profiles: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  // Aktive Tweaks: eingeschalteter Schalter
+  active: '<rect x="2" y="6" width="20" height="12" rx="6"/><circle cx="16" cy="12" r="3"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   restartpc: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
   revert: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
@@ -278,7 +281,7 @@ function renderHome() {
       ${window.DashboardMedia.html(state.lang)}
     </div>
     <div class="stats">
-      ${stat('profiles', t().statActive, on, `/ ${total}`)}
+      ${stat('active', t().statActive, on, `/ ${total}`)}
       ${stat('bolt', t().statOptimized, pct, '%')}
       ${stat('mods', t().statMods, state.mods ? state.mods.enabledCount : '—', state.mods ? `/ ${state.mods.mods.length}` : '')}
       ${stat('safemode', t().statSafe, state.safe ? (state.safe.enabled ? t().smOn : t().smOff) : '—', '', state.safe?.enabled ? 'ok' : '')}
@@ -355,7 +358,8 @@ function catHero(c, parent) {
 function renderCategory(c, parent) {
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
-  if (c === 'network') return catHero(c) + `<div class="opt-v2">${renderOptimization('network')}</div>`;
+  // Netzwerk, Dienste, Privatsphäre, Oberfläche: Start/Enable All + Revert All und Status-Kästchen wie im Leistungs-Tab
+  if (['network', 'services', 'privacy', 'visuals'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
   const all = tweaksIn(c);
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);

@@ -222,7 +222,7 @@ button.sb-item:hover { background: rgba(255, 255, 255, .05); color: #fff; }
 .opt-v2 .db-actions { order: 0; position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px;
   margin: 0 0 16px; padding: 12px 0; background: var(--bg); }
 .opt-v2 .db-actions .pill { height: 46px; font-size: 13.5px; border-radius: 13px; }
-.opt-v2 #opt-start:not(:disabled), .opt-v2 #net-start:not(:disabled) { background: linear-gradient(180deg, var(--accent-hover), var(--accent)); color: #fff; border-color: transparent; animation: glowPulse 2.6s ease-in-out infinite; }
+.opt-v2 #opt-start:not(:disabled), .opt-v2 .opt-go:not(:disabled) { background: linear-gradient(180deg, var(--accent-hover), var(--accent)); color: #fff; border-color: transparent; animation: glowPulse 2.6s ease-in-out infinite; }
 .opt-v2 .db-result { order: 11; }
 .enter .opt-v2 .rows > * { animation: rise .55s var(--ease-out) both; }
 

@@ -34,3 +34,16 @@ test('Start Network applies only network tweaks; Revert All restores only networ
  calls.length=0;await ctx.optimizationRun(true,'network');
  assert.equal(calls.some(x=>x.action==='backup-restore'),false);assert.match(ctx.optState.result.note,/Netzwerk/);
 });
+
+test('Services, Privacy and Interface tabs: Enable All applies only their own tweaks; Revert All stays in the tab',async()=>{
+ for(const [cat,prefix] of [['services','svc'],['privacy','prv'],['visuals','vis']]){
+  const {ctx,calls,state,dialogs}=setup();
+  state.tweaks.push({id:cat+'.a',category:cat,name:'A',description:'A',risk:'high',available:true},{id:cat+'.b',category:cat,name:'B',description:'B',risk:'low',available:true,applied:true});
+  for(const lang of ['de','en','it']){state.lang=lang;const html=ctx.renderOptimization(cat);assert.match(html,new RegExp(`id="${prefix}-start"[^>]*>Enable All<`));assert.match(html,new RegExp(`id="${prefix}-revert"`));assert.match(html,/type="checkbox"/);assert.doesNotMatch(html,/undefined/);}
+  state.lang='de';
+  await ctx.optimizationRun(false,cat);
+  assert.deepEqual(calls.filter(x=>x.action==='apply').map(x=>x.id),[cat+'.a']);assert.equal(dialogs[0][0],'Enable All');
+  calls.length=0;await ctx.optimizationRun(true,cat);
+  assert.equal(calls.some(x=>x.action==='backup-restore'),false);assert.match(ctx.optState.result.note,/diesem Tab/);
+ }
+});
