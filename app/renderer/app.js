@@ -425,6 +425,20 @@ function renderSearch() {
 }
 
 // Profile: Stufen aus echten Tweaks; einzelne Einträge abwählbar
+// Configs: Tweaks nach Bereich sortiert. Klick wählt einen Eintrag ab oder wieder an; bereits aktive sind fest markiert.
+const CFG_GROUPS = ['performance', 'network', 'services', 'privacy', 'visuals', 'keyboard', 'debloat'];
+function cfgList(list, run, subOf) {
+  const groups = CFG_GROUPS.map((c) => [c, list.filter((tw) => catOf(tw) === c)]).filter(([, l]) => l.length);
+  const rest = list.filter((tw) => !CFG_GROUPS.includes(catOf(tw)));
+  if (rest.length) groups.push(['other', rest]);
+  if (!groups.length) return `<div class="cfg-list"><p class="muted">${t().empty}</p></div>`;
+  return `<div class="cfg-list">${groups.map(([c, l]) => `<div class="cfg-group"><div class="cfg-group-head"><span>${esc(catName(c))}</span><b>${l.length}</b></div>${l.map((tw) => {
+    const off = state.profileOff.has(tw.id), sub = subOf ? subOf(tw) : '';
+    return `<button class="cfg-item risk-${esc(tw.risk)}${tw.applied ? ' done' : ''}${off ? ' off' : ''}" data-pchip="${esc(tw.id)}" ${tw.applied || run ? 'disabled' : ''} title="${esc(tw.description)}">
+      <i class="cfg-check" aria-hidden="true"></i><span class="cfg-name">${esc(tw.name)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>${tw.applied ? `<em>${esc(t().on)}</em>` : ''}</button>`;
+  }).join('')}</div>`).join('')}</div>`;
+}
+
 function renderProfiles() {
   const run = state.profileRun;
   const tierCard = ([tier], idx) => {
@@ -432,10 +446,6 @@ function renderProfiles() {
     const todo = cands.filter((tw) => !tw.applied && !state.profileOff.has(tw.id));
     const done = cands.filter((tw) => tw.applied).length;
     const mine = run?.tier === tier;
-    const chips = cands.map((tw) => {
-      const offSel = state.profileOff.has(tw.id);
-      return `<button class="pchip risk-${esc(tw.risk)}${tw.applied ? ' done' : ''}${offSel ? ' off' : ''}" data-pchip="${esc(tw.id)}" ${tw.applied || run ? 'disabled' : ''} title="${esc(tw.description)}">${esc(tw.name)}</button>`;
-    }).join('');
     return `
       <div class="card tier tier-${tier}${mine ? ' running' : ''}">
         <div class="tier-head">
@@ -445,7 +455,7 @@ function renderProfiles() {
         </div>
         <div class="tier-facts"></div>
         <div class="tier-count"><b data-count="${todo.length}">${todo.length}</b><span>${t().tierTodo(done, cands.length)}</span></div>
-        <div class="pchips">${chips || `<span class="muted">${t().empty}</span>`}</div>
+        ${cfgList(cands, run)}
         <div class="tier-extra">${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div>
           <span>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span></div>` : ''}</div>
         <div class="tier-actions"><button class="pill ${tier === 'safe' ? 'dark' : 'light'} big tier-go" data-tier="${tier}" ${run || !todo.length ? 'disabled' : ''}>${icon('bolt')}<span>${t().tierGo(todo.length)}</span></button></div>
@@ -457,7 +467,8 @@ function renderProfiles() {
       <div><h1>${t().profilesPage}</h1><p>${t().profilesDesc}</p></div></div>
     ${res ? `<div class="card cache-card bk-result"><div class="${res.failed.length ? 'sm-alert' : 'muted'}">${t().tierDone(res.ok, res.n, res.failed.length)}</div>
       ${res.failed.length ? `<div class="cache-list">${res.failed.map((f) => `<div><span>${esc(f.name)}</span><span class="muted">${esc(errorText(f.error))}</span><b class="res-failed">✕</b></div>`).join('')}</div>` : ''}</div>` : ''}
-    <div class="tiers">${window.Recommend.card()}${PROFILE_TIERS.map(tierCard).join('')}</div>
+    ${window.Recommend.card()}
+    <div class="tiers cfg-tiers">${PROFILE_TIERS.map(tierCard).join('')}</div>
     <p class="hint">${t().profilesNote}</p>`;
 }
 

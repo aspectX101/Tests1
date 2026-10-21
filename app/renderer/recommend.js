@@ -120,31 +120,31 @@
     ].join('');
   }
   // Same structure and classes as the other profile cards; tier-go/pchip clicks are handled by app.js.
+  // Featured card above the three configs: system and reasons on the left, the sorted selection on the right.
   function card() {
     const w = tx(), run = state.profileRun, mine = run?.tier === 'recommended';
-    const head = `<div class="tier-head"><div class="tier-badge">${esc(w.badge)}</div><h2>${esc(w.name)}</h2><p>${esc(w.desc)}</p></div>`;
     const checkBtn = `<button class="pill dark rec-check" id="rec-check" ${rec.busy || run ? 'disabled' : ''}>${esc(rec.busy ? w.checking : rec.facts ? w.recheck : w.check)}</button>`;
+    const info = (extra) => `<div class="cfg-feat-info"><div class="tier-badge">${esc(w.badge)}</div><h2>${esc(w.name)}</h2><p>${esc(w.desc)}</p>${extra}</div>`;
     if (!rec.facts) {
-      return `<div class="card tier tier-recommended">${head}<div class="tier-facts"></div>
-        <p class="muted tier-count">${esc(rec.error ? `${w.failed} ${errorText(rec.error)}` : rec.busy ? w.checking : w.first)}</p><div class="pchips"></div><div class="tier-extra"></div><div class="tier-actions rec-actions">${checkBtn}</div></div>`;
+      return `<section class="card cfg-featured">${info(`<div class="cfg-feat-actions">${checkBtn}</div>`)}
+        <div class="cfg-feat-picks cfg-feat-empty"><p class="muted">${esc(rec.error ? `${w.failed} ${errorText(rec.error)}` : rec.busy ? w.checking : w.first)}</p></div></section>`;
     }
     const { picks, skips } = result();
     const todo = picks.filter((p) => !p.tweak.applied && !state.profileOff.has(p.id));
     const done = picks.filter((p) => p.tweak.applied).length;
-    const chips = picks.map((p) => {
-      const off = state.profileOff.has(p.id);
-      return `<button class="pchip risk-${esc(p.tweak.risk)}${p.tweak.applied ? ' done' : ''}${off ? ' off' : ''}" data-pchip="${esc(p.id)}" ${p.tweak.applied || run ? 'disabled' : ''} title="${esc(w.reasons[p.reason] || '')}">${esc(p.tweak.name)}</button>`;
-    }).join('');
+    const reasonOf = new Map(picks.map((p) => [p.id, w.reasons[p.reason] || '']));
     const line = (x) => `<li><b>${esc(x.tweak.name)}</b> – ${esc(w.reasons[x.reason] || x.reason)}</li>`;
-    return `<div class="card tier tier-recommended${mine ? ' running' : ''}">${head}
-      <div class="tier-facts rec-facts">${summary(rec.facts)}</div>
-      <div class="tier-count"><b data-count="${todo.length}">${todo.length}</b><span>${t().tierTodo(done, picks.length)}</span></div>
-      <div class="pchips">${chips || `<span class="muted">${t().empty}</span>`}</div>
-      <div class="tier-extra"><details class="rec-why"><summary>${esc(w.why)}</summary><ul>${picks.map(line).join('')}</ul>
-        ${skips.length ? `<p class="muted">${esc(w.skipped)}</p><ul class="rec-skips">${skips.map(line).join('')}</ul>` : ''}</details>
-      ${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div><span>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span></div>` : ''}</div>
-      <div class="tier-actions rec-actions">${checkBtn}<button class="pill light big tier-go" data-tier="recommended" ${run || !todo.length ? 'disabled' : ''}>${icon('bolt')}<span>${t().tierGo(todo.length)}</span></button></div>
-    </div>`;
+    return `<section class="card cfg-featured${mine ? ' running' : ''}">
+      ${info(`<div class="rec-facts">${summary(rec.facts)}</div>
+        ${skips.length ? `<details class="rec-why"><summary>${esc(w.skipped)} (${skips.length})</summary><ul class="rec-skips">${skips.map(line).join('')}</ul></details>` : ''}
+        <div class="cfg-feat-actions">${checkBtn}</div>`)}
+      <div class="cfg-feat-picks">
+        <div class="tier-count"><b data-count="${todo.length}">${todo.length}</b><span>${t().tierTodo(done, picks.length)}</span></div>
+        ${cfgList(picks.map((p) => p.tweak), run, (tw) => reasonOf.get(tw.id))}
+        ${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div><span>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span></div>` : ''}
+        <button class="pill light big tier-go" data-tier="recommended" ${run || !todo.length ? 'disabled' : ''}>${icon('bolt')}<span>${t().tierGo(todo.length)}</span></button>
+      </div>
+    </section>`;
   }
   if (typeof document !== 'undefined') {
     document.addEventListener('click', (e) => { if (e.target.closest('#rec-check')) check(); });

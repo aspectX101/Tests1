@@ -8,7 +8,7 @@
 .tiers > .tier .tier-facts { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
 .tiers > .tier .tier-count { align-self: end; margin: 0; flex-wrap: nowrap; min-width: 0; }
 .tiers > .tier .tier-count span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.tiers > .tier .pchips { max-height: 236px; align-self: stretch; }
+.tiers > .tier .cfg-list { max-height: 300px; }
 .tiers > .tier .tier-extra { align-self: start; min-width: 0; }
 .tiers > .tier .tier-actions { align-self: end; display: grid; }
 .tiers > .tier .tier-actions.rec-actions { grid-template-columns: auto 1fr; gap: 8px; }

@@ -58,3 +58,6 @@ body, .app, .main, .content { background: #050505; }
 .h1t-restart-pill { height: 33px; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; font-size: 11px; border-radius: 8px; }
 .h1t-restart-pill svg { width: 15px; height: 15px; }
 .h1t-topbar-meta #h1t-restart-slot { display: contents; padding: 0; border: 0; background: none; }
+
+/* Config badges: one calm style for all cards */
+.tier .tier-badge, .cfg-featured .tier-badge, .tier-hardcore .tier-badge, .tier-aggressive .tier-badge, .tier-safe .tier-badge { background: #ffffff0d !important; color: #d6d6d9 !important; border: 1px solid #ffffff1f !important; box-shadow: none !important; }
