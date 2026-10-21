@@ -30,12 +30,12 @@ module.exports = async function afterPack(context) {
   vi.setFileVersion(a, b, c, 0, LANG);
   vi.setProductVersion(a, b, c, 0, LANG);
   vi.setStringValues({ lang: LANG, codepage: CODEPAGE }, {
-    ProductName: 'UND.CC Tweaker',
-    FileDescription: 'UND.CC Tweaker',
-    CompanyName: 'UND.CC',
-    LegalCopyright: `© ${new Date().getFullYear()} UND.CC`,
+    ProductName: 'H1T.CC Tweak Utility',
+    FileDescription: 'H1T.CC Tweak Utility',
+    CompanyName: 'H1T.CC',
+    LegalCopyright: `© ${new Date().getFullYear()} H1T.CC`,
     OriginalFilename: `${info.productFilename}.exe`,
-    InternalName: 'UND.CC Tweaker',
+    InternalName: 'H1T.CC Tweak Utility',
     FileVersion: info.version,
     ProductVersion: info.version,
   });
