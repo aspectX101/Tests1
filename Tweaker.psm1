@@ -174,6 +174,16 @@ function Invoke-TweakerPerformance {
             }
             $state.status = 'applied'
         } else {
+            # High performance was already active without a backup: switch off to the Windows default plan (Balanced).
+            if ($null -eq $state -and $Id -eq 'windows.power.high' -and -not $ExpectedRecoveryId) {
+                Assert-Administrator
+                $balanced = '381b4222-f694-41f0-9685-ff5bb260df2e'
+                if ((Get-PowerState) -ne $script:HighPerformance) { return [pscustomobject]@{id=$Id;status='restored'} }
+                New-TweakerRestorePoint
+                $null = Invoke-PowerCfg @('/setactive', $balanced)
+                if ((Get-PowerState) -ne $balanced) { throw 'restore_verification_failed' }
+                return [pscustomobject]@{id=$Id;status='restored'}
+            }
             if ($null -eq $state) { throw 'backup_not_found' }
             if ($state.version -ne 1 -or $state.id -ne $Id) { throw 'invalid_backup' }
             if ($state.status -eq 'restored') { return [pscustomobject]@{id=$Id;status='restored'} }

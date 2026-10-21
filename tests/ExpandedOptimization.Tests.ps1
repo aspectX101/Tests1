@@ -15,9 +15,7 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
     $script:values=@{};$script:writes=0;$script:safe=$false;$script:failOnce='';$script:failAlways=''
     function Assert-Administrator {}
     function Assert-OptimizationPlatform {}
-    function Assert-OptimizationAvailable([string]$Id) {
-        if ($Id -in @('windows.legacy.fps','windows.io.realtime')) {throw 'unsupported_optimization_recipe'}
-    }
+    function Assert-OptimizationAvailable([string]$Id) {}
     function Initialize-SafeModeStorage {$null=New-Item -ItemType Directory -Path $script:SafeModeDirectory -Force}
     function Read-SafeModeState {[pscustomobject]@{enabled=$script:safe}}
     function New-TweakerRestorePoint {}
@@ -68,12 +66,6 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
         foreach ($item in Get-OptimizationCatalog) {
             foreach ($language in @('de','en','it')) {Assert ($item.name[$language] -and $item.description[$language]) 'All translations required'}
             Assert (-not $item.bulkSafe) 'Extended settings require individual choice'
-            if ($item.id -in @('windows.legacy.fps','windows.io.realtime')) {
-                $writes=$script:writes
-                Expect {Invoke-TweakerPerformance apply $item.id} 'unsupported_optimization_recipe'
-                Assert ($writes -eq $script:writes) 'Unavailable cards cannot mutate'
-                continue
-            }
             $fields=@(Get-OptimizationFields $item.id)
             Assert ($fields.Count -gt 0) 'Implemented cards have concrete fields'
             foreach ($field in $fields) {$script:values[$field]=Seed $field}
@@ -98,6 +90,17 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
             @{f='nagleAck';v=[pscustomobject]@{exists=$true;kind='Interfaces';value='{11111111-2222-3333-4444-555555555555}=1;reg add'}},
             @{f='dnsServers';v=[pscustomobject]@{exists=$true;kind='Dns';value='{11111111-2222-3333-4444-555555555555}=1.1.1.1 & calc'}}
         )) {Expect {Assert-OptimizationValue $bad.f $bad.v} 'unsupported_optimization_value'}
+        # Switching off without a backup (setting was active before Tweaker): Windows defaults, verified.
+        $script:values.responsiveness=[pscustomobject]@{exists=$true;kind='DWord';value=10}
+        Remove-Item -LiteralPath (Join-Path $script:PerformanceStateDirectory 'windows.mmcss.latency.json') -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath (Join-Path $script:PerformanceStateDirectory 'windows.mmcss.latency.json.previous') -Force -ErrorAction SilentlyContinue
+        $r=Invoke-TweakerPerformance restore windows.mmcss.latency
+        Assert ($r.status -eq 'restored' -and $script:values.responsiveness.value -eq 20) 'Default SystemResponsiveness 20 restored without backup'
+        $script:values.tdr=[pscustomobject]@{exists=$true;kind='DWord';value=8}
+        Remove-Item -LiteralPath (Join-Path $script:PerformanceStateDirectory 'windows.gpu.tdr.json') -Force -ErrorAction SilentlyContinue
+        $null=Invoke-TweakerPerformance restore windows.gpu.tdr
+        Assert (-not $script:values.tdr.exists) 'Registry field without default returns to not set'
+        Assert (-not (Test-TweakerOptimizationApplied windows.gpu.tdr)) 'Switch shows off after default restore'
         $script:safe=$true;$writes=$script:writes
         foreach ($id in @('windows.service.sysmain.off','windows.service.diagtrack.off','windows.service.wer.off','windows.service.wappush.off','windows.service.diagnosticshub.off','windows.service.xbgm.off')) {
             Expect {Invoke-TweakerPerformance apply $id} 'safemode_protects_service'

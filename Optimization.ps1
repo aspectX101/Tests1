@@ -184,6 +184,38 @@ function Restore-OptimizationEntries($State,[string]$Path) {
     }
 }
 
+# Windows default for a field, used to switch a tweak off when no backup exists (setting was already active before).
+# Registry and per-card values without a listed default return to "not set"; tasks return to enabled.
+function Get-OptimizationDefault([string]$Field,$Current) {
+    $d=Get-OptimizationDefinition $Field
+    if ($d.adapter -in @('ifreg','dns')) {
+        $empty=if ($d.adapter -eq 'dns') {''} else {'x'}
+        $parts=foreach ($key in (ConvertFrom-NetworkValue $Current.value).Keys) {$key+'='+$empty}
+        return [pscustomobject]@{exists=$true;kind=$d.kind;value=($parts -join '|')}
+    }
+    if ($d.adapter -eq 'task') {
+        if (-not $Current.exists) {return $Current}
+        return [pscustomobject]@{exists=$true;kind='DWord';value=1}
+    }
+    if (-not $d.ContainsKey('default')) {
+        if ($d.adapter -eq 'registry') {return [pscustomobject]@{exists=$false;kind=$null;value=$null}}
+        throw 'original_value_unknown'
+    }
+    $value=$d.default
+    if ($d.kind -eq 'Power') {$value=($Current.value.Split('|')[0]+'|'+$d.default)}
+    return [pscustomobject]@{exists=$true;kind=$d.kind;value=$value}
+}
+
+# Switch off without a backup: write the Windows defaults (restore point first, every write verified).
+function Reset-OptimizationDefaults([string]$Id,[string[]]$Fields) {
+    $plan=@(foreach ($field in $Fields) {$current=Get-OptimizationValue $field;[pscustomobject]@{field=$field;current=$current;default=(Get-OptimizationDefault $field $current)}})
+    $changes=@($plan | Where-Object {-not (Test-OptimizationValueEqual $_.current $_.default)})
+    if ($changes.Count -eq 0) {return [pscustomobject]@{id=$Id;status='restored'}}
+    New-TweakerRestorePoint
+    foreach ($entry in $changes) {Set-OptimizationValue $entry.field $entry.default}
+    return [pscustomobject]@{id=$Id;status='restored'}
+}
+
 function Invoke-TweakerOptimization([string]$Action,[string]$Id,[string]$StateDirectory,[string]$ExpectedRecoveryId) {
     Assert-Administrator
     Assert-OptimizationPlatform
@@ -244,6 +276,8 @@ function Invoke-TweakerOptimization([string]$Action,[string]$Id,[string]$StateDi
             }
             $state.status = 'applied'
         } else {
+            # No backup: the setting was already active before Tweaker - switch off to the Windows default.
+            if ($null -eq $state -and -not $ExpectedRecoveryId) { return Reset-OptimizationDefaults $Id $fields }
             if ($null -eq $state) { throw 'backup_not_found' }
             if ($state.id -ne $Id) { throw 'invalid_optimization_backup' }
             Assert-OptimizationRestore $state

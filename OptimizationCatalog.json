@@ -502,43 +502,48 @@
       "id": "windows.legacy.fps",
       "category": "performance",
       "scope": "system",
-      "risk": "high",
+      "risk": "medium",
       "bulkSafe": false,
       "requiresAdmin": true,
-      "restart": false,
+      "restart": true,
       "name": {
-        "de": "Legacy-Games-FPS-Schluessel",
-        "en": "Legacy Games FPS keys",
-        "it": "Chiavi FPS giochi legacy"
+        "de": "Vollbildoptimierungen global aus",
+        "en": "Disable fullscreen optimizations globally",
+        "it": "Disattiva ottimizzazioni schermo intero"
       },
       "description": {
-        "de": "Keine universelle Windows-Funktion unter diesem Namen. Es werden keine wirkungslosen FPS-Schluessel angelegt. Fuer konkrete Spiele sind individuelle Kompatibilitaetseinstellungen erforderlich.",
-        "en": "No universal Windows feature has this name. No ineffective FPS keys are created. Specific games need individual compatibility settings.",
-        "it": "Non esiste una funzione Windows universale con questo nome. Non vengono create chiavi FPS inefficaci. Servono impostazioni specifiche per ogni gioco."
+        "de": "Schaltet die Windows-Vollbildoptimierungen f\u00fcr alle Spiele ab. Exklusiver Vollbildmodus l\u00e4uft dann wieder direkt ohne Desktop-Komposition \u2013 bei manchen DirectX-Spielen sp\u00fcrbar weniger Eingabeverz\u00f6gerung. Randlose Fenster sind nicht betroffen. Neustart erforderlich.",
+        "en": "Turns off Windows fullscreen optimizations for all games. Exclusive fullscreen runs directly again without desktop composition \u2013 noticeably lower input latency in some DirectX games. Borderless windows are not affected. Restart required.",
+        "it": "Disattiva le ottimizzazioni a schermo intero di Windows per tutti i giochi. Lo schermo intero esclusivo torna diretto senza composizione del desktop: in alcuni giochi DirectX meno latenza di input. Le finestre senza bordi non cambiano. Riavvio necessario."
       },
-      "fields": [],
-      "unavailable": "unsupported_optimization_recipe"
+      "fields": [
+        "fseMode",
+        "fseBehavior",
+        "fseHonorUser",
+        "fseDxgiHonor"
+      ]
     },
     {
       "id": "windows.io.realtime",
       "category": "performance",
       "scope": "system",
-      "risk": "high",
+      "risk": "low",
       "bulkSafe": false,
       "requiresAdmin": true,
-      "restart": false,
+      "restart": true,
       "name": {
-        "de": "IO-Realtime-Worker-Prioritaet",
-        "en": "IO realtime worker priority",
-        "it": "Priorita worker IO realtime"
+        "de": "NTFS: Zugriffszeitstempel aus",
+        "en": "NTFS: disable last-access timestamps",
+        "it": "NTFS: disattiva timestamp ultimo accesso"
       },
       "description": {
-        "de": "Kein unterstuetzter globaler Windows-Schalter. Echtzeit-Prioritaet kann Systemaufgaben verdraengen; diese Karte veraendert deshalb keine Systemwerte.",
-        "en": "No supported global Windows switch. Real-time priority can starve system work; this card therefore changes no settings.",
-        "it": "Nessun comando Windows globale supportato. La priorita tempo reale puo bloccare attivita di sistema; questa scheda non modifica impostazioni."
+        "de": "Windows schreibt nicht mehr bei jedem Lesen einer Datei den Zeitpunkt des letzten Zugriffs. Weniger Schreibzugriffe auf SSD/HDD, besonders beim Laden vieler kleiner Spieldateien. Backup-Programme, die darauf angewiesen sind, sind selten. Neustart erforderlich.",
+        "en": "Windows no longer writes the last-access time every time a file is read. Fewer writes to SSD/HDD, especially when loading many small game files. Backup tools relying on it are rare. Restart required.",
+        "it": "Windows non scrive pi\u00f9 l\u2019ora dell\u2019ultimo accesso a ogni lettura di file. Meno scritture su SSD/HDD, soprattutto caricando molti piccoli file di gioco. Raramente serve ai programmi di backup. Riavvio necessario."
       },
-      "fields": [],
-      "unavailable": "unsupported_optimization_recipe"
+      "fields": [
+        "ntfsLastAccess"
+      ]
     },
     {
       "id": "windows.close.faster",
@@ -803,14 +808,14 @@
         "it": "Disattiva Copilot Windows classico"
       },
       "description": {
-        "de": "Nur fuer die alte integrierte Copilot-Seitenleiste. Deinstalliert und blockiert nicht die neue eigenstaendige Copilot-App; auf neueren Windows-Versionen nicht verfuegbar.",
-        "en": "Only for the old integrated Copilot sidebar. Does not uninstall or block the newer standalone Copilot app; unavailable on newer Windows builds.",
-        "it": "Solo per la vecchia barra Copilot integrata. Non disinstalla ne blocca la nuova app Copilot autonoma; non disponibile su build Windows recenti."
+        "de": "Schaltet Copilot per Richtlinie ab und blendet den Copilot-Knopf in der Taskleiste aus. Auf neueren Windows-Versionen bleibt die Copilot-App installiert, wird aber nicht mehr angeboten. Neustart erforderlich.",
+        "en": "Turns Copilot off by policy and hides the Copilot taskbar button. On newer Windows versions the Copilot app stays installed but is no longer offered. Restart required.",
+        "it": "Disattiva Copilot tramite criterio e nasconde il pulsante Copilot nella barra delle applicazioni. Sulle versioni pi\u00f9 recenti l\u2019app resta installata ma non viene pi\u00f9 proposta. Riavvio necessario."
       },
       "fields": [
-        "copilot"
-      ],
-      "feature": "legacyCopilot"
+        "copilot",
+        "copilotButton"
+      ]
     },
     {
       "id": "windows.ink.off",
@@ -894,14 +899,13 @@
         "it": "Disattiva istantanee Recall"
       },
       "description": {
-        "de": "Windows beendet die Aufnahme UND loescht vorhandene Recall-Momentaufnahmen. Die Richtlinie ist rueckgaengig machbar, geloeschte Aufnahmen nicht. Nur auf unterstuetzten Windows-11-Pro/Enterprise/Education-Versionen.",
-        "en": "Windows stops saving AND deletes existing Recall snapshots. The policy can be undone; deleted snapshots cannot be recovered. Requires supported Windows 11 Pro/Enterprise/Education.",
-        "it": "Windows interrompe il salvataggio ED elimina le istantanee Recall esistenti. Il criterio e reversibile, le istantanee eliminate no. Richiede Windows 11 Pro/Enterprise/Education supportato."
+        "de": "Verhindert, dass Windows Recall Momentaufnahmen speichert (Richtlinie). Wirkt auf Copilot+-PCs; auf anderen PCs vorbeugend f\u00fcr sp\u00e4tere Windows-Updates. Vorhandene Momentaufnahmen k\u00f6nnen gel\u00f6scht werden. Neustart erforderlich.",
+        "en": "Stops Windows Recall from saving snapshots (policy). Effective on Copilot+ PCs; on other PCs it takes effect preventively for later Windows updates. Existing snapshots may be deleted. Restart required.",
+        "it": "Impedisce a Windows Recall di salvare istantanee (criterio). Vale sui PC Copilot+; sugli altri PC in via preventiva per futuri aggiornamenti. Le istantanee esistenti possono essere eliminate. Riavvio necessario."
       },
       "fields": [
         "recallPolicy"
       ],
-      "feature": "recall",
       "dataLoss": true
     },
     {
@@ -1229,7 +1233,8 @@
       "subgroup": "54533251-82be-4824-96c1-47b60b740d00",
       "setting": "893dee8e-2bef-41e0-89c6-b55d0929964c",
       "target": 100,
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 5
     },
     "sleepTimeout": {
       "adapter": "power",
@@ -1237,7 +1242,8 @@
       "subgroup": "238c9fa8-0aad-41ed-83f4-97be242c8f20",
       "setting": "29f6c1db-86da-48c5-9fdb-f2b67b1f44da",
       "target": 0,
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 1800
     },
     "parkMinimum": {
       "adapter": "power",
@@ -1245,7 +1251,8 @@
       "subgroup": "54533251-82be-4824-96c1-47b60b740d00",
       "setting": "0cc5b647-c1df-4637-891a-dec35c318583",
       "target": 100,
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 10
     },
     "sync": {
       "adapter": "registry",
@@ -1272,7 +1279,8 @@
       "name": "MenuShowDelay",
       "target": "0",
       "kind": "String",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": "400"
     },
     "hibernate": {
       "adapter": "hibernate",
@@ -1287,7 +1295,8 @@
       "name": "HiberbootEnabled",
       "target": 0,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 1
     },
     "tdr": {
       "adapter": "registry",
@@ -1305,7 +1314,8 @@
       "name": "Scheduling Category",
       "target": "High",
       "kind": "String",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": "Medium"
     },
     "gamesPriority": {
       "adapter": "registry",
@@ -1314,7 +1324,8 @@
       "name": "Priority",
       "target": 2,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 2
     },
     "responsiveness": {
       "adapter": "registry",
@@ -1323,7 +1334,8 @@
       "name": "SystemResponsiveness",
       "target": 10,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 20
     },
     "foreground": {
       "adapter": "registry",
@@ -1332,7 +1344,8 @@
       "name": "Win32PrioritySeparation",
       "target": 38,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 2
     },
     "prefetch": {
       "adapter": "registry",
@@ -1341,7 +1354,8 @@
       "name": "EnablePrefetcher",
       "target": 0,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 3
     },
     "sysmain_start": {
       "adapter": "service",
@@ -1349,7 +1363,8 @@
       "service": "SysMain",
       "part": "start",
       "target": 4,
-      "maximum": 4
+      "maximum": 4,
+      "default": "2|x"
     },
     "sysmain_running": {
       "adapter": "service",
@@ -1357,7 +1372,8 @@
       "service": "SysMain",
       "part": "running",
       "target": 0,
-      "maximum": 4
+      "maximum": 4,
+      "default": 1
     },
     "diagtrack_start": {
       "adapter": "service",
@@ -1365,7 +1381,8 @@
       "service": "DiagTrack",
       "part": "start",
       "target": 4,
-      "maximum": 4
+      "maximum": 4,
+      "default": "2|x"
     },
     "diagtrack_running": {
       "adapter": "service",
@@ -1373,7 +1390,8 @@
       "service": "DiagTrack",
       "part": "running",
       "target": 0,
-      "maximum": 4
+      "maximum": 4,
+      "default": 1
     },
     "wappush_start": {
       "adapter": "service",
@@ -1381,7 +1399,8 @@
       "service": "dmwappushservice",
       "part": "start",
       "target": 4,
-      "maximum": 4
+      "maximum": 4,
+      "default": "3|x"
     },
     "wappush_running": {
       "adapter": "service",
@@ -1389,7 +1408,8 @@
       "service": "dmwappushservice",
       "part": "running",
       "target": 0,
-      "maximum": 4
+      "maximum": 4,
+      "default": 0
     },
     "wer_start": {
       "adapter": "service",
@@ -1397,7 +1417,8 @@
       "service": "WerSvc",
       "part": "start",
       "target": 4,
-      "maximum": 4
+      "maximum": 4,
+      "default": "3|x"
     },
     "wer_running": {
       "adapter": "service",
@@ -1405,7 +1426,8 @@
       "service": "WerSvc",
       "part": "running",
       "target": 0,
-      "maximum": 4
+      "maximum": 4,
+      "default": 0
     },
     "diagnosticshub_start": {
       "adapter": "service",
@@ -1413,7 +1435,8 @@
       "service": "diagnosticshub.standardcollector.service",
       "part": "start",
       "target": 4,
-      "maximum": 4
+      "maximum": 4,
+      "default": "3|x"
     },
     "diagnosticshub_running": {
       "adapter": "service",
@@ -1421,7 +1444,8 @@
       "service": "diagnosticshub.standardcollector.service",
       "part": "running",
       "target": 0,
-      "maximum": 4
+      "maximum": 4,
+      "default": 0
     },
     "xbgm_start": {
       "adapter": "service",
@@ -1429,7 +1453,8 @@
       "service": "xbgm",
       "part": "start",
       "target": 4,
-      "maximum": 4
+      "maximum": 4,
+      "default": "3|x"
     },
     "xbgm_running": {
       "adapter": "service",
@@ -1437,7 +1462,8 @@
       "service": "xbgm",
       "part": "running",
       "target": 0,
-      "maximum": 4
+      "maximum": 4,
+      "default": 0
     },
     "svchost": {
       "adapter": "registry",
@@ -1446,7 +1472,8 @@
       "name": "SvcHostSplitThresholdInKB",
       "target": 4294967295,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 3670016
     },
     "ceipConsolidator": {
       "adapter": "task",
@@ -1515,7 +1542,8 @@
       "name": "HungAppTimeout",
       "target": "3000",
       "kind": "String",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": "5000"
     },
     "kill": {
       "adapter": "registry",
@@ -1532,7 +1560,8 @@
       "service": "MMCSS",
       "part": "start",
       "target": 2,
-      "maximum": 4
+      "maximum": 4,
+      "default": "2|x"
     },
     "mmcss_running": {
       "adapter": "service",
@@ -1540,7 +1569,8 @@
       "service": "MMCSS",
       "part": "running",
       "target": 1,
-      "maximum": 4
+      "maximum": 4,
+      "default": 1
     },
     "assistance": {
       "adapter": "registry",
@@ -1549,7 +1579,8 @@
       "name": "fAllowToGetHelp",
       "target": 0,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 1
     },
     "autoplay": {
       "adapter": "registry",
@@ -1567,7 +1598,8 @@
       "name": "MouseHoverTime",
       "target": "100",
       "kind": "String",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": "400"
     },
     "activityEnableActivityFeed": {
       "adapter": "registry",
@@ -1774,7 +1806,8 @@
       "name": "NetworkThrottlingIndex",
       "target": 4294967295,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 10
     },
     "dnsServers": {
       "adapter": "dns",
@@ -1812,7 +1845,8 @@
       "name": "value",
       "target": 0,
       "kind": "DWord",
-      "maximum": 4294967295
+      "maximum": 4294967295,
+      "default": 1
     },
     "nicPower": {
       "adapter": "ifreg",
@@ -1927,6 +1961,61 @@
       "path": "SYSTEM\\CurrentControlSet\\Services\\kbdclass\\Parameters",
       "name": "KeyboardDataQueueSize",
       "target": 400,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "fseMode": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "System\\GameConfigStore",
+      "name": "GameDVR_FSEBehaviorMode",
+      "target": 2,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "fseBehavior": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "System\\GameConfigStore",
+      "name": "GameDVR_FSEBehavior",
+      "target": 2,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "fseHonorUser": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "System\\GameConfigStore",
+      "name": "GameDVR_HonorUserFSEBehaviorMode",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "fseDxgiHonor": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "System\\GameConfigStore",
+      "name": "GameDVR_DXGIHonorFSEWindowsCompatible",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "ntfsLastAccess": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+      "name": "NtfsDisableLastAccessUpdate",
+      "target": 2147483649,
+      "kind": "DWord",
+      "maximum": 4294967295,
+      "default": 2147483650
+    },
+    "copilotButton": {
+      "adapter": "registry",
+      "hive": "CurrentUser",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "ShowCopilotButton",
+      "target": 0,
       "kind": "DWord",
       "maximum": 4294967295
     }

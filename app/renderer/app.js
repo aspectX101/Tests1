@@ -144,7 +144,7 @@ const UI_CAT_RULES = [
   [/^windows\.(service|svchost)\./, 'services'],
   [/^windows\.(ceip|office|activity|assistance|storage|clipboard|copilot|ink|sync|suggestions|spotlight)\./, 'privacy'],
   [/^windows\.(menu|tooltip|autoplay|explorer|close)\./, 'visuals'],
-  [/^windows\.(gamebar|capture|gamemode|audio|legacy)\./, 'gaming'],
+  [/^windows\.(gamebar|capture|gamemode|audio)\./, 'gaming'],
   [/^windows\.mmcss\.latency$/, 'network'], // SystemResponsiveness gehört zu den Netzwerk-Tweaks (MMCSS-Netzwerkdrossel)
 ];
 const catOf = (tw) => {
@@ -926,10 +926,12 @@ function confirmDialog(title, text, okLabel) {
 // Game Booster (Kategorie gaming) ist vorerst entfernt: diese Tweaks erscheinen nirgends in der Oberfläche.
 // Bestehende Sicherungen bleiben im Backend und lassen sich unter Sicherungen weiter zurücksetzen.
 const HIDDEN_CATS = new Set(['gaming']);
+// Tweaks, die auf diesem PC nicht anwendbar sind (Bestandteil fehlt), werden ausgeblendet statt ausgegraut.
+const NOT_APPLICABLE = new Set(['optional_component_missing', 'legacy_feature_unavailable', 'recall_policy_unavailable', 'network_adapter_missing']);
 async function call(action, id, extra = {}) {
   try {
     const res = await bridge.call({ action, id, lang: state.lang, ...extra });
-    if (action === 'list' && res?.ok && Array.isArray(res.tweaks)) res.tweaks = res.tweaks.filter((tw) => !HIDDEN_CATS.has(catOf(tw)));
+    if (action === 'list' && res?.ok && Array.isArray(res.tweaks)) res.tweaks = res.tweaks.filter((tw) => !HIDDEN_CATS.has(catOf(tw)) && !(tw.available === false && NOT_APPLICABLE.has(tw.stateError)));
     return res;
   } catch (err) {
     return { ok: false, error: err.message };

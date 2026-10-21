@@ -82,6 +82,15 @@ function Get-KeyboardTarget([string]$Field, [int]$Before) {
     }
 }
 
+# Windows defaults (fresh user profile), used to switch off a tweak that was already active without a backup.
+function Get-KeyboardDefault([string]$Field) {
+    switch ($Field) {
+        'delay' { 1 } 'speed' { 31 } 'filterFlags' { 126 } 'stickyFlags' { 510 } 'toggleFlags' { 62 } 'mouseKeysFlags' { 62 }
+        'mouseAccel' { (6 * 65536) + (10 * 256) + 1 } 'mouseSpeed' { 10 }
+        default { throw 'invalid_keyboard_field' }
+    }
+}
+
 function Test-TweakerKeyboardApplied([string]$Id) {
     foreach ($field in @(Get-KeyboardFields $Id)) {
         $value = Get-KeyboardValue $field
@@ -124,6 +133,12 @@ function Invoke-TweakerKeyboard([string]$Action, [string]$Id, [string]$StateDire
             if (-not (Test-TweakerKeyboardApplied $Id)) { throw 'keyboard_verification_failed' }
             $state.status = 'applied'
         } elseif ($Action -eq 'restore') {
+            if ($null -eq $state -and -not $ExpectedRecoveryId) {
+                # No backup: the setting was already active before Tweaker - switch off to the Windows default.
+                $changes = @($fields | Where-Object { (Get-KeyboardValue $_) -ne (Get-KeyboardDefault $_) })
+                if ($changes.Count -gt 0) { New-TweakerRestorePoint; foreach ($field in $changes) { Set-KeyboardValue $field (Get-KeyboardDefault $field) } }
+                return [pscustomobject]@{id=$Id;status='restored'}
+            }
             if ($null -eq $state) { throw 'backup_not_found' }
             if ($state.version -ne 1 -or $state.id -ne $Id -or $state.status -notin @('pending','applied','restored')) { throw 'invalid_backup' }
             if ($state.status -eq 'restored') { return [pscustomobject]@{id=$Id;status='restored'} }

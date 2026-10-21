@@ -465,47 +465,47 @@
   },
   {
     "description": {
-      "en": "No universal Windows feature has this name. No ineffective FPS keys are created. Specific games need individual compatibility settings.",
-      "de": "Keine universelle Windows-Funktion unter diesem Namen. Es werden keine wirkungslosen FPS-Schluessel angelegt. Fuer konkrete Spiele sind individuelle Kompatibilitaetseinstellungen erforderlich.",
-      "it": "Non esiste una funzione Windows universale con questo nome. Non vengono create chiavi FPS inefficaci. Servono impostazioni specifiche per ogni gioco."
+      "de": "Schaltet die Windows-Vollbildoptimierungen f\u00fcr alle Spiele ab. Exklusiver Vollbildmodus l\u00e4uft dann wieder direkt ohne Desktop-Komposition \u2013 bei manchen DirectX-Spielen sp\u00fcrbar weniger Eingabeverz\u00f6gerung. Randlose Fenster sind nicht betroffen. Neustart erforderlich.",
+      "en": "Turns off Windows fullscreen optimizations for all games. Exclusive fullscreen runs directly again without desktop composition \u2013 noticeably lower input latency in some DirectX games. Borderless windows are not affected. Restart required.",
+      "it": "Disattiva le ottimizzazioni a schermo intero di Windows per tutti i giochi. Lo schermo intero esclusivo torna diretto senza composizione del desktop: in alcuni giochi DirectX meno latenza di input. Le finestre senza bordi non cambiano. Riavvio necessario."
     },
     "bulkSafe": false,
     "id": "windows.legacy.fps",
-    "risk": "high",
+    "risk": "medium",
     "category": "performance",
     "requiresAdmin": true,
     "name": {
-      "en": "Legacy Games FPS keys",
-      "de": "Legacy-Games-FPS-Schluessel",
-      "it": "Chiavi FPS giochi legacy"
+      "de": "Vollbildoptimierungen global aus",
+      "en": "Disable fullscreen optimizations globally",
+      "it": "Disattiva ottimizzazioni schermo intero"
     },
     "unavailable": "unsupported_optimization_recipe",
-    "requiresRestart": false,
-    "reversible": false,
-    "available": false,
-    "stateError": "unsupported_optimization_recipe"
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
   },
   {
     "description": {
-      "en": "No supported global Windows switch. Real-time priority can starve system work; this card therefore changes no settings.",
-      "de": "Kein unterstuetzter globaler Windows-Schalter. Echtzeit-Prioritaet kann Systemaufgaben verdraengen; diese Karte veraendert deshalb keine Systemwerte.",
-      "it": "Nessun comando Windows globale supportato. La priorita tempo reale puo bloccare attivita di sistema; questa scheda non modifica impostazioni."
+      "de": "Windows schreibt nicht mehr bei jedem Lesen einer Datei den Zeitpunkt des letzten Zugriffs. Weniger Schreibzugriffe auf SSD/HDD, besonders beim Laden vieler kleiner Spieldateien. Backup-Programme, die darauf angewiesen sind, sind selten. Neustart erforderlich.",
+      "en": "Windows no longer writes the last-access time every time a file is read. Fewer writes to SSD/HDD, especially when loading many small game files. Backup tools relying on it are rare. Restart required.",
+      "it": "Windows non scrive pi\u00f9 l\u2019ora dell\u2019ultimo accesso a ogni lettura di file. Meno scritture su SSD/HDD, soprattutto caricando molti piccoli file di gioco. Raramente serve ai programmi di backup. Riavvio necessario."
     },
     "bulkSafe": false,
     "id": "windows.io.realtime",
-    "risk": "high",
+    "risk": "low",
     "category": "performance",
     "requiresAdmin": true,
     "name": {
-      "en": "IO realtime worker priority",
-      "de": "IO-Realtime-Worker-Prioritaet",
-      "it": "Priorita worker IO realtime"
+      "de": "NTFS: Zugriffszeitstempel aus",
+      "en": "NTFS: disable last-access timestamps",
+      "it": "NTFS: disattiva timestamp ultimo accesso"
     },
     "unavailable": "unsupported_optimization_recipe",
-    "requiresRestart": false,
-    "reversible": false,
-    "available": false,
-    "stateError": "unsupported_optimization_recipe"
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
   },
   {
     "description": {
@@ -740,9 +740,9 @@
   },
   {
     "description": {
-      "en": "Only for the old integrated Copilot sidebar. Does not uninstall or block the newer standalone Copilot app; unavailable on newer Windows builds.",
-      "de": "Nur fuer die alte integrierte Copilot-Seitenleiste. Deinstalliert und blockiert nicht die neue eigenstaendige Copilot-App; auf neueren Windows-Versionen nicht verfuegbar.",
-      "it": "Solo per la vecchia barra Copilot integrata. Non disinstalla ne blocca la nuova app Copilot autonoma; non disponibile su build Windows recenti."
+      "de": "Schaltet Copilot per Richtlinie ab und blendet den Copilot-Knopf in der Taskleiste aus. Auf neueren Windows-Versionen bleibt die Copilot-App installiert, wird aber nicht mehr angeboten. Neustart erforderlich.",
+      "en": "Turns Copilot off by policy and hides the Copilot taskbar button. On newer Windows versions the Copilot app stays installed but is no longer offered. Restart required.",
+      "it": "Disattiva Copilot tramite criterio e nasconde il pulsante Copilot nella barra delle applicazioni. Sulle versioni pi\u00f9 recenti l\u2019app resta installata ma non viene pi\u00f9 proposta. Riavvio necessario."
     },
     "bulkSafe": false,
     "id": "windows.copilot.off",
@@ -750,8 +750,8 @@
     "category": "performance",
     "requiresAdmin": true,
     "name": {
-      "en": "Disable legacy Windows Copilot policy",
       "de": "Klassischen Windows-Copilot deaktivieren",
+      "en": "Disable legacy Windows Copilot policy",
       "it": "Disattiva Copilot Windows classico"
     },
     "requiresRestart": true,
@@ -1002,9 +1002,9 @@
       "it": "Disattiva istantanee Recall"
     },
     "description": {
-      "de": "Windows beendet die Aufnahme UND loescht vorhandene Recall-Momentaufnahmen. Die Richtlinie ist rueckgaengig machbar, geloeschte Aufnahmen nicht. Nur auf unterstuetzten Windows-11-Pro/Enterprise/Education-Versionen.",
-      "en": "Windows stops saving AND deletes existing Recall snapshots. The policy can be undone; deleted snapshots cannot be recovered. Requires supported Windows 11 Pro/Enterprise/Education.",
-      "it": "Windows interrompe il salvataggio ED elimina le istantanee Recall esistenti. Il criterio e reversibile, le istantanee eliminate no. Richiede Windows 11 Pro/Enterprise/Education supportato."
+      "de": "Verhindert, dass Windows Recall Momentaufnahmen speichert (Richtlinie). Wirkt auf Copilot+-PCs; auf anderen PCs vorbeugend f\u00fcr sp\u00e4tere Windows-Updates. Vorhandene Momentaufnahmen k\u00f6nnen gel\u00f6scht werden. Neustart erforderlich.",
+      "en": "Stops Windows Recall from saving snapshots (policy). Effective on Copilot+ PCs; on other PCs it takes effect preventively for later Windows updates. Existing snapshots may be deleted. Restart required.",
+      "it": "Impedisce a Windows Recall di salvare istantanee (criterio). Vale sui PC Copilot+; sugli altri PC in via preventiva per futuri aggiornamenti. Le istantanee esistenti possono essere eliminate. Riavvio necessario."
     },
     "dataLoss": true,
     "requiresRestart": true,
