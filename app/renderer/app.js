@@ -316,7 +316,7 @@ function renderExtra() {
   }).join('')}</div>`;
 }
 
-function tweakRow(tw) {
+function tweakRow(tw, locked = false) {
   const busy = state.busy.has(tw.id);
   const risk = t().risk[tw.risk];
   const off = tw.available === false;
@@ -326,7 +326,7 @@ function tweakRow(tw) {
         <span class="risk-dot" title="${esc(risk || '')}"></span>
         <div class="tile2-name">${esc(tw.name)}</div>
         <label class="switch${busy ? ' busy' : ''}">
-          <input type="checkbox" data-toggle="${esc(tw.id)}" ${tw.applied ? 'checked' : ''} ${busy || off ? 'disabled' : ''} aria-label="${esc(tw.name)}">
+          <input type="checkbox" data-toggle="${esc(tw.id)}" ${tw.applied ? 'checked' : ''} ${busy || off || locked ? 'disabled' : ''} aria-label="${esc(tw.name)}">
           <span></span>
         </label>
       </div>
