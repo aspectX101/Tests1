@@ -13,6 +13,9 @@ const bridge = window.tweaker || {
   colorState: async () => ({ status: 'ready', look: { brightness: 0, contrast: 0, vibrance: 0, hue: 0 }, saved: null }),
   colorSet: async () => ({ ok: true }), colorSave: async () => ({ ok: true }), colorReset: async () => ({ ok: true }), onColor() {},
   // H1T Mods im Browser: leerer Katalog (echte Daten nur in der App)
+  // Hitreg im Browser: Beispielmessung, damit die Seite ohne App testbar ist
+  hitregTest: async (target) => ({ ok: true, method: 'udp', server: { name: target, host: '127.0.0.1', port: 30120, players: 87, max: 128 }, samples: Array.from({ length: 30 }, (_, i) => (i === 17 ? null : 28 + Math.round(Math.sin(i / 3) * 4 + (i % 7 === 0 ? 30 : 0)))), stats: { sent: 30, received: 29, loss: 3.3, min: 24, median: 29, p95: 61, max: 62, jitter: 7.4 } }),
+  onHitregProgress() {},
   h1tModsList: async () => ({ ok: true, mods: [] }), h1tModsInstall: async () => ({ ok: false, error: 'h1t_mods_unknown' }), onH1tModsProgress() {},
   openModsFolder: async () => ({ ok: true }),
   lastSafeMode: async () => null,
@@ -39,6 +42,7 @@ const ICONS = {
   collapse: '<path d="M4 6h16M4 12h16M4 18h16"/>',
   home: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
   performance: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 15 3-4 3 3 4-6"/>',
+  hitreg: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/>',
   h1tmods: '<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/><path d="M12 13v8"/><path d="m18.5 2.5.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6Z"/>',
   gaming: '<path d="M3 20h18"/><path d="m4 16 4-5 4 3 4-6 4 4"/><path d="M4 4v16"/>',
   network: '<rect x="8" y="3" width="8" height="11" rx="1"/><path d="M12 14v4M6 21h12M10 7h4M10 10h4"/>',
@@ -73,7 +77,7 @@ const ICONS = {
 };
 const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.other}</svg>`;
 
-const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'keyboard', 'services', 'visuals'];
+const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'keyboard', 'services', 'visuals', 'hitreg'];
 const EXTRA_CATS = ['mouse', 'controller', 'power', 'display'];
 
 // ---------- State ----------
@@ -150,7 +154,10 @@ const UI_CAT_RULES = [
   [/^windows\.(gamebar|capture|gamemode|audio)\./, 'gaming'],
   [/^windows\.mmcss\.latency$/, 'network'], // SystemResponsiveness gehört zu den Netzwerk-Tweaks (MMCSS-Netzwerkdrossel)
 ];
+// Einzelne Tweaks erscheinen in einem anderen Tab als ihre Backend-Kategorie (z. B. Game-DVR unter Hitreg).
+const CAT_OVERRIDE = { 'windows.capture.off': 'hitreg' };
 const catOf = (tw) => {
+  if (CAT_OVERRIDE[tw.id]) return CAT_OVERRIDE[tw.id];
   if (tw.category !== 'performance') return tw.category || 'other';
   const hit = UI_CAT_RULES.find(([re]) => re.test(tw.id));
   return hit ? hit[1] : 'performance';
@@ -202,9 +209,9 @@ function renderNav() {
   const activeKey = r.page === 'cat' ? (r.parent || r.cat) : r.page;
   const de = state.lang === 'de', it = state.lang === 'it';
   const labels = {
-    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',h1tmods:'H1T Mods',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
-    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',h1tmods:'H1T Mods',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
-    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',h1tmods:'H1T Mods',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
+    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
+    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
+    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
   }[state.lang] || {};
   const item=(key,attrs)=>`<button class="nav-item${activeKey===key?' active':''}" ${attrs} title="${esc(labels[key]||key)}" ${activeKey===key?'aria-current="page"':''}>${icon(key)}<span class="nav-label">${esc(labels[key]||key)}</span></button>`;
   const section=(id,items)=>{
@@ -215,7 +222,7 @@ function renderNav() {
   };
   const html=[
     item('home','data-go="home"'),item('performance','data-cat="performance"'),item('profiles','data-go="profiles"'),
-    section('fivem',[item('h1tmods','data-go="h1tmods"'),item('mods','data-go="mods"'),item('cleanup','data-go="cleanup"')]),
+    section('fivem',[item('hitreg','data-go="hitreg"'),item('h1tmods','data-go="h1tmods"'),item('mods','data-go="mods"'),item('cleanup','data-go="cleanup"')]),
     section('system',[
       item('network','data-cat="network"'),item('services','data-cat="services"'),
       item('privacy','data-cat="privacy"'),item('visuals','data-cat="visuals"'),
@@ -240,6 +247,7 @@ function renderCrumbs() {
   if (r.page === 'cat') parts = r.parent ? [t().extra, catName(r.cat)] : [catName(r.cat)];
   else if (r.page === 'color') parts = [t().extra, t().colorPage];
   else if (r.page === 'h1tmods') parts = ['FiveM', 'H1T Mods'];
+  else if (r.page === 'hitreg') parts = ['FiveM', 'Hitreg'];
   else parts = [r.page === 'mods' ? t().modsPage : r.page === 'profiles' ? t().profilesPage : r.page === 'search' ? t().searchTitle : t()[r.page]];
   $('#crumbs').innerHTML = parts.map(esc).join('<span class="sep">·</span>');
 }
@@ -393,7 +401,6 @@ function renderCategory(c, parent) {
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
   // Netzwerk, Dienste, Privatsphäre, Oberfläche: Start/Enable All + Revert All und Status-Kästchen wie im Leistungs-Tab
-  if (c === 'keyboard') return catHero(c, parent) + renderHitreg() + `<div class="opt-v2">${renderOptimization(c)}</div>`;
   if (['network', 'keyboard', 'services', 'privacy', 'visuals'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
   const all = tweaksIn(c);
   let list = all;
@@ -789,6 +796,7 @@ function render() {
   else if (r.page === 'extra') html += renderExtra();
   else if (r.page === 'color') html += window.ColorPage.html(state.lang);
   else if (r.page === 'h1tmods') html += window.H1tMods.html();
+  else if (r.page === 'hitreg') html += renderHitreg();
   else if (r.page === 'settings') html += renderSettings();
   else if (r.page === 'cleanup') html += renderCleanup();
   else if (r.page === 'safemode') html += renderSafeMode();
@@ -1445,4 +1453,6 @@ bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings')
 window.DashboardMedia.bind(bridge);
 window.ColorPage.bind(bridge);
 window.H1tMods.bind(bridge);
+hitreg.target = store.get('hitregTarget') || '';
+hitregBind(bridge);
 load();

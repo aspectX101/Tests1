@@ -60,6 +60,7 @@ function Assert-OptimizationValue([string]$Field, $Value) {
         'ServiceStart' {$Value.value -is [string] -and $Value.value -cmatch '^[234]\|[x01]$'}
         'Power' {$Value.value -is [string] -and $Value.value -cmatch '^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\|[0-9]{1,10}$' -and [decimal]$Value.value.Split('|')[1] -le 4294967295}
         {$_ -in @('Interfaces','Dns')} {Test-NetworkValue $d $Value.value}
+        'QosSet' {$Value.value -in @('on','off')}
         'Hibernate' {$Value.value -is [string] -and $Value.value -cmatch '^[01]\|[x01]\|[x012]\|(x|[0-9]{1,3})$' -and ($Value.value.Split('|')[3] -eq 'x' -or [int]$Value.value.Split('|')[3] -le 100)}
         default {$false}
     }
@@ -190,7 +191,8 @@ function Get-OptimizationDefault([string]$Field,$Current) {
     $d=Get-OptimizationDefinition $Field
     if ($d.adapter -in @('ifreg','dns')) {
         $empty=if ($d.adapter -eq 'dns') {''} else {'x'}
-        $parts=foreach ($key in (ConvertFrom-NetworkValue $Current.value).Keys) {$key+'='+$empty}
+        $now=ConvertFrom-NetworkValue $Current.value
+        $parts=foreach ($key in $now.Keys) {$key+'='+$(if ($d.onlyExisting -and $now[$key] -ne 'x') {[string]$d.default} else {$empty})}
         return [pscustomobject]@{exists=$true;kind=$d.kind;value=($parts -join '|')}
     }
     if ($d.adapter -eq 'task') {

@@ -40,6 +40,9 @@ contextBridge.exposeInMainWorld('tweaker', {
   colorSave: (look) => ipcRenderer.invoke('tweaker:color-save', look),
   colorReset: () => ipcRenderer.invoke('tweaker:color-reset'),
   onColor: (cb) => ipcRenderer.on('tweaker:color', (_e, value) => cb(value)),
+  // FiveM > Hitreg: Live-Test zum Server (IP:Port oder cfx.re-Link)
+  hitregTest: (target) => ipcRenderer.invoke('tweaker:hitreg-test', target),
+  onHitregProgress: (cb) => ipcRenderer.on('tweaker:hitreg-progress', (_e, p) => cb(p)),
   // FiveM > H1T Mods
   h1tModsList: () => ipcRenderer.invoke('tweaker:h1tmods-list'),
   h1tModsInstall: (id) => ipcRenderer.invoke('tweaker:h1tmods-install', id),

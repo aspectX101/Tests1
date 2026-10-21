@@ -71,6 +71,7 @@ function Test-NetworkValue($D,$Value) {
 }
 
 function Get-NetworkNativeValue($D) {
+    if ($D.adapter -eq 'qos') {return [pscustomobject]@{exists=$true;kind='QosSet';value=$(if (Test-NetworkQosPolicies) {'on'} else {'off'})}}
     $adapters=Get-NetworkAdapters
     $map=if ($D.adapter -eq 'ifreg' -and $D.scope -eq 'class') {Get-NetworkClassSubkeys} else {$null}
     $parts=foreach ($a in $adapters) {
@@ -80,7 +81,9 @@ function Get-NetworkNativeValue($D) {
             $a.guid+'='+(ConvertTo-NetworkDnsList ([string]$v.value))
         } else {
             $v=Get-OptimizationRegistryValue (Get-NetworkRegistryDefinition $D $a.guid $map)
-            if ($v.exists -and $v.kind -ne 'DWord') {throw 'unsupported_optimization_value'}
+            $kind=if ($D.valueKind -eq 'String') {'String'} else {'DWord'}
+            if ($v.exists -and $v.kind -ne $kind) {throw 'unsupported_optimization_value'}
+            if ($v.exists -and $kind -eq 'String' -and [string]$v.value -cnotmatch '^[0-9]{1,9}$') {throw 'unsupported_optimization_value'}
             $a.guid+'='+$(if ($v.exists) {[string]$v.value} else {'x'})
         }
     }
@@ -88,12 +91,16 @@ function Get-NetworkNativeValue($D) {
 }
 
 function Get-NetworkNativeTarget($D,$Current) {
+    if ($D.adapter -eq 'qos') {return [pscustomobject]@{exists=$true;kind='QosSet';value='on'}}
     $wanted=if ($D.adapter -eq 'dns') {Get-NetworkDnsChoice} else {[string]$D.target}
-    $parts=foreach ($key in (ConvertFrom-NetworkValue $Current.value).Keys) {$key+'='+$wanted}
+    $now=ConvertFrom-NetworkValue $Current.value
+    # Driver keywords: only cards whose driver offers the setting are changed.
+    $parts=foreach ($key in $now.Keys) {$key+'='+$(if ($D.onlyExisting -and $now[$key] -eq 'x') {'x'} else {$wanted})}
     return [pscustomobject]@{exists=$true;kind=$D.kind;value=($parts -join '|')}
 }
 
 function Set-NetworkNativeValue($D,$Value) {
+    if ($D.adapter -eq 'qos') {Set-NetworkQosPolicies ($Value.value -eq 'on'); return}
     $wanted=ConvertFrom-NetworkValue $Value.value
     $current=ConvertFrom-NetworkValue (Get-NetworkNativeValue $D).value
     # Same cards as when the backup was taken; otherwise this is an external change.
@@ -105,7 +112,7 @@ function Set-NetworkNativeValue($D,$Value) {
         if ($D.adapter -eq 'dns') {Set-NetworkDnsServers @($adapters | Where-Object guid -eq $guid)[0] $wanted[$guid]}
         else {
             $v=[pscustomobject]@{exists=($wanted[$guid] -ne 'x');kind=$null;value=$null}
-            if ($v.exists) {$v.kind='DWord';$v.value=[long]$wanted[$guid]}
+            if ($v.exists) {if ($D.valueKind -eq 'String') {$v.kind='String';$v.value=[string]$wanted[$guid]} else {$v.kind='DWord';$v.value=[long]$wanted[$guid]}}
             Set-OptimizationRegistryValue (Get-NetworkRegistryDefinition $D $guid $map) $v
         }
     }
@@ -174,4 +181,43 @@ function Test-NetworkIntermediate($Entry,$Value) {
     if ((@($now.Keys) -join '|') -cne (@($before.Keys) -join '|')) {return $false}
     foreach ($key in $now.Keys) {if ($now[$key] -cne $before[$key] -and $now[$key] -cne $target[$key]) {return $false}}
     return $true
+}
+
+# ---------- Hitreg: QoS priority (DSCP 46) for the FiveM game processes ----------
+# One policy-based QoS rule per FiveM game executable (default build and the game builds FiveM offers).
+# Only our own keys ("H1T FiveM ...") are created or removed; other QoS policies stay untouched.
+$script:QosRoot='SOFTWARE\Policies\Microsoft\Windows\QoS'
+$script:FiveMBuilds=@('', '_b1604', '_b2060', '_b2189', '_b2372', '_b2545', '_b2612', '_b2699', '_b2802', '_b2944', '_b3095', '_b3258', '_b3323', '_b3407', '_b3570')
+function Get-NetworkQosPolicies {
+    foreach ($b in $script:FiveMBuilds) {
+        $app='FiveM' + $b + '_GTAProcess.exe'
+        [pscustomobject]@{key=('H1T FiveM' + $b); values=[ordered]@{'Version'='1.0';'Application Name'=$app;'Protocol'='*';'Local Port'='*';'Local IP'='*';'Local IP Prefix Length'='*';'Remote Port'='*';'Remote IP'='*';'Remote IP Prefix Length'='*';'DSCP Value'='46';'Throttle Rate'='-1'}}
+    }
+}
+function Test-NetworkQosPolicies {
+    $hive=[Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine','Registry64')
+    try {
+        foreach ($p in Get-NetworkQosPolicies) {
+            $key=$hive.OpenSubKey($script:QosRoot + '\' + $p.key,$false)
+            if ($null -eq $key) {return $false}
+            try {foreach ($name in $p.values.Keys) {if ([string]$key.GetValue($name) -cne $p.values[$name]) {return $false}}} finally {$key.Dispose()}
+        }
+        return $true
+    } finally {$hive.Dispose()}
+}
+function Set-NetworkQosPolicies([bool]$On) {
+    $hive=[Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine','Registry64')
+    try {
+        if ($On) {
+            foreach ($p in Get-NetworkQosPolicies) {
+                $key=$hive.CreateSubKey($script:QosRoot + '\' + $p.key)
+                try {foreach ($name in $p.values.Keys) {$key.SetValue($name,$p.values[$name],[Microsoft.Win32.RegistryValueKind]::String)}; $key.Flush()} finally {$key.Dispose()}
+            }
+        } else {
+            $root=$hive.OpenSubKey($script:QosRoot,$true)
+            if ($root) {try {foreach ($name in @($root.GetSubKeyNames() | Where-Object {$_ -like 'H1T FiveM*'})) {$root.DeleteSubKeyTree($name,$false)}} finally {$root.Dispose()}}
+        }
+    } finally {$hive.Dispose()}
+    $gp=Join-Path $env:SystemRoot 'System32\gpupdate.exe'
+    if (Test-Path -LiteralPath $gp) {$null=& $gp /target:computer /force 2>&1}
 }

@@ -1389,6 +1389,111 @@
     "reversible": true,
     "available": true,
     "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet bei Ethernet- und WLAN-Karten Interrupt-Moderation, Flusskontrolle, Energy Efficient Ethernet und Large Send Offload ab und Receive Side Scaling an \u2013 sofern der Treiber diese Optionen anbietet. Pakete werden sofort statt gesammelt verarbeitet und auf mehrere Kerne verteilt: gleichm\u00e4\u00dfigere Treffer-R\u00fcckmeldung, etwas mehr CPU-Last. Neustart erforderlich.",
+      "en": "Turns off interrupt moderation, flow control, Energy Efficient Ethernet and Large Send Offload and turns on Receive Side Scaling on Ethernet and Wi-Fi cards \u2013 where the driver offers them. Packets are handled immediately instead of batched and spread across cores: steadier hit feedback, slightly more CPU load. Restart required.",
+      "it": "Disattiva moderazione degli interrupt, controllo di flusso, Energy Efficient Ethernet e Large Send Offload e attiva Receive Side Scaling sulle schede Ethernet e Wi-Fi, se il driver li offre. I pacchetti vengono gestiti subito e distribuiti sui core: riscontro dei colpi pi\u00f9 costante, un po\u2019 pi\u00f9 di carico CPU. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "hitreg.nic.latency",
+    "risk": "medium",
+    "category": "hitreg",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Netzwerkkarte: Latenz-Modus",
+      "en": "Network card: latency mode",
+      "it": "Scheda di rete: modalit\u00e0 latenza"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Windows 11 wendet die feine Timer-Aufl\u00f6sung, die FiveM anfordert, wieder systemweit an. Gleichm\u00e4\u00dfigere Frame-Zeiten und Netzwerk-Ticks, weniger Ruckler beim Zielen. Etwas h\u00f6herer Stromverbrauch. Neustart erforderlich.",
+      "en": "Windows 11 applies the fine timer resolution FiveM requests system-wide again. More even frame times and network ticks, fewer stutters while aiming. Slightly higher power use. Restart required.",
+      "it": "Windows 11 applica di nuovo a tutto il sistema la risoluzione del timer richiesta da FiveM. Tempi di frame e tick di rete pi\u00f9 regolari, meno scatti mirando. Consumo leggermente maggiore. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "hitreg.timer.global",
+    "risk": "low",
+    "category": "hitreg",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Pr\u00e4zise Timer-Aufl\u00f6sung (global)",
+      "en": "Precise timer resolution (global)",
+      "it": "Risoluzione timer precisa (globale)"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Markiert den Netzwerkverkehr der FiveM-Spielprozesse als Echtzeit-Verkehr (DSCP 46). \u00dcber WLAN (WMM) und auf Routern mit QoS werden Spielpakete vor Downloads und Streams durchgelassen \u2013 weniger Verz\u00f6gerung, wenn nebenbei etwas l\u00e4dt. Neustart erforderlich.",
+      "en": "Marks the network traffic of the FiveM game processes as real-time traffic (DSCP 46). Over Wi-Fi (WMM) and on routers with QoS, game packets go ahead of downloads and streams \u2013 less delay when something else is loading. Restart required.",
+      "it": "Contrassegna il traffico dei processi di gioco FiveM come traffico in tempo reale (DSCP 46). Su Wi-Fi (WMM) e router con QoS i pacchetti di gioco passano prima di download e streaming: meno ritardo quando altro sta scaricando. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "hitreg.qos.fivem",
+    "risk": "low",
+    "category": "hitreg",
+    "requiresAdmin": true,
+    "name": {
+      "de": "FiveM-Pakete priorisieren (QoS)",
+      "en": "Prioritise FiveM packets (QoS)",
+      "it": "Priorit\u00e0 ai pacchetti FiveM (QoS)"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Maus, Tastatur, Grafik- und Netzwerkkarte werden im aktiven Energieplan (am Netzteil) nie in Stromsparzust\u00e4nde versetzt. Kein kurzes \u201eAufwachen\u201c beim ersten Klick oder Paket \u2013 direktere Eingaben. Etwas h\u00f6herer Stromverbrauch.",
+      "en": "Mouse, keyboard, graphics and network card are never put into power-saving states in the active power plan (on AC power). No short wake-up on the first click or packet \u2013 more direct input. Slightly higher power use.",
+      "it": "Mouse, tastiera, scheda grafica e di rete non entrano mai in risparmio energetico nel piano attivo (con alimentazione di rete). Nessun breve risveglio al primo clic o pacchetto: input pi\u00f9 diretto. Consumo leggermente maggiore."
+    },
+    "bulkSafe": false,
+    "id": "hitreg.input.power",
+    "risk": "low",
+    "category": "hitreg",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Eingabe-Latenz: USB- und PCIe-Energiesparen aus",
+      "en": "Input latency: USB and PCIe power saving off",
+      "it": "Latenza input: risparmio USB e PCIe disattivato"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Windows startet jeden FiveM-Spielprozess (alle Spiel-Builds) automatisch mit hoher CPU-Priorit\u00e4t. Spiel-Logik und Netzwerk-Verarbeitung werden vor Hintergrundprogrammen bedient \u2013 weniger Aussetzer bei Schusswechseln. Wirkt ab dem n\u00e4chsten FiveM-Start.",
+      "en": "Windows starts every FiveM game process (all game builds) at high CPU priority automatically. Game logic and network handling are served before background programs \u2013 fewer hiccups in gunfights. Takes effect from the next FiveM start.",
+      "it": "Windows avvia ogni processo di gioco FiveM (tutte le build) con priorit\u00e0 CPU alta. Logica di gioco e rete vengono servite prima dei programmi in background: meno intoppi negli scontri. Effetto dal prossimo avvio di FiveM."
+    },
+    "bulkSafe": false,
+    "id": "hitreg.fivem.priority",
+    "risk": "medium",
+    "category": "hitreg",
+    "requiresAdmin": true,
+    "name": {
+      "de": "FiveM immer mit hoher CPU-Priorit\u00e4t",
+      "en": "FiveM always at high CPU priority",
+      "it": "FiveM sempre con priorit\u00e0 CPU alta"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
   }
 ];
   if (typeof module !== "undefined" && module.exports) module.exports = catalog;

@@ -8,7 +8,7 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
     function Assert-OptimizationPlatform {}
     $adapters=@(Get-NetworkAdapters)
     Write-Host ('PASS adapters: ' + (($adapters | ForEach-Object { $_.guid + ' up=' + $_.up }) -join ', '))
-    foreach ($tweak in @(Get-OptimizationCatalog | Where-Object category -eq network)) {
+    foreach ($tweak in @(Get-OptimizationCatalog | Where-Object { $_.category -in @('network','hitreg') })) {
         foreach ($field in @(Get-OptimizationFields $tweak.id)) {
             $value=Get-OptimizationValue $field
             $target=Get-OptimizationTarget $field $value
@@ -29,4 +29,12 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
     }
     Assert (Test-OptimizationValueEqual (Get-OptimizationValue 'nagleNoDelay') $before) 'original restored'
     Write-Host ('PASS restore nagleNoDelay: ' + $before.value)
+    # Hitreg QoS rules for the FiveM game processes: on, verified, off again.
+    $qosBefore=Get-OptimizationValue 'qosFiveM'
+    try {
+        Set-OptimizationValue 'qosFiveM' ([pscustomobject]@{exists=$true;kind='QosSet';value='on'})
+        Assert ((Get-OptimizationValue 'qosFiveM').value -eq 'on') 'QoS rules written'
+    } finally { Set-OptimizationValue 'qosFiveM' $qosBefore }
+    Assert ((Get-OptimizationValue 'qosFiveM').value -eq $qosBefore.value) 'QoS rules restored'
+    Write-Host ('PASS round trip qosFiveM: ' + $qosBefore.value + ' -> on -> ' + $qosBefore.value)
 }

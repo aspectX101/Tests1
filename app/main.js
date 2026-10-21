@@ -48,6 +48,16 @@ h1tMods.onProgress((p) => sendToUi('tweaker:h1tmods-progress', p));
 ipcMain.handle('tweaker:h1tmods-list', (e) => trusted(e) ? h1tMods.list() : { ok: false });
 ipcMain.handle('tweaker:h1tmods-install', (e, id) => trusted(e) && typeof id === 'string' ? h1tMods.install(id) : { ok: false });
 
+// FiveM > Hitreg: Live-Verbindungstest (UDP-Serverabfrage) mit Fortschritt für das Diagramm.
+const hitregNet = require('./hitreg-net');
+let hitregBusy = false;
+ipcMain.handle('tweaker:hitreg-test', async (e, target) => {
+  if (!trusted(e) || typeof target !== 'string' || hitregBusy) return { ok: false, error: 'hitreg_busy' };
+  hitregBusy = true;
+  try { return await hitregNet.runTest(target, (p) => sendToUi('tweaker:hitreg-progress', p)); }
+  finally { hitregBusy = false; }
+});
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1400,
