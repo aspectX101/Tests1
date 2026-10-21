@@ -34,7 +34,7 @@ test('the provided globe logo is embedded locally and used for splash and dashbo
 
   assert.match(index, /class="h1t-splash-emblem"/);
   assert.match(app, /class="h1t-dash-hero"/);
-  assert.match(app, /assets\/h1t-emblem\.svg/);
+  assert.match(read("app/renderer/h1t-dashboard.css"), /assets\/h1t-emblem\.svg/);
 });
 
 test('all routes retain navigation while page transitions honor reduced motion', () => {
