@@ -26,3 +26,20 @@ test('inventory failure prevents all Debloat mutations',async()=>{
  await ctx.debloatStart();assert.equal(calls.some(x=>['apply','debloat-remove','startup-disable'].includes(x.action)),false);
  assert.equal(ctx.state.db.busy,false);
 });
+
+test('Start Debloat stays usable with nothing left and explains it instead of a dead button',async()=>{
+ const {ctx,state,calls}=setup();state.db.data.apps=[];state.tweaks=[];
+ assert.equal(/id="db-start"[^>]*disabled/.test(ctx.renderDebloat()),false);
+ await ctx.debloatStart();
+ assert.equal(calls.some(x=>['debloat-preview','debloat-remove','apply','startup-disable'].includes(x.action)),false);
+ assert.match(state.db.result.note,/Nichts mehr zu tun/);
+});
+test('Debloat inventory loads once, reuses the cache and never locks the UI while loading',async()=>{
+ const {ctx,state,calls}=setup(); // no loadedAt yet: first load must query the backend
+ const first=ctx.debloatLoad();assert.equal(state.db.loading,true);assert.equal(state.db.busy,false);
+ assert.match(ctx.renderDebloat(),/id="db-start"[^>]*disabled/);
+ await Promise.all([first,ctx.debloatLoad()]);
+ assert.equal(calls.filter(x=>x.action==='debloat-list').length,1);assert.equal(calls.some(x=>x.action==='list'),false);
+ await ctx.debloatLoad();assert.equal(calls.filter(x=>x.action==='debloat-list').length,1);
+ await ctx.debloatLoad({force:true,tweaks:true});assert.equal(calls.filter(x=>x.action==='debloat-list').length,2);assert.equal(calls.some(x=>x.action==='list'),true);
+});

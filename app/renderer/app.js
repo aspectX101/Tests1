@@ -1161,6 +1161,8 @@ async function load() {
   state.enter = true;
   render();
   hideSplash();
+  // Debloat-Inventar (Apps, Autostart) vorab im Hintergrund laden, damit der Tab sofort fertig ist
+  setTimeout(() => debloatLoad(), 2500);
 }
 
 function go(route) {
@@ -1168,9 +1170,10 @@ function go(route) {
   state.filter = 'all';
   state.enter = true;
   if (route.page !== 'search') state.search = '';
+  // Vor dem Zeichnen starten: Seite erscheint einmal fertig (Daten aus dem Zwischenspeicher oder Ladezustand), statt doppelt aufgebaut zu werden
+  if (route.cat === 'debloat') debloatLoad();
   render();
   $('#content').scrollTop = 0;
-  if (route.cat === 'debloat') debloatLoad();
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
   if (route.page === 'safemode' && !state.safeBusy) safeAction('scan');
   if (route.page === 'settings') bridge.checkUpdate();

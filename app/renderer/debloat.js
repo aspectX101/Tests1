@@ -15,37 +15,57 @@ function renderDebloat() {
       <summary><span><strong>${esc(tr.groups[group][0])}</strong><small>${esc(tr.groups[group][1])}</small></span><span class="db-count">${count||'+'}</span></summary>
       <div class="db-options">${members.map(a=>`<label class="db-app"><span>${esc(a.name)}<small>${a.installed?(a.removable?tr.installed:esc(errorText(a.reason))):tr.absent}</small></span></label>`).join('')}
       ${tw?`<label class="db-app"><span>${esc(tw.name)}<small>${esc(tw.description)}</small><small>${tw.applied?tr.alreadyApplied:tw.available===false?esc(errorText(tw.stateError)):esc(tw.risk)}</small></span></label>`:''}
-      ${!d.data?`<p>${tr.unknown}</p>`:''}</div></details>`;
+      ${!d.data?`<p>${d.loading?esc(tr.loading):tr.unknown}</p>`:''}</div></details>`;
   }).join('');
-  return `<div class="db-actions"><button class="pill dark" id="db-start" ${d.busy||!selection.apps.length&&!selection.settings.length&&!selection.startup.length?'disabled':''}>${tr.start}</button><button class="pill dark" id="db-revert" ${d.busy?'disabled':''}>Revert All</button></div>
-    <div class="db-toolbar"><span>${esc(tr.selectHint)}</span><button class="pill dark" id="db-reload" ${d.busy?'disabled':''}>${tr.refresh}</button></div>
+  return `<div class="db-actions"><button class="pill db-go" id="db-start" ${d.busy||d.loading?'disabled':''}>${d.loading?esc(tr.loading):tr.start}</button><button class="pill dark" id="db-revert" ${d.busy||d.loading?'disabled':''}>Revert All</button></div>
+    <div class="db-toolbar"><span>${esc(tr.selectHint)}</span><button class="pill dark" id="db-reload" ${d.busy||d.loading?'disabled':''}>${tr.refresh}</button></div>
     ${d.error?`<p role="alert">${esc(errorText(d.error))}</p>`:''}
     <details class="card db-startup" ${d.startupOpen?'open':''}><summary>${tr.startup}</summary><p class="row-desc">${esc(tr.startupScope)}</p><button class="pill dark" data-debloat-open="startup-settings">${tr.windowsStartup}</button>
     ${d.startupError?`<p role="alert">${esc(errorText(d.startupError))}</p>`:''}
     ${(d.startup?.entries||[]).map(a=>`<div class="db-app"><span>${esc(a.name)}<small>${a.disabled?tr.disabled:tr.registered}</small></span><button class="pill dark" data-startup-id="${esc(a.id)}" ${d.busy||!a.available?'disabled':''}>${a.managed?tr.restore:tr.disable}</button></div>`).join('')||`<p>${tr.noStartup}</p>`}</details>
-    <div class="db-grid" aria-busy="${!!d.busy}">${cards}</div>
+    <div class="db-grid" aria-busy="${!!(d.busy||d.loading)}">${d.loading&&!d.data?'<div class="skeleton"></div>'.repeat(4):cards}</div>
     <p class="hint">${esc(tr.notice)}</p>
     ${d.result?`<div class="card db-result" role="status"><strong>${d.result.ok?tr.completed:tr.partial}</strong>${d.result.note?`<p>${esc(d.result.note)}</p>`:''}${(d.result.results||[]).map(x=>`<p>${esc(x.name||apps.find(a=>a.id===x.id)?.name||x.id||'')}: ${x.error?esc(errorText(x.error)):esc(tr[x.status]||x.status)}</p>`).join('')}</div>`:''}`;
 }
-async function debloatLoad() {
-  if(state.db.busy)return;state.db.busy=true;render();
-  const [apps,startup,list]=await Promise.all([call('debloat-list'),call('startup-list'),call('list')]);
-  state.db.busy=false;state.db.data=apps?.ok?apps:null;state.db.error=apps?.ok?(list?.ok?null:list?.error):apps?.error;
-  state.db.startup=startup?.ok?startup:null;state.db.startupError=startup?.ok?null:startup?.error;
-  if(list?.ok)state.tweaks=list.tweaks;
-  const valid=dbSelection();state.db.selected=new Set([...valid.apps,...valid.settings].map(x=>x.id));
-  if(state.route.cat==='debloat')render();
+// Nur den Debloat-Bereich neu zeichnen (kein kompletter Seitenaufbau, keine Einblend-Animation, Scrollposition bleibt).
+function dbPaint(full) {
+  if(state.route.cat!=='debloat')return;
+  if(full){render();return;}
+  const host=typeof document.querySelector==='function'?document.querySelector('#content .db-v2'):null;
+  if(host)host.innerHTML=renderDebloat();
+}
+// Inventar laden: im Hintergrund, zwischengespeichert (DB_FRESH), ohne die Oberfläche zu sperren.
+// force: nach Aktionen/Aktualisieren neu laden; tweaks: auch den Tweak-Status neu abfragen.
+const DB_FRESH=120000;
+let dbPending=null;
+function debloatLoad(opts={}) {
+  if(state.db.busy&&!opts.force)return Promise.resolve();
+  if(dbPending)return dbPending;
+  if(!opts.force&&state.db.data&&Date.now()-(state.db.loadedAt||0)<DB_FRESH)return Promise.resolve();
+  state.db.loading=true;dbPaint();
+  dbPending=(async()=>{
+    try {
+      const [apps,startup,list]=await Promise.all([call('debloat-list'),call('startup-list'),opts.tweaks?call('list'):null]);
+      state.db.data=apps?.ok?apps:null;state.db.error=apps?.ok?(list&&!list.ok?list.error:null):apps?.error;
+      state.db.startup=startup?.ok?startup:null;state.db.startupError=startup?.ok?null:startup?.error;
+      if(list?.ok)state.tweaks=list.tweaks;
+      if(apps?.ok&&startup?.ok)state.db.loadedAt=Date.now();
+      const valid=dbSelection();state.db.selected=new Set([...valid.apps,...valid.settings].map(x=>x.id));
+    } finally {state.db.loading=false;dbPending=null;dbPaint(!!opts.tweaks);}
+  })();
+  return dbPending;
 }
 async function debloatStart() {
   if(state.db.busy||state.busy?.size||state.bkBusy||state.safeBusy)return;
-  state.db.busy=true;state.db.result=null;render();
+  if(dbPending)await dbPending;
+  state.db.busy=true;state.db.result=null;dbPaint();
   const results=[];
   try {
     const [apps,startup,list]=await Promise.all([call('debloat-list'),call('startup-list'),call('list')]);
     const failed=[apps,startup,list].find(x=>!x?.ok);if(failed)throw Error(failed.error||dbText().partial);
     state.db.data=apps;state.db.startup=startup;state.tweaks=list.tweaks;
     const selected=dbSelection();
-    if(!selected.apps.length&&!selected.settings.length&&!selected.startup.length)return;
+    if(!selected.apps.length&&!selected.settings.length&&!selected.startup.length){state.db.result={ok:true,results:[],note:dbText().nothingToDo};return;}
     const ids=selected.apps.map(a=>a.id);
     const preview=ids.length?await call('debloat-preview',undefined,{appIds:ids}):null;
     if(ids.length&&!preview?.ok)throw Error(preview?.error||dbText().partial);
@@ -69,10 +89,10 @@ async function debloatStart() {
     }
     state.db.result={ok,results,note:ids.length?dbText().reinstallNotice:''};
   } catch(err){state.db.result={ok:false,results,note:errorText(err.message)};}
-  finally {state.db.busy=false;await debloatLoad();}
+  finally {state.db.busy=false;await debloatLoad({force:true,tweaks:true});}
 }
 async function debloatRevertAll() {
-  if(state.db.busy)return;state.db.busy=true;render();
+  if(state.db.busy||state.db.loading)return;state.db.busy=true;dbPaint();
   try {
     const list=await call('backup-list');if(!list?.ok){toast(errorText(list?.error),'error');return;}
     const relevant=list.backups.filter(b=>b.kind==='startup'||b.kind==='tweak'&&Object.values(DB_SETTINGS).includes(b.tweakId));
@@ -90,20 +110,20 @@ async function debloatRevertAll() {
       results.push({name:names[i],status:'restored',error:res?.ok?null:res?.results?.find(x=>x.status==='failed')?.reason||res?.error});
     }
     state.db.result={ok:!results.some(x=>x.error)&&!evidence,results,note:evidence?dbText().revertLimit:dbText().revertScope};
-  } finally {state.db.busy=false;await debloatLoad();}
+  } finally {state.db.busy=false;await debloatLoad({force:true,tweaks:true});}
 }
 async function startupChange(id) {
   if(state.db.busy)return;
   const entry=state.db.startup?.entries?.find(x=>x.id===id);
   if(!entry?.available)return;
   if(!await confirmDialog(entry.name,entry.managed?dbText().restorePrompt:dbText().disablePrompt,entry.managed?dbText().restore:dbText().disable))return;
-  state.db.busy=true;render();
+  state.db.busy=true;dbPaint();
   const result=await call(entry.managed?'startup-restore':'startup-disable',id,{previewToken:entry.token});
   if(!result?.ok)toast(errorText(result?.error),'error');
-  state.db.busy=false;await debloatLoad();
+  state.db.busy=false;await debloatLoad({force:true});
 }
 
 document.addEventListener('toggle',e=>{if(!e.target.isConnected)return;if(e.target.classList?.contains('db-startup'))state.db.startupOpen=e.target.open;const group=e.target.dataset?.dbGroup;if(group){state.db.openGroups??=new Set();if(e.target.open)state.db.openGroups.add(group);else state.db.openGroups.delete(group);}},true);
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='db-reload')debloatLoad();if(b.id==='db-start')debloatStart();if(b.id==='db-revert')debloatRevertAll();if(b.dataset.startupId)startupChange(b.dataset.startupId);if(b.dataset.debloatOpen)bridge.openDebloatTarget(b.dataset.debloatOpen).then(r=>{if(!r?.ok)toast(errorText(r?.error),'error');});});
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='db-reload')debloatLoad({force:true,tweaks:true});if(b.id==='db-start')debloatStart();if(b.id==='db-revert')debloatRevertAll();if(b.dataset.startupId)startupChange(b.dataset.startupId);if(b.dataset.debloatOpen)bridge.openDebloatTarget(b.dataset.debloatOpen).then(r=>{if(!r?.ok)toast(errorText(r?.error),'error');});});
 
 document.addEventListener('click',e=>{if(state.db.busy&&!e.target.closest('#modal, #win-min, #win-close')){e.preventDefault();e.stopImmediatePropagation();}},true);
