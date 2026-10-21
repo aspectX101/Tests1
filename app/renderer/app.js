@@ -197,36 +197,40 @@ function errorText(code) {
 function renderNav() {
   const r = state.route;
   const activeKey = r.page === 'cat' ? (r.parent || r.cat) : r.page;
-  const count = (c) => {
-    const list = tweaksIn(c);
-    if (!list.length) return '';
-    const on = list.filter((x) => x.applied).length;
-    return `<span class="nav-count${on ? ' on' : ''}">${on}/${list.length}</span>`;
+  const de = state.lang === 'de', it = state.lang === 'it';
+  const labels = {
+    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'V3 Tweak',gaming:'Game Booster',mods:'FiveM Mods',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
+    en:{home:'Dashboard',performance:'PC Optimization',profiles:'V3 Tweak',gaming:'Game Booster',mods:'FiveM Mods',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
+    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'V3 Tweak',gaming:'Game Booster',mods:'FiveM Mods',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
+  }[state.lang] || {};
+  const item=(key,attrs)=>`<button class="nav-item${activeKey===key?' active':''}" ${attrs} title="${esc(labels[key]||key)}" ${activeKey===key?'aria-current="page"':''}>${icon(key)}<span class="nav-label">${esc(labels[key]||key)}</span></button>`;
+  const section=(id,items)=>{
+    const collapsed=state.navClosed.has(id);
+    return `<div class="nav-group${collapsed?' closed':''}">
+      <button class="nav-head" data-navgroup="${id}" aria-expanded="${!collapsed}"><span>${esc(labels[id]||id)}</span><i></i></button>
+      <div class="nav-items">${items.join('')}</div></div>`;
   };
-  const item = (key, label, attrs, extra = '') =>
-    `<button class="nav-item${activeKey === key ? ' active' : ''}" ${attrs} title="${esc(label)}">
-       ${icon(key)}<span class="nav-label">${esc(label)}</span>${extra}</button>`;
-  const entry = ([kind, c]) => {
-    if (kind === 'cat') {
-      if (c !== 'debloat' && !tweaksIn(c).length) return ''; // leere Bereiche ausblenden
-      return item(c, catName(c), `data-cat="${c}"`, count(c));
-    }
-    const label = kind === 'mods' ? t().modsPage : kind === 'backups' ? t().backupsPage : kind === 'profiles' ? t().profilesPage : t()[kind];
-    return item(kind, label, `data-go="${kind}"`);
-  };
-  const groups = NAV_GROUPS.map(([g, items]) => {
-    const html = items.map(entry).join('');
-    if (!html) return '';
-    const closed = state.navClosed.has(g);
-    return `<div class="nav-group${closed ? ' closed' : ''}">
-      <button class="nav-head" data-navgroup="${g}"><span>${esc(t().navGroups[g])}</span><i></i></button>
-      <div class="nav-items">${html}</div></div>`;
-  }).join('');
-  $('#nav').innerHTML = item('collapse', t().collapse, 'data-collapse') + groups +
-    '<div class="nav-spacer"></div>' + item('settings', t().settings, 'data-go="settings"');
-  $('#app').classList.toggle('collapsed', state.collapsed);
-  const sb = $('#nav-search');
-  if (sb) { sb.placeholder = t().searchPh; if (document.activeElement !== sb) sb.value = state.search; }
+  const hasGaming=tweaksIn('gaming').length>0;
+  const html=[
+    item('home','data-go="home"'),item('performance','data-cat="performance"'),item('profiles','data-go="profiles"'),
+    item('gaming','data-cat="gaming"'+(!hasGaming?' disabled title="'+esc(t().empty)+'"':'')),
+    section('fivem',[item('mods','data-go="mods"'),item('cleanup','data-go="cleanup"')]),
+    section('system',[
+      item('network','data-cat="network"'),item('services','data-cat="services"'),
+      item('privacy','data-cat="privacy"'),item('visuals','data-cat="visuals"'),
+      item('keyboard','data-cat="keyboard"'),item('debloat','data-cat="debloat"')
+    ]),
+    section('protect',[item('safemode','data-go="safemode"'),item('backups','data-go="backups"')]),
+    section('more',[item('extra','data-go="extra"')]),
+    '<div class="nav-spacer"></div>',
+    '<div class="nav-tail">'+item('settings','data-go="settings"')+
+      '<button class="nav-item" data-go="settings" title="'+esc(labels.info)+'">'+icon('safemode')+
+      '<span class="nav-label">'+esc(labels.info)+'</span></button></div>'
+  ].join('');
+  $('#nav').innerHTML=html;
+  $('#app').classList.toggle('collapsed',state.collapsed);
+  const sb=$('#nav-search');
+  if(sb){sb.placeholder=t().searchPh;if(document.activeElement!==sb)sb.value=state.search;}
 }
 
 function renderCrumbs() {
@@ -252,57 +256,71 @@ function ring(key, label) {
 }
 
 function renderHome() {
-  const i = state.info || {};
-  const total = state.tweaks.length;
-  const on = state.tweaks.filter((x) => x.applied).length;
-  const pct = total ? Math.round((on / total) * 100) : 0;
-  const seg = (k) => `<button data-metric="${k}" class="${state.metric === k ? 'active' : ''}">${k.toUpperCase()}</button>`;
-  const adminTxt = i.isAdmin === false ? t().noAdmin : i.isAdmin ? t().admin : '';
-
-  return `<div class="dashboard-home">
-    <div class="card h1t-hero">
-      <div class="h1t-hero-copy">
-        <div class="h1t-eyebrow">H1T.CC · ${state.lang==='de'?'SYSTEM CONTROL':state.lang==='it'?'CONTROLLO SISTEMA':'SYSTEM CONTROL'}</div>
-        <h1>${state.lang==='de'?'Dein System.':'Your system.'} <em>${state.lang==='de'?'Deine Kontrolle.':state.lang==='it'?'Il tuo controllo.':'Your control.'}</em></h1>
-        <p>${esc([i.os,adminTxt].filter(Boolean).join(' · '))} · ${state.lang==='de'?'Präzise Anpassungen, transparent und jederzeit kontrollierbar.':state.lang==='it'?'Ottimizzazioni precise, trasparenti e reversibili.':'Precision tuning with clear control and reversible changes.'}</p>
-        <div class="h1t-hero-pills"><span><i></i>${state.lang==='de'?'SYSTEM BEREIT':state.lang==='it'?'SISTEMA PRONTO':'SYSTEM READY'}</span><span>${on} / ${total} ${state.lang==='de'?'TWEAKS AKTIV':state.lang==='it'?'MODIFICHE ATTIVE':'TWEAKS ACTIVE'}</span></div>
-      </div>
-      <div class="h1t-globe" aria-hidden="true"><div class="h1t-orb"></div><img src="assets/h1t-emblem.svg" alt=""></div>
+  const all=state.tweaks || [];
+  const count=all.length, on=all.filter(x=>x.applied).length;
+  const ready=all.filter(x=>bulkOk(x) && !x.applied).length;
+  const stopped=all.filter(x=>catOf(x)==='services'&&x.applied).length;
+  const dict={
+    de:{label:'H1T.CC Tweak Utility',sub:'Übersicht & schnelle Aktionen für ein optimales System.',
+      done:'Angewendete Tweaks',doneSub:'Aktuell aktiviert',available:'Verfügbare Tweaks',availableSub:'Auf deinem System',
+      selected:'Sicher verfügbar',selectedSub:'Bereit zum Anwenden',stopped:'Dienste optimiert',stoppedSub:'Aktive Service-Tweaks',
+      quick:'Schnellaktionen',quickDesc:'Die wichtigsten Funktionen mit einem Klick.',run:'Alles ausführen',runSub:'Sichere Tweaks anwenden',
+      undo:'Alle zurücksetzen',undoSub:'Änderungen aus Sicherungen wiederherstellen',restart:'PC neu starten',restartSub:'Änderungen übernehmen',
+      activities:'Aktivitäten',empty:'Noch keine Aktivitäten',emptyDesc:'Ausgeführte Änderungen und Optimierungen erscheinen hier.',recent:'Letzte Änderungen'},
+    en:{label:'H1T.CC Tweak Utility',sub:'Overview & quick actions for your system.',
+      done:'Applied tweaks',doneSub:'Currently enabled',available:'Available tweaks',availableSub:'On your system',
+      selected:'Safe & ready',selectedSub:'Ready to apply',stopped:'Services optimized',stoppedSub:'Applied service tweaks',
+      quick:'Quick actions',quickDesc:'Important functions in a single click.',run:'Apply all',runSub:'Apply safe tweaks',
+      undo:'Restore all',undoSub:'Restore changes from backups',restart:'Restart PC',restartSub:'Apply pending changes',
+      activities:'Activity',empty:'No activity yet',emptyDesc:'Changes and optimizations will appear here.',recent:'Recent changes'},
+    it:{label:'H1T.CC Tweak Utility',sub:'Panoramica e azioni rapide per il sistema.',
+      done:'Modifiche applicate',doneSub:'Attualmente attive',available:'Modifiche disponibili',availableSub:'Nel tuo sistema',
+      selected:'Sicure e pronte',selectedSub:'Pronte da applicare',stopped:'Servizi ottimizzati',stoppedSub:'Modifiche attive ai servizi',
+      quick:'Azioni rapide',quickDesc:'Funzioni principali con un clic.',run:'Applica tutte',runSub:'Applica modifiche sicure',
+      undo:'Ripristina tutto',undoSub:'Ripristina modifiche dai backup',restart:'Riavvia PC',restartSub:'Applica le modifiche',
+      activities:'Attività',empty:'Nessuna attività',emptyDesc:'Le modifiche verranno visualizzate qui.',recent:'Modifiche recenti'}
+  }[state.lang];
+  const metric=(id,val,label,sub,iconName,cls='')=>`<div class="card h1t-metric ${cls}">
+    <div class="h1t-metric-icon">${icon(iconName)}</div>
+    <div class="h1t-metric-body"><b class="h1t-metric-value" data-count="${val}">${val}</b>
+      <div class="h1t-metric-label">${esc(label)}</div><div class="h1t-metric-note">${esc(sub)}</div></div>
+    <div class="h1t-metric-trend" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="h1t-metric-meter" aria-hidden="true"><i></i></div>
+  </div>`;
+  const action=(id,type,ic,name,description,disabled)=>`<button id="${id}" class="h1t-quick ${type}" ${disabled?'disabled':''}>
+    <span class="h1t-quick-icon">${icon(ic)}</span>
+    <span class="h1t-quick-copy"><b>${esc(name)}</b><small>${esc(description)}</small></span><span class="h1t-quick-arr">›</span></button>`;
+  const rows=(state.activity||[]).slice(0,5);
+  const activity=rows.length?`<div class="h1t-activity-list">${rows.map(a=>`<div class="h1t-activity-row">
+      <span class="h1t-act-dot ${a.kind==='fail'?'err':a.kind==='off'?'off':''}"></span>
+      <div><b>${esc(a.text)}</b><small>${esc(fmtDate(a.at))}</small></div></div>`).join('')}</div>`:
+      `<div class="h1t-activity-empty">${icon('backups')}<b>${esc(dict.empty)}</b><p>${esc(dict.emptyDesc)}</p></div>`;
+  return `<div class="dashboard-home h1t-dashboard">
+    <header class="h1t-dash-hero"><div class="h1t-dash-copy">
+      <span class="h1t-dash-eyebrow">${esc(dict.label)}</span>
+      <h1>Dashboard</h1><p>${esc(dict.sub)}</p></div></header>
+    <div class="h1t-metrics">
+      ${metric('applied',on,dict.done,dict.doneSub,'active')}
+      ${metric('available',count,dict.available,dict.availableSub,'bolt')}
+      ${metric('safe',ready,dict.selected,dict.selectedSub,'profiles')}
+      ${metric('services',stopped,dict.stopped,dict.stoppedSub,'services','warn')}
     </div>
-    <div class="h1t-overview-label">${state.lang==='de'?'LIVE SYSTEM MONITOR':state.lang==='it'?'MONITOR SISTEMA':'LIVE SYSTEM MONITOR'}</div>
-    <div class="rings">${ring('cpu', t().cpu)}${ring('gpu', t().gpu)}${ring('ram', t().ram)}</div>
-    <div class="home-row">
-      <div class="card chart-card">
-        <div class="chart-head">
-          <div><h2>${t()[state.metric]}</h2><p>${t().current} <span data-current>0</span>% · ${t().last60}</p></div>
-          <div class="seg">${seg('cpu')}${seg('gpu')}${seg('ram')}</div>
-        </div>
-        <div class="chart">
-          <div class="chart-y"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
-          <svg viewBox="0 0 600 200" preserveAspectRatio="none">
-            <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
-            </linearGradient></defs>
-            ${[0, 40, 80, 120, 160].map((y) => `<line class="grid" x1="0" x2="600" y1="${y}" y2="${y}"/>`).join('')}
-            <path class="area" data-area/><path class="line" data-line/>
-          </svg>
-        </div>
-      </div>
-      ${window.DashboardMedia.html(state.lang)}
-    </div>
-    <div class="stats">
-      ${stat('active', t().statActive, on, `/ ${total}`)}
-      ${stat('bolt', t().statOptimized, pct, '%')}
-      ${stat('mods', t().statMods, state.mods ? state.mods.enabledCount : '—', state.mods ? `/ ${state.mods.mods.length}` : '')}
-      ${stat('safemode', t().statSafe, state.safe ? (state.safe.enabled ? t().smOn : t().smOff) : '—', '', state.safe?.enabled ? 'ok' : '')}
-    </div>
-    <div class="h1t-overview-label">${state.lang==='de'?'DIREKTZUGRIFF':state.lang==='it'?'ACCESSO RAPIDO':'QUICK ACCESS'}</div>
-    <div class="h1t-launch">
-      <button data-cat="performance">${icon('performance')}<span><b>${esc(catName('performance'))}</b><small>${state.lang==='de'?'Leistung gezielt anpassen':'Tune performance'}</small></span><span class="h1t-arrow">›</span></button>
-      <button data-cat="network">${icon('network')}<span><b>${esc(catName('network'))}</b><small>${state.lang==='de'?'Verbindung optimieren':'Optimize connection'}</small></span><span class="h1t-arrow">›</span></button>
-      <button data-go="mods">${icon('mods')}<span><b>${esc(t().modsPage)}</b><small>${state.lang==='de'?'FiveM Bibliothek':'FiveM library'}</small></span><span class="h1t-arrow">›</span></button>
-      <button data-go="backups">${icon('backups')}<span><b>${esc(t().backupsPage)}</b><small>${state.lang==='de'?'Änderungen wiederherstellen':'Restore changes'}</small></span><span class="h1t-arrow">›</span></button>
-    </div>
+    <section class="card h1t-panel h1t-action-panel">
+      <div class="h1t-panel-head"><div class="h1t-panel-name">${icon('bolt')}<span>${esc(dict.quick)}</span></div><p class="h1t-panel-hint">${esc(dict.quickDesc)}</p></div>
+      <div class="h1t-quick-grid">
+       ${action('qa-safe','primary','bolt',dict.run,dict.runSub,!ready)}
+       ${action('qa-revert','secondary','revert',dict.undo,dict.undoSub,false)}
+       ${action('qa-restart','amber','restartpc',dict.restart,dict.restartSub,false)}
+      </div></section>
+    <section class="card h1t-panel h1t-activity-panel">
+      <div class="h1t-panel-head"><div class="h1t-panel-name">${icon('restartpc')}<span>${esc(dict.activities)}</span></div>
+        <p class="h1t-panel-hint">${esc(rows.length?dict.recent:dict.empty)}</p></div>
+      ${activity}
+    </section>
+    <section class="h1t-monitor-panel" aria-label="Hardware monitoring">
+      <div class="h1t-monitor-label">${esc(state.lang==='de'?'SYSTEMMONITOR':state.lang==='it'?'MONITOR SISTEMA':'SYSTEM MONITOR')}</div>
+      <div class="rings">${ring('cpu',t().cpu)}${ring('gpu',t().gpu)}${ring('ram',t().ram)}</div>
+    </section>
   </div>`;
 }
 
@@ -754,6 +772,7 @@ function render() {
   document.documentElement.lang = state.lang;
   renderNav();
   renderCrumbs();
+  const language=$('#h1t-language');if(language&&language.value!==state.lang)language.value=state.lang;
   const r = state.route;
   const upReady = state.update?.status === 'ready'
     ? `<div class="restart"><span>${esc(t().upBanner(state.update.version || ''))}</span><button class="pill" id="up-install">${t().upInstall}</button></div>`
@@ -782,7 +801,7 @@ function render() {
     content.classList.add('enter');
     const stagger = (els) => els.forEach((el, i) => el.style.setProperty('--i', Math.min(i, 14)));
     stagger([...content.children]);
-    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers').forEach((g) => stagger([...g.children]));
+    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers, .h1t-metrics, .h1t-quick-grid, .h1t-activity-list').forEach((g) => stagger([...g.children]));
     countUp(content);
     clearTimeout(state.enterTimer);
     state.enterTimer = setTimeout(() => content.classList.remove('enter'), 1600);
@@ -812,20 +831,24 @@ function countUp(root) {
 
 // Statusleiste unten: SafeMode, Neustart, laufendes Profil, Rechte, Version
 function renderStatus() {
-  const el = $('#statusbar');
-  if (!el) return;
-  const sm = state.safe;
-  const run = state.profileRun;
-  const i = state.info || {};
-  const smCls = sm ? (sm.enabled ? (sm.health === 'red' ? 'bad' : 'ok') : 'idle') : 'idle';
-  el.innerHTML = `
-    <button class="sb-item" data-go="safemode"><i class="dot ${smCls}"></i>${t().safemode}: ${sm ? (sm.enabled ? t().smOn : t().smOff) : '—'}</button>
-    ${run ? `<span class="sb-item sb-run"><i class="dot live"></i>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span>` : ''}
-    ${state.restartPending ? `<button class="sb-item sb-restart" id="sb-restart">${icon('restartpc')}${t().needsRestartShort}</button>` : ''}
-    <span class="sb-spacer"></span>
-    <span class="sb-item muted">${i.isAdmin === false ? t().noAdmin : t().admin}</span>
-    <span class="sb-item muted">${esc(t().modes[state.mode] || '')}</span>
-    <span class="sb-item sb-ver">H1T.CC · v${esc(state.version || '')}</span>`;
+  const el=$('#statusbar');if(!el)return;
+  const sm=state.safe,run=state.profileRun;
+  const txt=state.lang==='de'
+    ?{title:'Safe Mode für PC-Check / Analysen',sub:'Systemzustand prüfen und kritische Dienste kontrollieren.',backup:'Sicherungen',restart:'PC neu starten',unknown:'Status prüfen'}
+    :state.lang==='it'
+    ?{title:'Modalità sicura / Analisi',sub:'Verifica i servizi e lo stato del sistema.',backup:'Backup',restart:'Riavvia PC',unknown:'Verifica stato'}
+    :{title:'Safe Mode / System analysis',sub:'Check essential services and system health.',backup:'Backups',restart:'Restart PC',unknown:'Check status'};
+  const checked=!!sm?.enabled;
+  el.innerHTML=`<button class="h1t-footer-safe" data-go="safemode">
+       <span class="h1t-footer-icon">${icon('safemode')}</span>
+       <span class="h1t-footer-copy"><b>${esc(txt.title)}</b><small>${esc(run?t().tierRunning(run.i,run.n,run.current||''):txt.sub)}</small></span></button>
+     <button class="h1t-footer-toggle" id="h1t-safe-toggle" role="switch" aria-label="${esc(txt.title)}"
+       aria-checked="${checked}" title="${esc(sm?(checked?t().smDisable:t().smEnable):txt.unknown)}"
+       ${!sm||state.safeBusy?'disabled':''}><span class="h1t-footer-switch"><i></i></span></button>
+     <div class="h1t-footer-actions">
+       <button class="pill dark" data-go="backups">${icon('backups')}<span>${esc(txt.backup)}</span></button>
+       <button class="pill h1t-amber" id="sb-restart">${icon('restartpc')}<span>${esc(txt.restart)}</span></button>
+     </div>`;
 }
 
 // Live-Werte nur im DOM nachziehen, damit die Seite nicht jede Sekunde neu gebaut wird.
@@ -847,6 +870,22 @@ function paintUsage() {
   const pts = h.map((v, i) => `${((i + off) * step).toFixed(1)},${(200 - v * 2).toFixed(1)}`);
   line.setAttribute('d', 'M' + pts.join('L'));
   document.querySelector('[data-area]').setAttribute('d', `M${(off * step).toFixed(1)},200L${pts.join('L')}L600,200Z`);
+}
+
+async function dashboardApplySafe() {
+  const count=state.tweaks.filter(x=>bulkOk(x)&&!x.applied).length;
+  if(!count)return;
+  const confirmed=await confirmDialog(
+    state.lang==='de'?'Sichere Tweaks anwenden?':'Apply safe tweaks?',
+    state.lang==='de'?`${count} ausdrücklich als sicher markierte Tweaks werden nacheinander angewendet. Einzelne Änderungen können einen Neustart benötigen.`:
+      `Apply ${count} safe tweaks? Some changes may require a restart.`,
+    state.lang==='de'?'Anwenden':'Apply'
+  );
+  if(confirmed)await applySafe(true);
+}
+async function dashboardRestoreAll() {
+  await bkRestore(null,true);
+  if(state.route.page==='home')render();
 }
 
 // ---------- Aktionen ----------
@@ -1236,9 +1275,10 @@ document.addEventListener('click', (e) => {
     load();
   } else if (el.id === 'apply-safe') applySafe();
   else if (el.id === 'revert-cat') revertCategory();
-  else if (el.id === 'qa-safe') applySafe(true);
-  else if (el.id === 'qa-revert') { go({ page: 'backups' }); setTimeout(() => bkRestore(null, true), 700); }
+  else if (el.id === 'qa-safe') dashboardApplySafe();
+  else if (el.id === 'qa-revert') dashboardRestoreAll();
   else if (el.id === 'qa-restart' || el.id === 'sb-restart') restartPc();
+  else if (el.id === 'h1t-safe-toggle') safeAction(state.safe?.enabled?'disable':'enable');
   else if (el.dataset.tier) runProfile(el.dataset.tier);
   else if (el.dataset.pchip) { const id = el.dataset.pchip; if (state.profileOff.has(id)) state.profileOff.delete(id); else state.profileOff.add(id); render(); }
   else if (el.dataset.navgroup) {
@@ -1303,7 +1343,7 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.target.id === 'nav-search' && e.key === 'Escape') { e.target.value = ''; e.target.dispatchEvent(new Event('input', { bubbles: true })); }
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') { e.preventDefault(); $('#nav-search')?.focus(); }
+  if ((e.ctrlKey || e.metaKey) && ['f','k'].includes(e.key.toLowerCase())) { e.preventDefault(); $('#nav-search')?.focus(); }
 });
 
 // Eigene Auflösung: Eingaben ohne Neuzeichnen übernehmen, nur den Übernehmen-Knopf aktualisieren.
@@ -1328,7 +1368,23 @@ document.addEventListener('change', async (e) => {
   setTweak(id, apply);
 });
 
+document.addEventListener('change',(e)=>{
+  if(e.target.id!=='h1t-language')return;
+  if(!['de','en','it'].includes(e.target.value))return;
+  state.lang=e.target.value;store.set('lang',state.lang);state.cache=null;state.bk=null;state.mods=null;load();
+});
+document.addEventListener('click',(e)=>{
+  const b=e.target.closest('#h1t-ambient');
+  if(!b)return;
+  const enabled=!document.body.classList.contains('h1t-ambient-on');
+  document.body.classList.toggle('h1t-ambient-on',enabled);
+  b.setAttribute('aria-pressed',String(enabled));
+  store.set('h1tAmbient',enabled?'1':'0');
+});
+document.body.classList.toggle('h1t-ambient-on',store.get('h1tAmbient','1')==='1');
+
 $('#win-min').addEventListener('click', () => bridge.minimize());
+$('#win-max').addEventListener('click', () => bridge.maximize());
 $('#win-close').addEventListener('click', () => bridge.close());
 
 bridge.onUsage((u) => {
