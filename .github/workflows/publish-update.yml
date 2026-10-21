@@ -27,6 +27,9 @@ jobs:
           "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
       - run: npm ci
       - run: npm test
+      - name: Prepare H1T.CC branding for Windows
+        shell: pwsh
+        run: ./build/generate-h1t-icon.ps1
       - run: npm run dist
       - name: Publish verified updater asset
         shell: pwsh
@@ -36,7 +39,7 @@ jobs:
           $version = $env:RELEASE_VERSION
           $exe = "dist/UNDCC-Tweaker-$version.exe"
           if (-not (Test-Path $exe) -or (Get-Item $exe).Length -eq 0) { throw 'Portable executable missing' }
-          gh release create "v$version" $exe --draft --target $env:GITHUB_SHA --title "UND.CC Tweaker $version" --notes-file "release-notes/v$version.md"
+          gh release create "v$version" $exe --draft --target $env:GITHUB_SHA --title "H1T.CC Tweak Utility $version" --notes-file "release-notes/v$version.md"
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
           gh release edit "v$version" --draft=false --latest
           if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }
