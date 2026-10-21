@@ -12,3 +12,6 @@ test('Windows PowerShell: full catalog incl. network tab applies and restores ex
 test('Windows PowerShell: network adapters read real cards and round-trip a per-card value', {skip:process.platform!=='win32',timeout:120000}, () => {
   const output=ps('NetworkLive.Tests.ps1',110000);console.log(output);assert.match(output,/PASS restore nagleNoDelay/);
 });
+test('Windows PowerShell: keyboard tab reads real settings and round-trips the live ones', {skip:process.platform!=='win32',timeout:120000}, () => {
+  const output=ps('KeyboardLive.Tests.ps1',110000);console.log(output);assert.match(output,/PASS round trip mouseSpeed/);
+});

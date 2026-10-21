@@ -49,3 +49,12 @@ test('Services, Privacy and Interface tabs: Enable All applies only their own tw
 });
 
 test('network and other batch tabs expose live per-tweak toggles',()=>{const {ctx,state}=setup();state.tweaks.push({id:'net.on',category:'network',name:'Net',description:'Network',available:true,risk:'low'},{id:'net.off',category:'network',name:'Unavailable',description:'Not supported',available:false,risk:'low'});for(const cat of ['network','services','privacy','visuals']){if(cat!=='network')state.tweaks.push({id:cat+'.test',category:cat,name:cat,description:'Setting',available:true,risk:'low'});const html=ctx.renderOptimization(cat);assert.match(html,/data-toggle=/);assert.doesNotMatch(html,/<label class="card row">/);}const html=ctx.renderOptimization('network');assert.match(html,/data-toggle="net.off"[^>]*disabled/);ctx.optState.busy=true;assert.match(ctx.renderOptimization('network'),/data-toggle="net.on"[^>]*disabled/);});
+
+test('Keyboard tab: Tweak Keyboard applies only keyboard tweaks; Revert All stays in the tab',async()=>{
+ const {ctx,calls,state,dialogs}=setup();
+ state.tweaks.push({id:'keyboard.a',category:'keyboard',name:'A',description:'A',risk:'medium',available:true},{id:'keyboard.b',category:'keyboard',name:'B',description:'B',risk:'low',available:true,applied:true});
+ for(const lang of ['de','en','it']){state.lang=lang;const html=ctx.renderOptimization('keyboard');assert.match(html,/id="kbd-start"[^>]*>Tweak Keyboard</);assert.match(html,/id="kbd-revert"/);assert.doesNotMatch(html,/undefined/);}
+ state.lang='de';await ctx.optimizationRun(false,'keyboard');
+ assert.deepEqual(calls.filter(x=>x.action==='apply').map(x=>x.id),['keyboard.a']);assert.equal(dialogs[0][0],'Tweak Keyboard');
+ calls.length=0;await ctx.optimizationRun(true,'keyboard');assert.equal(calls.some(x=>x.action==='backup-restore'),false);assert.match(ctx.optState.result.note,/Tastatur/);
+});

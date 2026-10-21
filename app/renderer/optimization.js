@@ -7,18 +7,23 @@ const OPT_TEXT = {
 };
 // Same Start/Revert All batch for Leistung, Netzwerk, Dienste, Privatsphäre und Oberfläche; only label, ids and texts differ.
 const OPT_TABS = { performance: { start:'Start Optimisations', prefix:'opt' }, network: { start:'Start Network', prefix:'net' },
-  services: { start:'Enable All', prefix:'svc' }, privacy: { start:'Enable All', prefix:'prv' }, visuals: { start:'Enable All', prefix:'vis' } };
+  keyboard: { start:'Tweak Keyboard', prefix:'kbd' }, services: { start:'Enable All', prefix:'svc' }, privacy: { start:'Enable All', prefix:'prv' }, visuals: { start:'Enable All', prefix:'vis' } };
 const NET_TEXT = {
   de: { hint:'Du kannst Netzwerk-Tweaks einzeln schalten. Start Network wendet nach Bestätigung alle verfügbaren, noch nicht aktiven Netzwerk-Tweaks an – auch riskante. Jede Änderung wird gesichert und lässt sich mit Revert All exakt zurücksetzen.', restore:'Nur gesicherte Einstellungen aus dem Netzwerk-Tab werden wiederhergestellt. Andere Bereiche bleiben unverändert.', empty:'Keine Netzwerk-Sicherungen zum Wiederherstellen vorhanden.' },
   en: { hint:'Use the switches for individual network tweaks. Start Network applies all available, inactive network tweaks after confirmation, including high-risk ones. Every change is backed up and Revert All restores it exactly.', restore:'Only backed-up settings from the Network tab will be restored. Other sections remain unchanged.', empty:'No network backups available to restore.' },
   it: { hint:'Usa gli interruttori per le singole modifiche di rete. Start Network applica dopo conferma tutte quelle disponibili e inattive, anche le rischiose. Ogni modifica viene salvata e Revert All la ripristina esattamente.', restore:'Verranno ripristinate solo le impostazioni salvate della scheda Rete. Le altre sezioni restano invariate.', empty:'Nessun backup di rete da ripristinare.' }
+};
+const KBD_TEXT = {
+  de: { hint:'Du kannst Tastatur- und Maus-Tweaks einzeln schalten. Tweak Keyboard wendet nach Bestätigung alle verfügbaren, noch nicht aktiven an – auch Bedienungshilfen. Jede Änderung wird gesichert; Revert All setzt nur diesen Tab exakt zurück.', restore:'Nur gesicherte Einstellungen aus dem Tastatur-Tab werden wiederhergestellt. Andere Bereiche bleiben unverändert.', empty:'Keine Tastatur-Sicherungen zum Wiederherstellen vorhanden.' },
+  en: { hint:'Use the switches for individual keyboard and mouse tweaks. Tweak Keyboard applies all available, inactive ones after confirmation, including accessibility settings. Every change is backed up; Revert All restores only this tab exactly.', restore:'Only backed-up settings from the Keyboard tab will be restored. Other sections remain unchanged.', empty:'No keyboard backups available to restore.' },
+  it: { hint:'Usa gli interruttori per le singole modifiche di tastiera e mouse. Tweak Keyboard applica dopo conferma tutte quelle disponibili e inattive, incluse le impostazioni di accessibilità. Ogni modifica viene salvata; Revert All ripristina esattamente solo questa scheda.', restore:'Verranno ripristinate solo le impostazioni salvate della scheda Tastiera. Le altre sezioni restano invariate.', empty:'Nessun backup della tastiera da ripristinare.' }
 };
 const TAB_TEXT = {
   de: { hint:'Enable All wendet nach Bestätigung alle verfügbaren, noch nicht aktiven Tweaks dieses Tabs an – auch riskante. Jede Änderung wird gesichert; Revert All setzt nur diesen Tab exakt zurück.', restore:'Nur gesicherte Einstellungen aus diesem Tab werden wiederhergestellt. Andere Bereiche bleiben unverändert.', empty:'Keine Sicherungen aus diesem Tab zum Wiederherstellen vorhanden.' },
   en: { hint:'Enable All applies all available, inactive tweaks in this tab after confirmation, including high-risk ones. Every change is backed up; Revert All restores only this tab exactly.', restore:'Only backed-up settings from this tab will be restored. Other sections remain unchanged.', empty:'No backups from this tab available to restore.' },
   it: { hint:'Enable All applica dopo conferma tutte le modifiche disponibili e inattive di questa scheda, anche quelle rischiose. Ogni modifica viene salvata; Revert All ripristina esattamente solo questa scheda.', restore:'Verranno ripristinate solo le impostazioni salvate di questa scheda. Le altre sezioni restano invariate.', empty:'Nessun backup di questa scheda da ripristinare.' }
 };
-const optText = (cat='performance') => ({ ...(OPT_TEXT[state.lang] || OPT_TEXT.en), ...(cat === 'network' ? NET_TEXT[state.lang] || NET_TEXT.en : cat !== 'performance' ? TAB_TEXT[state.lang] || TAB_TEXT.en : {}) });
+const optText = (cat='performance') => ({ ...(OPT_TEXT[state.lang] || OPT_TEXT.en), ...(cat === 'network' ? NET_TEXT[state.lang] || NET_TEXT.en : cat === 'keyboard' ? KBD_TEXT[state.lang] || KBD_TEXT.en : cat !== 'performance' ? TAB_TEXT[state.lang] || TAB_TEXT.en : {}) });
 const optTweaks = (cat='performance') => tweaksIn(cat);
 const optSelection = (cat='performance') => optTweaks(cat).filter(x => x.available !== false && !x.applied);
 function renderOptimization(cat='performance') {

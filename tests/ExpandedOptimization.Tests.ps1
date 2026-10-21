@@ -60,10 +60,11 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
     }
     try {
         $catalog=@(Get-TweakerCatalog)
-        Assert ($catalog.Count -eq 61) '61 catalog entries'
+        Assert ($catalog.Count -eq 66) '66 catalog entries'
         Assert (@($catalog | Where-Object category -eq performance).Count -eq 41) '40 screenshot entries plus existing plan'
         Assert (@($catalog | Where-Object category -eq network).Count -eq 12) '12 network entries'
-        Assert (@($catalog.id | Select-Object -Unique).Count -eq 61) 'Unique IDs'
+        Assert (@($catalog | Where-Object category -eq keyboard).Count -eq 8) '8 keyboard entries'
+        Assert (@($catalog.id | Select-Object -Unique).Count -eq 66) 'Unique IDs'
         foreach ($item in Get-OptimizationCatalog) {
             foreach ($language in @('de','en','it')) {Assert ($item.name[$language] -and $item.description[$language]) 'All translations required'}
             Assert (-not $item.bulkSafe) 'Extended settings require individual choice'

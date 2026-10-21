@@ -67,8 +67,8 @@ const ICONS = {
 };
 const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.other}</svg>`;
 
-const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'gaming', 'services', 'visuals'];
-const EXTRA_CATS = ['mouse', 'keyboard', 'controller', 'power', 'display'];
+const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'gaming', 'keyboard', 'services', 'visuals'];
+const EXTRA_CATS = ['mouse', 'controller', 'power', 'display'];
 
 // ---------- State ----------
 const store = {
@@ -153,12 +153,12 @@ const catOf = (tw) => {
 const NAV_GROUPS = [
   ['overview', [['home'], ['profiles']]],
   ['system', [['cat', 'performance'], ['cat', 'services'], ['cat', 'privacy'], ['cat', 'visuals'], ['cat', 'network'], ['cat', 'debloat']]],
-  ['gaming', [['cat', 'gaming'], ['mods'], ['cleanup']]],
+  ['gaming', [['cat', 'gaming'], ['cat', 'keyboard'], ['mods'], ['cleanup']]],
   ['protect', [['safemode'], ['backups']]],
   ['more', [['extra']]],
 ];
 // Nie automatisch im Paket ändern (Backend-Vorgabe): Bedienungshilfen, Aufnahme, Audio, Prozess-Priorität, Debloat.
-const NEVER_BULK = new Set(['keyboard.filterkeys.off', 'keyboard.stickykeys.off', 'windows.capture.off', 'windows.audio.ducking.off', 'fivem.priority.high']);
+const NEVER_BULK = new Set(['keyboard.filterkeys.off', 'keyboard.stickykeys.off', 'keyboard.togglekeys.off', 'keyboard.mousekeys.off', 'windows.capture.off', 'windows.audio.ducking.off', 'fivem.priority.high']);
 const PROFILE_TIERS = [['safe', ['low']], ['aggressive', ['low', 'medium']], ['hardcore', ['low', 'medium', 'high']]];
 const profileCandidates = (tier) => {
   const risks = PROFILE_TIERS.find(([k]) => k === tier)[1];
@@ -363,7 +363,7 @@ function renderCategory(c, parent) {
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
   // Netzwerk, Dienste, Privatsphäre, Oberfläche: Start/Enable All + Revert All und Status-Kästchen wie im Leistungs-Tab
-  if (['network', 'services', 'privacy', 'visuals'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
+  if (['network', 'keyboard', 'services', 'privacy', 'visuals'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
   const all = tweaksIn(c);
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);

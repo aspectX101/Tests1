@@ -892,14 +892,14 @@
     "bulkSafe": true,
     "requiresAdmin": true,
     "name": {
-      "en": "WASD: fast key repeat",
-      "de": "WASD: schnelle Tastenwiederholung",
-      "it": "WASD: ripetizione rapida dei tasti"
+      "de": "Tastenwiederholung: Verz\u00f6gerung 0, Rate 31",
+      "en": "Key repeat: delay 0, rate 31",
+      "it": "Ripetizione tasti: ritardo 0, velocit\u00e0 31"
     },
     "description": {
+      "de": "Setzt die Windows-Wiederholverz\u00f6gerung auf die k\u00fcrzeste Stufe (ca. 250 ms) und die Wiederholrate auf die h\u00f6chste Stufe (ca. 30/s). Betrifft gehaltene Tasten und auch Texteingaben, nicht die Latenz des ersten Tastendrucks. Kein garantierter Vorteil in Spielen.",
       "en": "Sets Windows repeat delay to the shortest level (about 250 ms) and repeat rate to the highest level (about 30/s). Affects held keys including text input, not first-press latency. No guaranteed game benefit.",
-      "de": "Setzt die Windows-Wiederholverzoegerung auf die kuerzeste Stufe (ca. 250 ms) und die Wiederholrate auf die hoechste Stufe (ca. 30/s). Betrifft gehaltene Tasten und auch Texteingaben, nicht die Latenz des ersten Tastendrucks. Kein garantierter Vorteil in Spielen.",
-      "it": "Imposta il ritardo di ripetizione Windows al minimo (circa 250 ms) e la velocita al massimo (circa 30/s). Riguarda i tasti tenuti premuti, anche nel testo, non la latenza della prima pressione. Nessun vantaggio garantito nei giochi."
+      "it": "Imposta il ritardo di ripetizione Windows al minimo (circa 250 ms) e la velocit\u00e0 al massimo (circa 30/s). Riguarda i tasti tenuti premuti, anche nel testo, non la latenza della prima pressione. Nessun vantaggio garantito nei giochi."
     },
     "requiresRestart": false,
     "reversible": true,
@@ -913,14 +913,14 @@
     "bulkSafe": false,
     "requiresAdmin": true,
     "name": {
-      "en": "Disable Filter Keys",
       "de": "Filtertasten deaktivieren",
+      "en": "Disable Filter Keys",
       "it": "Disattiva Filtro tasti"
     },
     "description": {
+      "de": "Deaktiviert Filtertasten und die Aktivierung durch langes Halten der rechten Umschalttaste. Kann aktive Eingabefilter beseitigen. Ver\u00e4ndert eine Bedienungshilfe f\u00fcr alle Anwendungen; nur deaktivieren, wenn sie nicht ben\u00f6tigt wird.",
       "en": "Disables Filter Keys and its right-Shift activation shortcut. Can remove active input filtering. Changes an accessibility feature for all applications; disable only if you do not need it.",
-      "de": "Deaktiviert Filtertasten und die Aktivierung durch langes Halten der rechten Umschalttaste. Kann aktive Eingabefilter beseitigen. Veraendert eine Bedienungshilfe fuer alle Anwendungen; nur deaktivieren, wenn sie nicht benoetigt wird.",
-      "it": "Disattiva Filtro tasti e la scorciatoia con Maiusc destro tenuto premuto. Puo eliminare filtri di input attivi. Modifica una funzione di accessibilita per tutte le app; disattivala solo se non serve."
+      "it": "Disattiva Filtro tasti e la scorciatoia con Maiusc destro tenuto premuto. Pu\u00f2 eliminare filtri di input attivi. Modifica una funzione di accessibilit\u00e0 per tutte le app; disattivala solo se non serve."
     },
     "requiresRestart": false,
     "reversible": true,
@@ -934,14 +934,14 @@
     "bulkSafe": false,
     "requiresAdmin": true,
     "name": {
-      "en": "Disable Sticky Keys",
       "de": "Einrastfunktion deaktivieren",
+      "en": "Disable Sticky Keys",
       "it": "Disattiva Tasti permanenti"
     },
     "description": {
+      "de": "Deaktiviert die Einrastfunktion und die Aktivierung durch f\u00fcnfmaliges Dr\u00fccken der Umschalttaste. Verhindert versehentliches Einschalten beim Spielen. Ver\u00e4ndert eine Bedienungshilfe f\u00fcr alle Anwendungen; senkt nicht die Hardware-Latenz.",
       "en": "Disables Sticky Keys and its five-Shift activation shortcut. Prevents accidental activation while gaming. Changes an accessibility feature for all applications; does not reduce hardware latency.",
-      "de": "Deaktiviert die Einrastfunktion und die Aktivierung durch fuenfmaliges Druecken der Umschalttaste. Verhindert versehentliches Einschalten beim Spielen. Veraendert eine Bedienungshilfe fuer alle Anwendungen; senkt nicht die Hardware-Latenz.",
-      "it": "Disattiva Tasti permanenti e la scorciatoia con cinque pressioni di Maiusc. Evita attivazioni accidentali durante il gioco. Modifica una funzione di accessibilita per tutte le app; non riduce la latenza hardware."
+      "it": "Disattiva Tasti permanenti e la scorciatoia con cinque pressioni di Maiusc. Evita attivazioni accidentali durante il gioco. Modifica una funzione di accessibilit\u00e0 per tutte le app; non riduce la latenza hardware."
     },
     "requiresRestart": false,
     "reversible": true,
@@ -1281,6 +1281,111 @@
       "it": "Ottimizza condivisione file in LAN"
     },
     "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Vergr\u00f6\u00dfert den Eingabepuffer des Windows-Tastaturtreibers von 100 auf 400 Ereignisse. Verhindert verlorene Tastendr\u00fccke, wenn das System kurz ausgelastet ist. Ehrlich: senkt die Eingabeverz\u00f6gerung nicht. Neustart erforderlich.",
+      "en": "Enlarges the Windows keyboard driver input buffer from 100 to 400 events. Prevents lost key presses when the system is briefly overloaded. Honestly: it does not reduce input lag. Restart required.",
+      "it": "Aumenta il buffer del driver tastiera di Windows da 100 a 400 eventi. Evita la perdita di tasti premuti quando il sistema \u00e8 momentaneamente sovraccarico. Onestamente: non riduce l'input lag. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.buffer.large",
+    "risk": "low",
+    "category": "keyboard",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Tastaturpuffer \u00d74",
+      "en": "Keyboard buffer \u00d74",
+      "it": "Buffer tastiera \u00d74"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet die Umschalttasten-T\u00f6ne f\u00fcr Feststell-, Num- und Rollen-Taste ab und entfernt die Aktivierung durch 5 Sekunden langes Halten von Num. Verhindert versehentliches Einschalten im Spiel. \u00c4ndert eine Bedienungshilfe f\u00fcr alle Programme.",
+      "en": "Turns off the Toggle Keys sounds for Caps, Num and Scroll Lock and removes the shortcut of holding Num Lock for 5 seconds. Prevents accidental activation while gaming. Changes an accessibility feature for all applications.",
+      "it": "Disattiva i segnali acustici per Bloc Maiusc, Bloc Num e Bloc Scorr e la scorciatoia tenendo premuto Bloc Num per 5 secondi. Evita attivazioni accidentali in gioco. Modifica una funzione di accessibilit\u00e0 per tutte le app."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.togglekeys.off",
+    "risk": "medium",
+    "category": "keyboard",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Umschalttasten aus",
+      "en": "Disable Toggle Keys",
+      "it": "Disattiva Segnali acustici"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet die Maustasten ab und entfernt das K\u00fcrzel Links-Alt + Links-Umschalt + Num, das sie mitten im Spiel einschalten kann. Andere Bedienungshilfen bleiben, wie sie sind. \u00c4ndert eine Bedienungshilfe f\u00fcr alle Programme.",
+      "en": "Turns off Mouse Keys and removes the Left Alt + Left Shift + Num Lock shortcut that can switch them on mid-game. Other accessibility features stay as they are. Changes an accessibility feature for all applications.",
+      "it": "Disattiva i Tasti del mouse e la scorciatoia Alt sinistro + Maiusc sinistro + Bloc Num che pu\u00f2 attivarli durante il gioco. Le altre funzioni di accessibilit\u00e0 restano invariate. Modifica una funzione di accessibilit\u00e0 per tutte le app."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mousekeys.off",
+    "risk": "medium",
+    "category": "keyboard",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Bedienungshilfen-K\u00fcrzel aus (Maustasten)",
+      "en": "Disable accessibility shortcut (Mouse Keys)",
+      "it": "Disattiva scorciatoia accessibilit\u00e0 (Tasti del mouse)"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet \u201eZeigerpr\u00e4zision verbessern\u201c ab: Der Zeiger bewegt sich proportional zur Mausbewegung, unabh\u00e4ngig vom Tempo. Spiele mit Raw Input sind ohnehin nicht betroffen; wirkt auf Desktop, Men\u00fcs und Spiele ohne Raw Input. Sofort aktiv.",
+      "en": "Turns off \"Enhance pointer precision\": the pointer moves in proportion to the mouse, regardless of speed. Games using raw input are not affected anyway; applies to the desktop, menus and games without raw input. Takes effect immediately.",
+      "it": "Disattiva \"Migliora precisione puntatore\": il puntatore si muove in proporzione al mouse, indipendentemente dalla velocit\u00e0. I giochi con raw input non ne sono influenzati; vale per desktop, menu e giochi senza raw input. Effetto immediato."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.accel.off",
+    "risk": "low",
+    "category": "keyboard",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Mausbeschleunigung aus",
+      "en": "Disable mouse acceleration",
+      "it": "Disattiva accelerazione mouse"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Setzt die Windows-Zeigergeschwindigkeit auf die 6. von 11 Stufen. Nur dort wird jeder Mausz\u00e4hlschritt genau ein Pixel, ohne \u00fcbersprungene oder doppelte Schritte. Die Empfindlichkeit regelst du dann \u00fcber die DPI der Maus. Sofort aktiv.",
+      "en": "Sets the Windows pointer speed to notch 6 of 11, the only setting where every mouse count is exactly one pixel, without skipped or doubled steps. Set sensitivity with your mouse DPI instead. Takes effect immediately.",
+      "it": "Imposta la velocit\u00e0 del puntatore di Windows sul 6\u00b0 livello di 11, l'unico in cui ogni conteggio del mouse corrisponde a un pixel senza passi saltati o doppi. Regola la sensibilit\u00e0 con i DPI del mouse. Effetto immediato."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.speed.native",
+    "risk": "low",
+    "category": "keyboard",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Maus 1:1 (Zeigergeschwindigkeit 6/11)",
+      "en": "Mouse 1:1 (pointer speed 6/11)",
+      "it": "Mouse 1:1 (velocit\u00e0 puntatore 6/11)"
+    },
+    "requiresRestart": false,
     "reversible": true,
     "available": true,
     "stateError": null

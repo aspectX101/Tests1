@@ -11,7 +11,8 @@ test('all shipped catalog IDs reach the fixed CLI adapter, including new optimiz
     assert.ok(catalog.some(t => t.id === id));
     done(null, JSON.stringify({ ok: true, id, applied: true, restartRequired: true }), '');
   }, true);
-  assert.equal(catalog.length, 61);
+  assert.equal(catalog.length, 66);
+  assert.equal(catalog.filter(t => t.category === 'keyboard').length, 8);
   assert.equal(catalog.filter(t => t.category === 'network').length, 12);
   assert.equal(catalog.filter(t => t.category === 'performance').length, 41);
   for (const tw of catalog) for (const lang of ['de', 'en', 'it']) {

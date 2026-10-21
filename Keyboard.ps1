@@ -10,6 +10,10 @@ function Get-KeyboardFields([string]$Id) {
         'keyboard.repeat.fast' { @('delay','speed') }
         'keyboard.filterkeys.off' { @('filterFlags') }
         'keyboard.stickykeys.off' { @('stickyFlags') }
+        'keyboard.togglekeys.off' { @('toggleFlags') }
+        'keyboard.mousekeys.off' { @('mouseKeysFlags') }
+        'keyboard.mouse.accel.off' { @('mouseAccel') }
+        'keyboard.mouse.speed.native' { @('mouseSpeed') }
         default { throw 'invalid_tweak_id' }
     }
 }
@@ -22,14 +26,26 @@ function Get-KeyboardValue([string]$Field) {
         'filterFlags' { [Tweaker.Native.Keyboard]::Read(0x32, 6)[1] -band 0x7F }
         # Ignore transient modifier latch/lock state: Windows does not restore it.
         'stickyFlags' { [Tweaker.Native.Keyboard]::Read(0x3A, 2)[1] -band 0x1FF }
+        # TOGGLEKEYS / MOUSEKEYS: persistent preference bits only (no button or lock state).
+        'toggleFlags' { [Tweaker.Native.Keyboard]::Read(0x34, 2)[1] -band 0x3F }
+        'mouseKeysFlags' { [Tweaker.Native.Keyboard]::Read(0x36, 7)[1] -band 0xFF }
+        # Pointer acceleration as one number: threshold1 * 65536 + threshold2 * 256 + acceleration.
+        'mouseAccel' {
+            $m = [Tweaker.Native.Keyboard]::ReadMouse()
+            if ($m[0] -lt 0 -or $m[0] -gt 255 -or $m[1] -lt 0 -or $m[1] -gt 255 -or $m[2] -lt 0 -or $m[2] -gt 2) { throw 'invalid_keyboard_value' }
+            ($m[0] * 65536) + ($m[1] * 256) + $m[2]
+        }
+        'mouseSpeed' { [Tweaker.Native.Keyboard]::Read(0x70, 1)[0] }
         default { throw 'invalid_keyboard_field' }
     }
 }
 
 function Assert-KeyboardValue([string]$Field, $Value) {
     if ($null -eq $Value -or $Value -is [bool] -or $Value.ToString() -notmatch '^\d+$') { throw 'invalid_keyboard_value' }
-    $maximum = switch ($Field) { 'delay' {3} 'speed' {31} 'filterFlags' {127} 'stickyFlags' {511} default {throw 'invalid_keyboard_field'} }
+    $maximum = switch ($Field) { 'delay' {3} 'speed' {31} 'filterFlags' {127} 'stickyFlags' {511} 'toggleFlags' {63} 'mouseKeysFlags' {255} 'mouseAccel' {16777215} 'mouseSpeed' {20} default {throw 'invalid_keyboard_field'} }
     if ([long]$Value -gt $maximum) { throw 'invalid_keyboard_value' }
+    if ($Field -eq 'mouseSpeed' -and [long]$Value -lt 1) { throw 'invalid_keyboard_value' }
+    if ($Field -eq 'mouseAccel' -and ([long]$Value -band 255) -gt 2) { throw 'invalid_keyboard_value' }
 }
 
 function Set-KeyboardValue([string]$Field, [int]$Value) {
@@ -40,6 +56,10 @@ function Set-KeyboardValue([string]$Field, [int]$Value) {
         'speed' { [Tweaker.Native.Keyboard]::WriteScalar(0x0B, $Value) }
         'filterFlags' { [Tweaker.Native.Keyboard]::WriteFlags(0x32, 0x33, 6, $Value) }
         'stickyFlags' { [Tweaker.Native.Keyboard]::WriteFlags(0x3A, 0x3B, 2, $Value) }
+        'toggleFlags' { [Tweaker.Native.Keyboard]::WriteFlags(0x34, 0x35, 2, $Value) }
+        'mouseKeysFlags' { [Tweaker.Native.Keyboard]::WriteFlags(0x36, 0x37, 7, $Value) }
+        'mouseAccel' { [Tweaker.Native.Keyboard]::WriteMouse(($Value -shr 16) -band 255, ($Value -shr 8) -band 255, $Value -band 255) }
+        'mouseSpeed' { [Tweaker.Native.Keyboard]::WritePointerValue(0x71, $Value) }
     }
     if ((Get-KeyboardValue $Field) -ne $Value) { throw 'keyboard_verification_failed' }
 }
@@ -51,6 +71,13 @@ function Get-KeyboardTarget([string]$Field, [int]$Before) {
         # Clear ON and HOTKEYACTIVE only. Keep AVAILABLE and all other preferences.
         'filterFlags' { $Before -band 0x7A }
         'stickyFlags' { $Before -band 0x1FA }
+        # Clear ON and HOTKEYACTIVE; keep AVAILABLE and the other preferences.
+        'toggleFlags' { $Before -band 0x3A }
+        'mouseKeysFlags' { $Before -band 0xFA }
+        # Enhance pointer precision off: thresholds and acceleration 0.
+        'mouseAccel' { 0 }
+        # 10 = 6th notch of 11, the 1:1 pointer speed.
+        'mouseSpeed' { 10 }
         default { throw 'invalid_keyboard_field' }
     }
 }

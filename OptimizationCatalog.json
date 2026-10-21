@@ -1198,6 +1198,28 @@
         "lanmanSize",
         "lanmanThrottle"
       ]
+    },
+    {
+      "id": "keyboard.buffer.large",
+      "category": "keyboard",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Tastaturpuffer \u00d74",
+        "en": "Keyboard buffer \u00d74",
+        "it": "Buffer tastiera \u00d74"
+      },
+      "description": {
+        "de": "Vergr\u00f6\u00dfert den Eingabepuffer des Windows-Tastaturtreibers von 100 auf 400 Ereignisse. Verhindert verlorene Tastendr\u00fccke, wenn das System kurz ausgelastet ist. Ehrlich: senkt die Eingabeverz\u00f6gerung nicht. Neustart erforderlich.",
+        "en": "Enlarges the Windows keyboard driver input buffer from 100 to 400 events. Prevents lost key presses when the system is briefly overloaded. Honestly: it does not reduce input lag. Restart required.",
+        "it": "Aumenta il buffer del driver tastiera di Windows da 100 a 400 eventi. Evita la perdita di tasti premuti quando il sistema \u00e8 momentaneamente sovraccarico. Onestamente: non riduce l'input lag. Riavvio necessario."
+      },
+      "fields": [
+        "kbdQueue"
+      ]
     }
   ],
   "fields": {
@@ -1896,6 +1918,15 @@
       "path": "SYSTEM\\CurrentControlSet\\Services\\LanmanWorkstation\\Parameters",
       "name": "DisableBandwidthThrottling",
       "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "kbdQueue": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Services\\kbdclass\\Parameters",
+      "name": "KeyboardDataQueueSize",
+      "target": 400,
       "kind": "DWord",
       "maximum": 4294967295
     }
