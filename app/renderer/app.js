@@ -268,7 +268,7 @@ function renderHome() {
           <div class="chart-y"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
           <svg viewBox="0 0 600 200" preserveAspectRatio="none">
             <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#e3112b" stop-opacity=".35"/><stop offset="1" stop-color="#e3112b" stop-opacity="0"/>
+              <stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
             </linearGradient></defs>
             ${[0, 40, 80, 120, 160].map((y) => `<line class="grid" x1="0" x2="600" y1="${y}" y2="${y}"/>`).join('')}
             <path class="area" data-area/><path class="line" data-line/>
