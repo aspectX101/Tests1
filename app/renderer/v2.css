@@ -218,9 +218,9 @@ button.sb-item:hover { background: rgba(255, 255, 255, .05); color: #fff; }
 .opt-v2 .row:has(input:checked:not(:disabled))::after { opacity: 1; }
 .opt-v2 .row:has(input:checked:disabled) { background: linear-gradient(160deg, rgba(227, 17, 43, .1), rgba(14, 10, 12, .92) 55%); }
 .opt-v2 .row:has(input:checked:disabled) input { background-color: #3a0a12; border-color: rgba(227, 17, 43, .5); box-shadow: none; }
-/* Start / Revert als klebende Aktionsleiste unten */
-.opt-v2 .db-actions { order: 10; position: sticky; bottom: -18px; z-index: 5; display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px;
-  margin: 16px 0 0; padding: 14px 0 18px; background: linear-gradient(180deg, transparent, var(--bg) 35%); }
+/* Start / Revert zuerst anzeigen und beim Scrollen erreichbar halten. */
+.opt-v2 .db-actions { order: 0; position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px;
+  margin: 0 0 16px; padding: 12px 0; background: var(--bg); }
 .opt-v2 .db-actions .pill { height: 46px; font-size: 13.5px; border-radius: 13px; }
 .opt-v2 #opt-start:not(:disabled) { background: linear-gradient(180deg, var(--red-hi), var(--red)); color: #fff; border-color: transparent; animation: glowPulse 2.6s ease-in-out infinite; }
 .opt-v2 .db-result { order: 11; }
