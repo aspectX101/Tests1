@@ -157,7 +157,7 @@ body::before { background:radial-gradient(800px 580px at 98% 2%,rgba(21,112,60,.
 .enter > *,.enter .rows > *,.enter .tiles > *,.enter .rings > *,.enter .home-row > *,.enter .settings > *,
 .enter .tgrid > *,.enter .stats > *,.enter .quick > *,.enter .tiers > *,.enter .mod-grid > *{
  animation:h1t-enter .52s var(--h1t-ease) both!important;
- animation-delay:calc(min(var(--i,0),9)*34ms)!important;
+ animation-delay:calc(var(--i, 0) * 34ms)!important;
 }
 @keyframes h1t-enter{from{opacity:0;transform:translateY(12px) scale(.992);filter:blur(2px)}
  to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
@@ -175,3 +175,23 @@ body::before{animation:none}
   .enter > *,.enter *,.nav-item,.pill,.tile2,.mod-card,.switch span,.switch span::after{animation:none!important;transition:none!important}
   .h1t-globe .h1t-orb{box-shadow:none}
 }
+
+/* Original H1T.CC globe artwork, optimized as an embedded offline image. */
+.h1t-globe{width:36%;min-width:250px;isolation:isolate}
+.h1t-globe .h1t-orb{position:absolute;z-index:-1;inset:50% auto auto 50%;transform:translate(-50%,-50%);}
+.h1t-globe img{height:245px;max-width:100%;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 6px 30px #2ce77a35);opacity:.95;}
+.h1t-globe strong{display:none}
+.splash.ignition{background:radial-gradient(ellipse at 50% 43%,#135d2b2d,transparent 44%),#050b07;}
+.ignition-grid{opacity:.16}
+.ignition-emblem{width:180px;height:230px;left:calc(50% - 90px);top:calc(43% - 120px);
+ filter:drop-shadow(0 0 25px #39dc6f55);animation:h1t-logo-intro 3.8s var(--h1t-ease) both;}
+.ignition-emblem img{width:100%;height:100%;object-fit:contain;display:block}
+.ignition-wordmark{top:44%;letter-spacing:-.035em;font-size:clamp(43px,6.2vw,76px);color:#effff4;animation-delay:2s}
+.ignition-wordmark b{color:#68e695}
+.ignition-wordmark small{color:#8ba996;font-size:10px;letter-spacing:.4em}
+.ignition-signature{color:#6b9879}
+.ignition-halo{background:radial-gradient(ellipse at 50% 48%,#2bc06d23,transparent 55%);}
+@keyframes h1t-logo-intro{0%{opacity:0;transform:translateY(14px) scale(.8);filter:blur(10px)}
+  24%,42%{opacity:1;transform:none;filter:blur(0)}
+  60%,100%{opacity:0;transform:translateY(-20px) scale(.86);filter:blur(5px)}}
+@media(prefers-reduced-motion:reduce){.ignition-emblem{display:none}}
