@@ -391,6 +391,7 @@ function renderCategory(c, parent) {
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
   // Netzwerk, Dienste, Privatsphäre, Oberfläche: Start/Enable All + Revert All und Status-Kästchen wie im Leistungs-Tab
+  if (c === 'keyboard') return catHero(c, parent) + renderHitreg() + `<div class="opt-v2">${renderOptimization(c)}</div>`;
   if (['network', 'keyboard', 'services', 'privacy', 'visuals'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
   const all = tweaksIn(c);
   let list = all;
@@ -1440,5 +1441,3 @@ bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings')
 window.DashboardMedia.bind(bridge);
 window.ColorPage.bind(bridge);
 load();
-
-
