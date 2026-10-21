@@ -12,7 +12,7 @@ test('H1T.CC rebrand is consistent across Electron UI and application metadata',
   const packaged = read('build/after-pack.cjs');
   assert.match(index, /<title>H1T\.CC \| Tweak Utility<\/title>/);
   assert.match(index, /class="brand-name">H1T<span>\.CC<\/span>/);
-  assert.match(index, /class="brand-sub">Tweak Utility/);
+  assert.match(index, /class="brand-sub">TWEAK UTILITY/);
   assert.match(index, /<link rel="stylesheet" href="h1t\.css">/);
   assert.match(main, /title: 'H1T\.CC Tweak Utility'/);
   assert.match(config, /productName: 'H1T\.CC Tweak Utility'/);
@@ -33,7 +33,7 @@ test('the provided globe logo is embedded locally and used for splash and dashbo
     '9d3702f4213f79caa88eb0c193cddeb7caf03d6c873c827c7a93f03fdbd60a02');
 
   assert.match(index, /class="h1t-splash-emblem"/);
-  assert.match(app, /class="h1t-globe"/);
+  assert.match(app, /class="h1t-dash-hero"/);
   assert.match(app, /assets\/h1t-emblem\.svg/);
 });
 
@@ -42,11 +42,15 @@ test('all routes retain navigation while page transitions honor reduced motion',
   const css = read('app/renderer/h1t.css');
   assert.match(app, /function go\(route\)/);
   assert.match(app, /state\.enter = true/);
-  assert.match(app, /<div class="h1t-launch">/);
+  assert.match(app, /class="h1t-quick-grid"/);
   assert.match(app, /data-go="backups"/);
   assert.match(app, /data-cat="performance"/);
   assert.match(app, /data-cat="network"/);
   assert.match(css, /@keyframes h1t-enter/);
+  const referenceCss = read('app/renderer/h1t-dashboard.css');
+  assert.match(referenceCss, /\.h1t-metrics/);
+  assert.match(referenceCss, /\.h1t-activity-panel/);
+  assert.match(referenceCss, /\.h1t-quick\.primary/);
   assert.match(css, /\.enter > \*/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });
