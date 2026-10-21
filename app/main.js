@@ -42,6 +42,12 @@ if (relaunched) {
   });
 }
 
+// FiveM > H1T Mods: Katalog aus dem GitHub-Release "h1t-mods"; Installation über den normalen Mod-Import.
+const h1tMods = require('./h1t-mods').createH1tMods(app, (req) => backend(req));
+h1tMods.onProgress((p) => sendToUi('tweaker:h1tmods-progress', p));
+ipcMain.handle('tweaker:h1tmods-list', (e) => trusted(e) ? h1tMods.list() : { ok: false });
+ipcMain.handle('tweaker:h1tmods-install', (e, id) => trusted(e) && typeof id === 'string' ? h1tMods.install(id) : { ok: false });
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1400,

@@ -12,6 +12,8 @@ const bridge = window.tweaker || {
   // Extra > Color im Browser: Werte nur merken, Bildschirm bleibt unverändert
   colorState: async () => ({ status: 'ready', look: { brightness: 0, contrast: 0, vibrance: 0, hue: 0 }, saved: null }),
   colorSet: async () => ({ ok: true }), colorSave: async () => ({ ok: true }), colorReset: async () => ({ ok: true }), onColor() {},
+  // H1T Mods im Browser: leerer Katalog (echte Daten nur in der App)
+  h1tModsList: async () => ({ ok: true, mods: [] }), h1tModsInstall: async () => ({ ok: false, error: 'h1t_mods_unknown' }), onH1tModsProgress() {},
   openModsFolder: async () => ({ ok: true }),
   lastSafeMode: async () => null,
   onSafeMode() {},
@@ -37,6 +39,7 @@ const ICONS = {
   collapse: '<path d="M4 6h16M4 12h16M4 18h16"/>',
   home: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
   performance: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 15 3-4 3 3 4-6"/>',
+  h1tmods: '<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/><path d="M12 13v8"/><path d="m18.5 2.5.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6Z"/>',
   gaming: '<path d="M3 20h18"/><path d="m4 16 4-5 4 3 4-6 4 4"/><path d="M4 4v16"/>',
   network: '<rect x="8" y="3" width="8" height="11" rx="1"/><path d="M12 14v4M6 21h12M10 7h4M10 10h4"/>',
   privacy: '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="m8 15 7-7 2 2-7 7H8z"/>',
@@ -199,9 +202,9 @@ function renderNav() {
   const activeKey = r.page === 'cat' ? (r.parent || r.cat) : r.page;
   const de = state.lang === 'de', it = state.lang === 'it';
   const labels = {
-    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
-    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
-    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
+    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',h1tmods:'H1T Mods',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
+    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',h1tmods:'H1T Mods',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
+    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',h1tmods:'H1T Mods',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
   }[state.lang] || {};
   const item=(key,attrs)=>`<button class="nav-item${activeKey===key?' active':''}" ${attrs} title="${esc(labels[key]||key)}" ${activeKey===key?'aria-current="page"':''}>${icon(key)}<span class="nav-label">${esc(labels[key]||key)}</span></button>`;
   const section=(id,items)=>{
@@ -212,7 +215,7 @@ function renderNav() {
   };
   const html=[
     item('home','data-go="home"'),item('performance','data-cat="performance"'),item('profiles','data-go="profiles"'),
-    section('fivem',[item('mods','data-go="mods"'),item('cleanup','data-go="cleanup"')]),
+    section('fivem',[item('h1tmods','data-go="h1tmods"'),item('mods','data-go="mods"'),item('cleanup','data-go="cleanup"')]),
     section('system',[
       item('network','data-cat="network"'),item('services','data-cat="services"'),
       item('privacy','data-cat="privacy"'),item('visuals','data-cat="visuals"'),
@@ -236,6 +239,7 @@ function renderCrumbs() {
   let parts;
   if (r.page === 'cat') parts = r.parent ? [t().extra, catName(r.cat)] : [catName(r.cat)];
   else if (r.page === 'color') parts = [t().extra, t().colorPage];
+  else if (r.page === 'h1tmods') parts = ['FiveM', 'H1T Mods'];
   else parts = [r.page === 'mods' ? t().modsPage : r.page === 'profiles' ? t().profilesPage : r.page === 'search' ? t().searchTitle : t()[r.page]];
   $('#crumbs').innerHTML = parts.map(esc).join('<span class="sep">·</span>');
 }
@@ -784,6 +788,7 @@ function render() {
   } else if (r.page === 'home') html += renderHome();
   else if (r.page === 'extra') html += renderExtra();
   else if (r.page === 'color') html += window.ColorPage.html(state.lang);
+  else if (r.page === 'h1tmods') html += window.H1tMods.html();
   else if (r.page === 'settings') html += renderSettings();
   else if (r.page === 'cleanup') html += renderCleanup();
   else if (r.page === 'safemode') html += renderSafeMode();
@@ -1243,6 +1248,7 @@ function go(route) {
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();
   if (route.page === 'safemode' && !state.safeBusy) safeAction('scan');
   if (route.page === 'settings') bridge.checkUpdate();
+  if (route.page === 'h1tmods' && !window.H1tMods.state.mods) window.H1tMods.load();
   if (route.page === 'profiles' && !window.Recommend.state.facts && !window.Recommend.state.busy) window.Recommend.check();
   if (route.page === 'mods' && !state.modsBusy) modsLoad();
   if (route.page === 'backups' && !state.bkBusy) { state.bkResult = null; state.bkOpen = null; bkList(); }
@@ -1438,4 +1444,5 @@ setTimeout(hideSplash, 6000);
 bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings') render(); });
 window.DashboardMedia.bind(bridge);
 window.ColorPage.bind(bridge);
+window.H1tMods.bind(bridge);
 load();

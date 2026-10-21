@@ -40,6 +40,10 @@ contextBridge.exposeInMainWorld('tweaker', {
   colorSave: (look) => ipcRenderer.invoke('tweaker:color-save', look),
   colorReset: () => ipcRenderer.invoke('tweaker:color-reset'),
   onColor: (cb) => ipcRenderer.on('tweaker:color', (_e, value) => cb(value)),
+  // FiveM > H1T Mods
+  h1tModsList: () => ipcRenderer.invoke('tweaker:h1tmods-list'),
+  h1tModsInstall: (id) => ipcRenderer.invoke('tweaker:h1tmods-install', id),
+  onH1tModsProgress: (cb) => ipcRenderer.on('tweaker:h1tmods-progress', (_e, p) => cb(p)),
 });
 
 
