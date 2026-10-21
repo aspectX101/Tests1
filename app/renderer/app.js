@@ -256,14 +256,16 @@ function renderHome() {
   const adminTxt = i.isAdmin === false ? t().noAdmin : i.isAdmin ? t().admin : '';
 
   return `<div class="dashboard-home">
-    <div class="card hero">
-      <img src="assets/logo-icon.png" alt="">
-      <div>
-        <h1>${t().welcome}<span>.</span></h1>
-        <p>${esc([i.os, adminTxt].filter(Boolean).join(' · '))}</p>
+    <div class="card h1t-hero">
+      <div class="h1t-hero-copy">
+        <div class="h1t-eyebrow">H1T.CC · ${state.lang==='de'?'SYSTEM CONTROL':state.lang==='it'?'CONTROLLO SISTEMA':'SYSTEM CONTROL'}</div>
+        <h1>${state.lang==='de'?'Dein System.':'Your system.'} <em>${state.lang==='de'?'Deine Kontrolle.':state.lang==='it'?'Il tuo controllo.':'Your control.'}</em></h1>
+        <p>${esc([i.os,adminTxt].filter(Boolean).join(' · '))} · ${state.lang==='de'?'Präzise Anpassungen, transparent und jederzeit kontrollierbar.':state.lang==='it'?'Ottimizzazioni precise, trasparenti e reversibili.':'Precision tuning with clear control and reversible changes.'}</p>
+        <div class="h1t-hero-pills"><span><i></i>${state.lang==='de'?'SYSTEM BEREIT':state.lang==='it'?'SISTEMA PRONTO':'SYSTEM READY'}</span><span>${on} / ${total} ${state.lang==='de'?'TWEAKS AKTIV':state.lang==='it'?'MODIFICHE ATTIVE':'TWEAKS ACTIVE'}</span></div>
       </div>
-      <span class="badge">UND.CC</span>
+      <div class="h1t-globe" aria-hidden="true"><div class="h1t-orb"></div><strong>H1T.CC</strong></div>
     </div>
+    <div class="h1t-overview-label">${state.lang==='de'?'LIVE SYSTEM MONITOR':state.lang==='it'?'MONITOR SISTEMA':'LIVE SYSTEM MONITOR'}</div>
     <div class="rings">${ring('cpu', t().cpu)}${ring('gpu', t().gpu)}${ring('ram', t().ram)}</div>
     <div class="home-row">
       <div class="card chart-card">
@@ -289,6 +291,13 @@ function renderHome() {
       ${stat('bolt', t().statOptimized, pct, '%')}
       ${stat('mods', t().statMods, state.mods ? state.mods.enabledCount : '—', state.mods ? `/ ${state.mods.mods.length}` : '')}
       ${stat('safemode', t().statSafe, state.safe ? (state.safe.enabled ? t().smOn : t().smOff) : '—', '', state.safe?.enabled ? 'ok' : '')}
+    </div>
+    <div class="h1t-overview-label">${state.lang==='de'?'DIREKTZUGRIFF':state.lang==='it'?'ACCESSO RAPIDO':'QUICK ACCESS'}</div>
+    <div class="h1t-launch">
+      <button data-cat="performance">${icon('performance')}<span><b>${esc(catName('performance'))}</b><small>${state.lang==='de'?'Leistung gezielt anpassen':'Tune performance'}</small></span><span class="h1t-arrow">›</span></button>
+      <button data-cat="network">${icon('network')}<span><b>${esc(catName('network'))}</b><small>${state.lang==='de'?'Verbindung optimieren':'Optimize connection'}</small></span><span class="h1t-arrow">›</span></button>
+      <button data-go="mods">${icon('mods')}<span><b>${esc(t().modsPage)}</b><small>${state.lang==='de'?'FiveM Bibliothek':'FiveM library'}</small></span><span class="h1t-arrow">›</span></button>
+      <button data-go="backups">${icon('backups')}<span><b>${esc(t().backupsPage)}</b><small>${state.lang==='de'?'Änderungen wiederherstellen':'Restore changes'}</small></span><span class="h1t-arrow">›</span></button>
     </div>
   </div>`;
 }
@@ -802,7 +811,7 @@ function renderStatus() {
     <span class="sb-spacer"></span>
     <span class="sb-item muted">${i.isAdmin === false ? t().noAdmin : t().admin}</span>
     <span class="sb-item muted">${esc(t().modes[state.mode] || '')}</span>
-    <span class="sb-item sb-ver">UND.CC · v${esc(state.version || '')}</span>`;
+    <span class="sb-item sb-ver">H1T.CC · v${esc(state.version || '')}</span>`;
 }
 
 // Live-Werte nur im DOM nachziehen, damit die Seite nicht jede Sekunde neu gebaut wird.
