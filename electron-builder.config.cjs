@@ -7,7 +7,7 @@ const base = require('./packaging/electron-builder.cjs');
 
 module.exports = {
   ...base,
-  productName: 'UND.CC Tweaker',
+  productName: 'H1T.CC Tweak Utility',
   extraResources: [...base.extraResources, { from: 'app/spotify-session.ps1', to: 'media/spotify-session.ps1' }],
   directories: { output: 'dist' },
   files: ['package.json', 'app/**/*'],
