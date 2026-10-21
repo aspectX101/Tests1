@@ -125,8 +125,8 @@
     const head = `<div class="tier-head"><div class="tier-badge">${esc(w.badge)}</div><h2>${esc(w.name)}</h2><p>${esc(w.desc)}</p></div>`;
     const checkBtn = `<button class="pill dark rec-check" id="rec-check" ${rec.busy || run ? 'disabled' : ''}>${esc(rec.busy ? w.checking : rec.facts ? w.recheck : w.check)}</button>`;
     if (!rec.facts) {
-      return `<div class="card tier tier-recommended">${head}
-        <p class="muted">${esc(rec.error ? `${w.failed} ${errorText(rec.error)}` : rec.busy ? w.checking : w.first)}</p>${checkBtn}</div>`;
+      return `<div class="card tier tier-recommended">${head}<div class="tier-facts"></div>
+        <p class="muted tier-count">${esc(rec.error ? `${w.failed} ${errorText(rec.error)}` : rec.busy ? w.checking : w.first)}</p><div class="pchips"></div><div class="tier-extra"></div><div class="tier-actions rec-actions">${checkBtn}</div></div>`;
     }
     const { picks, skips } = result();
     const todo = picks.filter((p) => !p.tweak.applied && !state.profileOff.has(p.id));
@@ -137,13 +137,13 @@
     }).join('');
     const line = (x) => `<li><b>${esc(x.tweak.name)}</b> – ${esc(w.reasons[x.reason] || x.reason)}</li>`;
     return `<div class="card tier tier-recommended${mine ? ' running' : ''}">${head}
-      <div class="rec-facts">${summary(rec.facts)}</div>
+      <div class="tier-facts rec-facts">${summary(rec.facts)}</div>
       <div class="tier-count"><b data-count="${todo.length}">${todo.length}</b><span>${t().tierTodo(done, picks.length)}</span></div>
       <div class="pchips">${chips || `<span class="muted">${t().empty}</span>`}</div>
-      <details class="rec-why"><summary>${esc(w.why)}</summary><ul>${picks.map(line).join('')}</ul>
+      <div class="tier-extra"><details class="rec-why"><summary>${esc(w.why)}</summary><ul>${picks.map(line).join('')}</ul>
         ${skips.length ? `<p class="muted">${esc(w.skipped)}</p><ul class="rec-skips">${skips.map(line).join('')}</ul>` : ''}</details>
-      ${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div><span>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span></div>` : ''}
-      <div class="rec-actions">${checkBtn}<button class="pill light big tier-go" data-tier="recommended" ${run || !todo.length ? 'disabled' : ''}>${icon('bolt')}<span>${t().tierGo(todo.length)}</span></button></div>
+      ${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div><span>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span></div>` : ''}</div>
+      <div class="tier-actions rec-actions">${checkBtn}<button class="pill light big tier-go" data-tier="recommended" ${run || !todo.length ? 'disabled' : ''}>${icon('bolt')}<span>${t().tierGo(todo.length)}</span></button></div>
     </div>`;
   }
   if (typeof document !== 'undefined') {

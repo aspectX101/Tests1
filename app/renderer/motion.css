@@ -1,0 +1,28 @@
+/* Loaded last. Configs page: all four cards share the same rows, so headings, counts, lists and buttons line up.
+   Page transitions: one short, calm fade for the page; no blur, no scaling, no second nested wave. */
+
+/* ---------- Configs: aligned cards (rows: head, facts, count, chips, extra, actions) ---------- */
+.tiers { grid-auto-rows: auto; row-gap: 14px; }
+.tiers > .tier { display: grid; grid-row: span 6; grid-template-rows: subgrid; row-gap: 12px; align-content: start; }
+.tiers > .tier .tier-head p { min-height: 0; }
+.tiers > .tier .tier-facts { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+.tiers > .tier .tier-count { align-self: end; margin: 0; flex-wrap: nowrap; min-width: 0; }
+.tiers > .tier .tier-count span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tiers > .tier .pchips { max-height: 236px; align-self: stretch; }
+.tiers > .tier .tier-extra { align-self: start; min-width: 0; }
+.tiers > .tier .tier-actions { align-self: end; display: grid; }
+.tiers > .tier .tier-actions.rec-actions { grid-template-columns: auto 1fr; gap: 8px; }
+.tiers > .tier .tier-actions .tier-go { width: 100%; }
+
+/* ---------- Page transitions ---------- */
+.enter > *,
+.enter .h1t-dash-hero, .enter .h1t-metric, .enter .h1t-panel, .enter .h1t-monitor-panel {
+  animation: page-in .26s cubic-bezier(.2, .7, .2, 1) both !important;
+  animation-delay: calc(min(var(--i, 0), 5) * 28ms) !important;
+}
+.enter .rows > *, .enter .tiles > *, .enter .rings > *, .enter .home-row > *, .enter .settings > *,
+.enter .tgrid > *, .enter .stats > *, .enter .quick > *, .enter .tiers > *, .enter .mod-grid > *,
+.enter .opt-v2 .rows > *, .enter .res-presets > * { animation: none !important; }
+.enter .detail-head .tile-icon svg { animation: none !important; }
+@keyframes page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .enter > *, .enter .h1t-metric, .enter .h1t-panel, .enter .h1t-monitor-panel, .enter .h1t-dash-hero { animation: none !important; } }

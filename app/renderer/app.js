@@ -70,7 +70,7 @@ const ICONS = {
 };
 const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.other}</svg>`;
 
-const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'gaming', 'keyboard', 'services', 'visuals'];
+const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'keyboard', 'services', 'visuals'];
 const EXTRA_CATS = ['mouse', 'controller', 'power', 'display'];
 
 // ---------- State ----------
@@ -156,7 +156,7 @@ const catOf = (tw) => {
 const NAV_GROUPS = [
   ['overview', [['home'], ['profiles']]],
   ['system', [['cat', 'performance'], ['cat', 'services'], ['cat', 'privacy'], ['cat', 'visuals'], ['cat', 'network'], ['cat', 'debloat']]],
-  ['gaming', [['cat', 'gaming'], ['cat', 'keyboard'], ['mods'], ['cleanup']]],
+  ['gaming', [['cat', 'keyboard'], ['mods'], ['cleanup']]],
   ['protect', [['safemode'], ['backups']]],
   ['more', [['extra']]],
 ];
@@ -199,9 +199,9 @@ function renderNav() {
   const activeKey = r.page === 'cat' ? (r.parent || r.cat) : r.page;
   const de = state.lang === 'de', it = state.lang === 'it';
   const labels = {
-    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'V3 Tweak',gaming:'Game Booster',mods:'FiveM Mods',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
-    en:{home:'Dashboard',performance:'PC Optimization',profiles:'V3 Tweak',gaming:'Game Booster',mods:'FiveM Mods',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
-    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'V3 Tweak',gaming:'Game Booster',mods:'FiveM Mods',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
+    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
+    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
+    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
   }[state.lang] || {};
   const item=(key,attrs)=>`<button class="nav-item${activeKey===key?' active':''}" ${attrs} title="${esc(labels[key]||key)}" ${activeKey===key?'aria-current="page"':''}>${icon(key)}<span class="nav-label">${esc(labels[key]||key)}</span></button>`;
   const section=(id,items)=>{
@@ -210,10 +210,8 @@ function renderNav() {
       <button class="nav-head" data-navgroup="${id}" aria-expanded="${!collapsed}"><span>${esc(labels[id]||id)}</span><i></i></button>
       <div class="nav-items">${items.join('')}</div></div>`;
   };
-  const hasGaming=tweaksIn('gaming').length>0;
   const html=[
     item('home','data-go="home"'),item('performance','data-cat="performance"'),item('profiles','data-go="profiles"'),
-    item('gaming','data-cat="gaming"'+(!hasGaming?' disabled title="'+esc(t().empty)+'"':'')),
     section('fivem',[item('mods','data-go="mods"'),item('cleanup','data-go="cleanup"')]),
     section('system',[
       item('network','data-cat="network"'),item('services','data-cat="services"'),
@@ -446,11 +444,12 @@ function renderProfiles() {
           <h2>${t().tiers[tier][0]}</h2>
           <p>${t().tiers[tier][1]}</p>
         </div>
+        <div class="tier-facts"></div>
         <div class="tier-count"><b data-count="${todo.length}">${todo.length}</b><span>${t().tierTodo(done, cands.length)}</span></div>
         <div class="pchips">${chips || `<span class="muted">${t().empty}</span>`}</div>
-        ${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div>
-          <span>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span></div>` : ''}
-        <button class="pill ${tier === 'safe' ? 'dark' : 'light'} big tier-go" data-tier="${tier}" ${run || !todo.length ? 'disabled' : ''}>${icon('bolt')}<span>${t().tierGo(todo.length)}</span></button>
+        <div class="tier-extra">${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div>
+          <span>${esc(t().tierRunning(run.i, run.n, run.current || ''))}</span></div>` : ''}</div>
+        <div class="tier-actions"><button class="pill ${tier === 'safe' ? 'dark' : 'light'} big tier-go" data-tier="${tier}" ${run || !todo.length ? 'disabled' : ''}>${icon('bolt')}<span>${t().tierGo(todo.length)}</span></button></div>
       </div>`;
   };
   const res = state.profileResult;
@@ -938,9 +937,14 @@ function confirmDialog(title, text, okLabel) {
   });
 }
 
+// Game Booster (Kategorie gaming) ist vorerst entfernt: diese Tweaks erscheinen nirgends in der Oberfläche.
+// Bestehende Sicherungen bleiben im Backend und lassen sich unter Sicherungen weiter zurücksetzen.
+const HIDDEN_CATS = new Set(['gaming']);
 async function call(action, id, extra = {}) {
   try {
-    return await bridge.call({ action, id, lang: state.lang, ...extra });
+    const res = await bridge.call({ action, id, lang: state.lang, ...extra });
+    if (action === 'list' && res?.ok && Array.isArray(res.tweaks)) res.tweaks = res.tweaks.filter((tw) => !HIDDEN_CATS.has(catOf(tw)));
+    return res;
   } catch (err) {
     return { ok: false, error: err.message };
   }
@@ -1150,8 +1154,6 @@ async function modToggle(id, enable) {
 async function modRemove(id) {
   const m = state.mods?.mods?.find(x => x.id === id);
   if (!m || state.modsBusy) return;
-  if (!(await confirmDialog(t().modsRemoveTitle(m.name), t().modsRemoveText, t().modsRemove))) return;
-  if (state.modsBusy) return;
   state.modsBusy = id;
   render();
   const res = await call('mods-remove', undefined, { modId: id });
