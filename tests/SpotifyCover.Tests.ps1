@@ -6,9 +6,9 @@ $tokens=$null;$errors=$null
 $ast=[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$tokens,[ref]$errors)
 if ($errors.Count) { throw 'spotify-session.ps1 has syntax errors' }
 # Setup statements (Add-Type, type variables, $asTask) and the helper functions, without the session loop.
-$wanted=@('streamType','readerType','asTask')
+$wanted=@('streamType','readerType','inputType','randomType','contentTypeProvider','asStream','asTask')
 $setup=$ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and $n.Left.VariablePath -and $wanted -contains $n.Left.VariablePath.UserPath },$true)
-$functions=$ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and ($n.Name -like 'Read-Cover*' -or $n.Name -eq 'Await') },$true)
+$functions=$ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and ($n.Name -like '*-Cover*' -or $n.Name -eq 'Await') },$true)
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 foreach ($node in @($setup)+@($functions)) { . ([scriptblock]::Create($node.Extent.Text)) }
 if (-not (Get-Command Read-Cover -ErrorAction SilentlyContinue)) { throw 'Read-Cover not found' }
