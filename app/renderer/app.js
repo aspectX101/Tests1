@@ -21,7 +21,7 @@ const bridge = window.tweaker || {
   appLocation: async () => ({ exe: 'C:\\Users\\Spieler\\Downloads\\UNDCC-Tweaker-0.6.0.exe' }),
   showExe: async () => ({ ok: true }),
   createShortcut: async (where) => ({ ok: true, path: where }),
-  minimize() {}, close() {},
+  minimize() {}, maximize() {}, close() {},
   onUsage(cb) {
     let u = { cpu: 9, gpu: 8, ram: 37 };
     const walk = (v, lo, hi) => Math.max(lo, Math.min(hi, v + (Math.random() - 0.5) * 8 + (Math.random() < 0.04 ? 35 : 0)));
