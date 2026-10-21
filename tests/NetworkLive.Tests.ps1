@@ -4,6 +4,8 @@ $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
 & (Get-Module Tweaker) {
     function Assert($c,[string]$m) {if (-not $c) {throw $m}}
+    # CI runs on Windows Server, which the app itself does not support; only the edition check is skipped here.
+    function Assert-OptimizationPlatform {}
     $adapters=@(Get-NetworkAdapters)
     Write-Host ('PASS adapters: ' + (($adapters | ForEach-Object { $_.guid + ' up=' + $_.up }) -join ', '))
     foreach ($tweak in @(Get-OptimizationCatalog | Where-Object category -eq network)) {
