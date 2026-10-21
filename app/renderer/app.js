@@ -117,12 +117,16 @@ const state = {
   modsError: null,
   modsBusy: null,    // 'list' | 'import' | modId
   modsTab: 'all',
+  modsQuery: '',
+  modsSort: 'recent',
+  modsExpanded: new Set(),
   res: null,         // letzte res-get/res-set-Antwort
   resError: null,
   resBusy: false,
   resForm: null,     // { width, height, windowed }
 };
 const MOD_CATS = ['graphics', 'sound', 'weapons', 'minimap', 'other'];
+const MOD_UI_TEXT = {"de":{"detected":"FiveM erkannt","notDetected":"FiveM nicht gefunden","manage":"Mod-Verwaltung","subtitle":"Importieren, aktivieren, Dateiziele prüfen und sicher wiederherstellen.","total":"Gesamt","totalSub":"Mods in der Bibliothek","enabled":"Aktiv","enabledSub":"Für FiveM aktiviert","disabled":"Inaktiv","disabledSub":"Jederzeit aktivierbar","size":"Größe","sizeSub":"Gespeicherte Dateien","active":"AKTIV","inactive":"INAKTIV","library":"Mod-Bibliothek","searchLabel":"Suchen","search":"Mod, Kategorie oder Dateiziel","sortLabel":"Sortieren","sort":{"recent":"Neueste","name":"Name","size":"Größe"},"untitled":"Unbenannte Mod","noFiles":"Keine Installationsziele","targets":"Installationsziele","imported":"Importiert","details":"Details","hideDetails":"Weniger","noSearch":"Keine passenden Mods. Ändere Suche oder Filter."},"en":{"detected":"FiveM detected","notDetected":"FiveM not found","manage":"Manage mods","subtitle":"Import, enable, inspect target files and safely restore.","total":"Total","totalSub":"Mods in library","enabled":"Enabled","enabledSub":"Active for FiveM","disabled":"Disabled","disabledSub":"Ready to enable","size":"Storage","sizeSub":"Imported files","active":"ACTIVE","inactive":"INACTIVE","library":"Mod library","searchLabel":"Search","search":"Mod, category or target path","sortLabel":"Sort by","sort":{"recent":"Newest","name":"Name","size":"Size"},"untitled":"Unnamed mod","noFiles":"No target files","targets":"Target files","imported":"Imported","details":"Details","hideDetails":"Less","noSearch":"No matching mods. Change your search or filter."},"it":{"detected":"FiveM rilevato","notDetected":"FiveM non trovato","manage":"Gestione mod","subtitle":"Importa, attiva, verifica le destinazioni e ripristina in sicurezza.","total":"Totale","totalSub":"Mod in libreria","enabled":"Attive","enabledSub":"Attive in FiveM","disabled":"Disattivate","disabledSub":"Pronte da attivare","size":"Dimensione","sizeSub":"File importati","active":"ATTIVA","inactive":"INATTIVA","library":"Libreria mod","searchLabel":"Cerca","search":"Mod, categoria o percorso","sortLabel":"Ordina","sort":{"recent":"Recenti","name":"Nome","size":"Dimensione"},"untitled":"Mod senza nome","noFiles":"Nessun file di destinazione","targets":"Destinazioni","imported":"Importato","details":"Dettagli","hideDetails":"Meno","noSearch":"Nessuna mod trovata. Modifica ricerca o filtro."}};
 const RES_PRESETS = [
   [1920, 1080, '16:9'], [1728, 1080, '16:10 Stretched'], [1680, 1050, '16:10'], [1600, 900, '16:9'],
   [1440, 1080, '4:3 Stretched'], [1280, 1024, '5:4'], [1280, 960, '4:3'],
@@ -626,54 +630,48 @@ function updateText() {
 const showTarget = (t) => (t.startsWith('gta:') ? 'GTA V\\' + t.slice(4) : 'FiveM\\' + t);
 
 function renderMods() {
-  const d = state.mods;
-  const busy = state.modsBusy;
-  const head = `
-    <div class="card detail-head">
-      <div class="tile-icon">${icon('mods')}</div>
-      <div><h1>${t().modsPage}</h1><p>${t().modsDesc}</p></div>
-    </div>`;
-  let status;
-  if (!d && busy === 'list') status = `<div class="cache-status muted">${t().modsLoading}</div>`;
-  else if (!d) status = `<div class="cache-status">${esc(errorText(state.modsError))}</div><div class="cache-actions"><button class="pill dark" id="mods-reload">${t().reload}</button></div>`;
-  else status = `
-    <div class="cache-total"><b>${d.mods.length}</b><span>${t().modsCount(d.mods.length, d.enabledCount)}</span></div>
-    ${d.root ? `<div class="cache-root" title="${esc(d.root)}">FiveM: ${esc(d.root)}</div>` : ''}
-    <div class="cache-root" title="${esc(d.gtaRoot || '')}">GTA V: ${d.gtaRoot ? esc(d.gtaRoot) : t().modsNoGta}</div>
-    ${d.fivemFound ? '' : `<div class="sm-alert">${t().modsNoFivem}</div>`}
-    <p class="cache-note">${esc(d.message || '')}</p>
-    <div class="cache-actions">
-      <button class="pill light" data-mod-import="file" ${busy ? 'disabled' : ''}>${busy === 'import' ? '…' : t().modsImportFile}</button>
-      <button class="pill dark" data-mod-import="folder" ${busy ? 'disabled' : ''}>${t().modsImportFolder}</button>
-      <button class="pill dark" id="mods-open" ${d.fivemFound ? '' : 'disabled'}>${t().modsOpenFolder}</button>
-    </div>`;
-
-  const list = (d?.mods || []).filter((m) => state.modsTab === 'all' || m.category === state.modsTab);
-  const tab = (k) => `<button data-mod-tab="${k}" class="${state.modsTab === k ? 'active' : ''}">${k === 'all' ? t().all : t().modCats[k]}</button>`;
-  const row = (m) => {
-    const mine = busy === m.id;
-    const more = m.fileCount > 1 ? ` +${m.fileCount - 1}` : '';
-    return `
-      <div class="card row mod-row${m.enabled ? ' on' : ''}">
-        <div class="mod-icon">${icon(m.category)}</div>
-        <div class="row-body">
-          <div class="row-title">${esc(m.name)}
-            <span class="tag">${esc(t().modCats[m.category] || m.category)}</span>
-            ${m.skippedCount ? `<span class="tag" title="${esc(t().modsSkippedHint)}">${t().modsSkipped(m.skippedCount)}</span>` : ''}</div>
-          <div class="row-desc">${fmtBytes(m.sizeBytes)} · ${t().modsFiles(m.fileCount)} · <span class="mono">${esc(showTarget(m.targets[0] || ''))}${more}</span></div>
-        </div>
-        <button class="pill dark danger" data-mod-remove="${esc(m.id)}" ${busy ? 'disabled' : ''}>${t().modsRemove}</button>
-        <label class="switch${mine ? ' busy' : ''}">
-          <input type="checkbox" data-mod-toggle="${esc(m.id)}" ${m.enabled ? 'checked' : ''} ${busy ? 'disabled' : ''} aria-label="${esc(m.name)}">
-          <span></span>
-        </label>
-      </div>`;
+  const d=state.mods, busy=state.modsBusy, tr=MOD_UI_TEXT[state.lang]||MOD_UI_TEXT.en;
+  const rows=Array.isArray(d?.mods)?d.mods:[];
+  const enabled=rows.filter(m=>m.enabled).length;
+  const totalSize=rows.reduce((sum,m)=>sum+Math.max(0,Number(m.sizeBytes)||0),0);
+  const query=String(state.modsQuery||'').trim().toLocaleLowerCase();
+  const filtered=rows.filter(m=>(state.modsTab==='all'||m.category===state.modsTab)&&
+      `${m.name||''} ${m.category||''} ${(Array.isArray(m.targets)?m.targets:[]).join(' ')}`.toLocaleLowerCase().includes(query));
+  const sorted=[...filtered].sort((a,b)=>state.modsSort==='name'?String(a.name||'').localeCompare(String(b.name||''),state.lang):
+    state.modsSort==='size'?(Number(b.sizeBytes)||0)-(Number(a.sizeBytes)||0):
+    String(b.importedUtc||'').localeCompare(String(a.importedUtc||'')));
+  const categories=['all',...MOD_CATS];
+  const count=c=>c==='all'?rows.length:rows.filter(m=>m.category===c).length;
+  const tab=c=>`<button data-mod-tab="${c}" class="${state.modsTab===c?'active':''}" aria-pressed="${state.modsTab===c}">${esc(c==='all'?t().all:t().modCats[c])}<span>${count(c)}</span></button>`;
+  const sorter=k=>`<button data-mod-sort="${k}" class="${state.modsSort===k?'active':''}" aria-pressed="${state.modsSort===k}">${esc(tr.sort[k])}</button>`;
+  const header=`<div class="card detail-head mod-hero"><div class="tile-icon">${icon('mods')}</div><div><h1>${esc(t().modsPage)}</h1><p>${esc(t().modsDesc)}</p></div><span class="mod-connection ${d?.fivemFound?'ok':''}"><i></i>${esc(d?.fivemFound?tr.detected:tr.notDetected)}</span></div>`;
+  const actions=`<div class="card mod-toolbar"><div><b>${esc(tr.manage)}</b><p>${esc(tr.subtitle)}</p></div><div class="mod-toolbar-actions"><button class="pill light" data-mod-import="file" ${busy?'disabled':''}>${esc(t().modsImportFile)}</button><button class="pill dark" data-mod-import="folder" ${busy?'disabled':''}>${esc(t().modsImportFolder)}</button><button class="pill dark" id="mods-open" ${busy||!d?.fivemFound?'disabled':''}>${esc(t().modsOpenFolder)}</button><button class="pill dark" id="mods-reload" ${busy?'disabled':''}>${esc(t().reload)}</button></div></div>`;
+  if(!d)return header+`<div class="card mod-placeholder">${esc(busy==='list'?t().modsLoading:errorText(state.modsError))}</div>`+actions+renderResolution();
+  const stats=`<div class="mod-stats">
+    <div class="card mod-stat"><span>${esc(tr.total)}</span><strong>${rows.length}</strong><small>${esc(tr.totalSub)}</small></div>
+    <div class="card mod-stat emphasis"><span>${esc(tr.enabled)}</span><strong>${enabled}</strong><small>${esc(tr.enabledSub)}</small></div>
+    <div class="card mod-stat"><span>${esc(tr.disabled)}</span><strong>${rows.length-enabled}</strong><small>${esc(tr.disabledSub)}</small></div>
+    <div class="card mod-stat"><span>${esc(tr.size)}</span><strong>${esc(fmtBytes(totalSize))}</strong><small>${esc(tr.sizeSub)}</small></div>
+  </div>`;
+  const paths=`<div class="card mod-paths"><div><b>FiveM</b><code title="${esc(d.root||'')}">${esc(d.root||tr.notDetected)}</code></div><div><b>GTA V</b><code title="${esc(d.gtaRoot||'')}">${esc(d.gtaRoot||t().modsNoGta)}</code></div>${d.fivemFound?'':`<p class="mod-warning">${esc(t().modsNoFivem)}</p>`}${state.modsError?`<p class="mod-warning">${esc(errorText(state.modsError))} <button class="pill dark" data-mod-reload>${esc(t().reload)}</button></p>`:''}</div>`;
+  const makeCard=m=>{
+    const id=String(m.id||''), valid=/^[a-f0-9]{12}$/i.test(id), active=!!m.enabled;
+    const name=String(m.name||tr.untitled);
+    const category=MOD_CATS.includes(m.category)?m.category:'other';
+    const targets=(Array.isArray(m.targets)?m.targets:[]).filter(v=>typeof v==='string'&&v.length);
+    const open=state.modsExpanded.has(id);
+    const detailPaths=targets.slice(0,30).map(p=>`<li>${esc(showTarget(p))}</li>`).join('');
+    return `<article class="card mod-card ${active?'enabled':''}">
+      <div class="mod-card-head"><div class="mod-icon">${icon(category)}</div><div class="mod-card-title"><h3 title="${esc(name)}">${esc(name)}</h3><small>${esc(t().modCats[category])}</small></div><span class="mod-state ${active?'enabled':''}"><i></i>${esc(active?tr.active:tr.inactive)}</span></div>
+      <div class="mod-meta"><span>${esc(t().modsFiles(Math.max(0,Number(m.fileCount)||0)))}</span><span>${esc(fmtBytes(Math.max(0,Number(m.sizeBytes)||0)))}</span>${m.skippedCount?`<span title="${esc(t().modsSkippedHint)}">${esc(t().modsSkipped(m.skippedCount))}</span>`:''}</div>
+      <div class="mod-target" title="${esc(targets.length?showTarget(targets[0]):tr.noFiles)}">${esc(targets.length?showTarget(targets[0]):tr.noFiles)}${targets.length>1?` · +${targets.length-1}`:''}</div>
+      ${open?`<div class="mod-details"><b>${esc(tr.targets)}</b><ul>${detailPaths||`<li>${esc(tr.noFiles)}</li>`}${targets.length>30?`<li>+${targets.length-30}</li>`:''}</ul>${m.importedUtc?`<p>${esc(tr.imported)}: ${esc(fmtDate(m.importedUtc))}</p>`:''}</div>`:''}
+      <div class="mod-card-footer"><button class="mod-details-button" data-mod-details="${esc(id)}" aria-expanded="${open}">${esc(open?tr.hideDetails:tr.details)} <span>${open?'−':'+'}</span></button><button class="pill dark danger" data-mod-remove="${esc(id)}" ${busy||!valid?'disabled':''}>${esc(t().modsRemove)}</button><label class="switch ${busy===id?'busy':''}"><input type="checkbox" data-mod-toggle="${esc(id)}" aria-label="${esc(name)}" ${active?'checked':''} ${busy||!valid?'disabled':''}><span></span></label></div>
+    </article>`;
   };
-  const mods = d ? `
-    <div class="toolbar"><div class="seg">${['all', ...MOD_CATS].map(tab).join('')}</div></div>
-    ${state.modsTab === 'sound' ? `<p class="hint">${t().modsSoundHint}</p>` : ''}
-    <div class="rows">${list.length ? list.map(row).join('') : `<div class="card empty">${t().modsEmpty}</div>`}</div>` : '';
-  return head + `<div class="card cache-card">${status}</div>` + mods + renderResolution();
+  const filters=`<div class="mod-filter-bar"><label class="mod-search"><span>${esc(tr.searchLabel)}</span><input id="mods-search" type="search" autocomplete="off" spellcheck="false" value="${esc(state.modsQuery||'')}" placeholder="${esc(tr.search)}"></label><div class="mod-filter-cats">${categories.map(tab).join('')}</div><div class="mod-sort"><span>${esc(tr.sortLabel)}</span>${['recent','name','size'].map(sorter).join('')}</div></div>`;
+  const mods=`<div class="mod-list-header"><h2>${esc(tr.library)} <span>${sorted.length}/${rows.length}</span></h2></div>${state.modsTab==='sound'?`<p class="hint">${esc(t().modsSoundHint)}</p>`:''}<div class="mod-grid">${sorted.length?sorted.map(makeCard).join(''):`<div class="card mod-placeholder">${esc(query?tr.noSearch:t().modsEmpty)}</div>`}</div>`;
+  return header+stats+actions+paths+filters+mods+`<div class="mod-resolution">${renderResolution()}</div>`;
 }
 
 function renderResolution() {
@@ -1052,11 +1050,13 @@ async function bkExport(id) {
 }
 
 async function modsLoad() {
+  if (state.modsBusy) return;
   state.modsBusy = 'list';
   render();
   const [list, res] = await Promise.all([call('mods-list'), call('res-get')]);
   state.modsBusy = null;
-  if (list?.ok) { state.mods = list; state.modsError = null; } else { state.mods = null; state.modsError = list?.error; }
+  if (list?.ok && Array.isArray(list.mods)) { state.mods = list; state.modsError = null; }
+  else { state.modsError = list?.error || 'invalid_mod_state'; }
   setRes(res);
   if (state.route.page === 'mods') render();
 }
@@ -1082,24 +1082,28 @@ async function modImport(kind) {
 }
 
 async function modToggle(id, enable) {
-  const m = state.mods?.mods.find((x) => x.id === id);
+  const m = state.mods?.mods?.find(x => x.id === id);
+  if (!m || state.modsBusy || m.enabled === enable) { render(); return; }
   state.modsBusy = id;
   render();
   const res = await call(enable ? 'mods-enable' : 'mods-disable', undefined, { modId: id });
   state.modsBusy = null;
   if (res?.ok) toast(enable ? t().modsEnabled(m.name) : t().modsDisabled(m.name));
-  else toast(`${m?.name}: ${errorText(res?.error)}`, 'error');
+  else toast(`${m.name}: ${errorText(res?.error)}`, 'error');
   await modsLoad();
 }
 
 async function modRemove(id) {
-  const m = state.mods?.mods.find((x) => x.id === id);
+  const m = state.mods?.mods?.find(x => x.id === id);
+  if (!m || state.modsBusy) return;
   if (!(await confirmDialog(t().modsRemoveTitle(m.name), t().modsRemoveText, t().modsRemove))) return;
+  if (state.modsBusy) return;
   state.modsBusy = id;
   render();
   const res = await call('mods-remove', undefined, { modId: id });
   state.modsBusy = null;
-  if (res?.ok) toast(t().modsRemoved(m.name)); else toast(errorText(res?.error), 'error');
+  if (res?.ok) { state.modsExpanded.delete(id); toast(t().modsRemoved(m.name)); }
+  else toast(errorText(res?.error), 'error');
   await modsLoad();
 }
 
@@ -1227,6 +1231,9 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'sm-export') safeExport();
   else if (el.id === 'bk-reload') bkList();
   else if (el.dataset.modTab) { state.modsTab = el.dataset.modTab; render(); }
+  else if (el.dataset.modSort) { state.modsSort = el.dataset.modSort; render(); }
+  else if (el.dataset.modDetails) { const id = el.dataset.modDetails; if (state.modsExpanded.has(id)) state.modsExpanded.delete(id); else state.modsExpanded.add(id); render(); }
+  else if (el.hasAttribute('data-mod-reload')) modsLoad();
   else if (el.dataset.modImport) modImport(el.dataset.modImport);
   else if (el.dataset.modRemove) modRemove(el.dataset.modRemove);
   else if (el.id === 'mods-open') bridge.openModsFolder().then((r) => { if (!r?.ok) toast(errorText(r?.error), 'error'); });
@@ -1253,6 +1260,14 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'restart-later') { state.restartPending = false; render(); }
 });
 
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'mods-search') return;
+  const start = e.target.selectionStart, end = e.target.selectionEnd;
+  state.modsQuery = e.target.value;
+  render();
+  const input = $('#mods-search');
+  if (input) { input.focus(); if (start != null && end != null) input.setSelectionRange(start, end); }
+});
 // Suche in der Seitenleiste (Strg+F)
 document.addEventListener('input', (e) => {
   if (e.target.id !== 'nav-search') return;
