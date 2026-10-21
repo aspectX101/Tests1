@@ -34,7 +34,11 @@ test('the provided globe logo is embedded locally and used for splash and dashbo
 
   assert.match(index, /class="h1t-splash-emblem"/);
   assert.match(app, /class="h1t-dash-hero"/);
-  assert.match(read("app/renderer/h1t-dashboard.css"), /assets\/h1t-emblem\.svg/);
+  // Dashboard hero shows only the globe with the H1T.CC lettering (user request), as a small local JPEG.
+  assert.match(read("app/renderer/h1t-dashboard.css"), /assets\/h1t-globe\.jpg/);
+  const globe = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets/h1t-globe.jpg'));
+  assert.equal(globe.subarray(0, 3).toString('hex'), 'ffd8ff');
+  assert.ok(globe.length < 120000, 'globe artwork stays small');
 });
 
 test('all routes retain navigation while page transitions honor reduced motion', () => {

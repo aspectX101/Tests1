@@ -764,6 +764,7 @@ function render() {
   renderNav();
   renderCrumbs();
   const language=$('#h1t-language');if(language&&language.value!==state.lang)language.value=state.lang;
+  const langCode=$('#h1t-lang-code');if(langCode)langCode.textContent=state.lang.toUpperCase();
   const r = state.route;
   const upReady = state.update?.status === 'ready'
     ? `<div class="restart"><span>${esc(t().upBanner(state.update.version || ''))}</span><button class="pill" id="up-install">${t().upInstall}</button></div>`
