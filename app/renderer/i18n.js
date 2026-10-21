@@ -28,6 +28,8 @@ window.I18N = {
     toTweaks: 'Zu den Tweaks',
     working: 'Einstellungen werden geprüft und gesichert …',
     statusMsg: { unchanged: 'war bereits aktiv', no_change: 'kein laufender FiveM-Prozess gefunden' },
+    colorPage: 'Farbe',
+    colorDesc: 'Helligkeit, Kontrast, Vibrance und Farbton live einstellen',
     errors: {
       not_portable: 'Nur in der portablen Exe verfügbar.', shortcut_failed: 'Die Verknüpfung konnte nicht erstellt werden.',
       unsupported_optimization_recipe: "Fuer diesen Eintrag gibt es keinen unterstuetzten globalen Windows-Schalter.",
@@ -291,6 +293,8 @@ window.I18N = {
     toTweaks: 'Go to tweaks',
     working: 'Checking settings and backups …',
     statusMsg: { unchanged: 'was already active', no_change: 'no running FiveM process found' },
+    colorPage: 'Color',
+    colorDesc: 'Adjust brightness, contrast, vibrance and hue live',
     errors: {
       not_portable: 'Only available in the portable exe.', shortcut_failed: 'The shortcut could not be created.',
       unsupported_optimization_recipe: "This entry has no supported global Windows switch.",
@@ -554,6 +558,8 @@ window.I18N = {
     toTweaks: 'Vai ai tweak',
     working: 'Verifica delle impostazioni e delle copie …',
     statusMsg: { unchanged: 'era già attivo', no_change: 'nessun processo FiveM attivo' },
+    colorPage: 'Colore',
+    colorDesc: 'Regola dal vivo luminosità, contrasto, vivacità e tonalità',
     errors: {
       not_portable: 'Disponibile solo nell’exe portatile.', shortcut_failed: 'Impossibile creare il collegamento.',
       unsupported_optimization_recipe: "Non esiste un comando Windows globale supportato per questa voce.",

@@ -15,6 +15,7 @@ const INDEX_URL = pathToFileURL(INDEX).href;
 const LANGS = new Set(['de', 'en', 'it']);
 
 const spotify = require('./spotify').createSpotify(app);
+const displayColor = require('./display-color').createDisplayColor(app);
 let win;
 let currentLang = 'de';
 let lastSafeMode = null; // letzte Meldung des SafeMode-Monitors, für Fenster die später laden
@@ -79,6 +80,14 @@ ipcMain.handle('tweaker:spotify-open', async (e) => {
   try { await shell.openExternal('spotify:'); return {ok:true}; } catch { return {ok:false}; }
 });
 app.on('before-quit', () => spotify.stop());
+
+// Extra > Color: Werte nur als Ganzzahlen 0-100, Prüfung in display-color.js.
+displayColor.onChange((value) => sendToUi('tweaker:color', value));
+ipcMain.handle('tweaker:color-state', (e) => trusted(e) ? displayColor.getState() : null);
+ipcMain.handle('tweaker:color-set', (e, look) => trusted(e) ? displayColor.set(look) : {ok:false});
+ipcMain.handle('tweaker:color-save', (e, look) => trusted(e) ? displayColor.save(look) : {ok:false});
+ipcMain.handle('tweaker:color-reset', (e) => trusted(e) ? displayColor.reset() : {ok:false});
+app.on('before-quit', () => displayColor.stop());
 
 ipcMain.handle('tweaker:call', async (e, request) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
@@ -188,10 +197,11 @@ ipcMain.handle('tweaker:safemode-last', (e) => (trusted(e) ? lastSafeMode : null
 ipcMain.on('window:minimize', (e) => trusted(e) && win?.minimize());
 ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 
-if (!relaunched) app.whenReady().then(createWindow);
+if (!relaunched) app.whenReady().then(() => { createWindow(); displayColor.restore(); });
 app.on('window-all-closed', () => {
   usage.stop();
   spotify.stop();
+  displayColor.stop();
   app.quit();
 });
 

@@ -8,7 +8,7 @@ const base = require('./packaging/electron-builder.cjs');
 module.exports = {
   ...base,
   productName: 'H1T.CC Tweak Utility',
-  extraResources: [...base.extraResources, { from: 'app/spotify-session.ps1', to: 'media/spotify-session.ps1' }],
+  extraResources: [...base.extraResources, { from: 'app/spotify-session.ps1', to: 'media/spotify-session.ps1' }, { from: 'app/display-color.ps1', to: 'media/display-color.ps1' }],
   directories: { output: 'dist' },
   files: ['package.json', 'app/**/*'],
   win: {

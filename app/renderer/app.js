@@ -9,6 +9,9 @@ const bridge = window.tweaker || {
   importMod: (category, kind) => window.TweakerMock.call({ action: 'mods-import', category, modPath: kind === 'folder' ? 'C:\\Mods\\Neuer Ordner' : 'C:\\Downloads\\Neue Mod.zip' }),
   openDebloatTarget: async () => ({ ok: true }),
   restartPc: async () => ({ ok: true }),
+  // Extra > Color im Browser: Werte nur merken, Bildschirm bleibt unverändert
+  colorState: async () => ({ status: 'ready', look: { brightness: 0, contrast: 0, vibrance: 0, hue: 0 }, saved: null }),
+  colorSet: async () => ({ ok: true }), colorSave: async () => ({ ok: true }), colorReset: async () => ({ ok: true }), onColor() {},
   openModsFolder: async () => ({ ok: true }),
   lastSafeMode: async () => null,
   onSafeMode() {},
@@ -230,6 +233,7 @@ function renderCrumbs() {
   const r = state.route;
   let parts;
   if (r.page === 'cat') parts = r.parent ? [t().extra, catName(r.cat)] : [catName(r.cat)];
+  else if (r.page === 'color') parts = [t().extra, t().colorPage];
   else parts = [r.page === 'mods' ? t().modsPage : r.page === 'profiles' ? t().profilesPage : r.page === 'search' ? t().searchTitle : t()[r.page]];
   $('#crumbs').innerHTML = parts.map(esc).join('<span class="sep">·</span>');
 }
@@ -315,7 +319,15 @@ function logActivity(kind, text) {
 }
 
 function renderExtra() {
-  return `<div class="tiles">${extraCats().map((c) => {
+  const color = `
+      <div class="card tile">
+        <div class="tile-icon">${window.ColorPage.icon}</div>
+        <h3>${esc(t().colorPage)}</h3>
+        <p>${esc(t().colorDesc)}</p>
+        <div class="meta">&nbsp;</div>
+        <button class="pill dark" data-go="color">${t().openSettings}</button>
+      </div>`;
+  return `<div class="tiles">${color}${extraCats().map((c) => {
     const list = tweaksIn(c);
     const on = list.filter((x) => x.applied).length;
     return `
@@ -751,6 +763,7 @@ function render() {
     html += '<div class="rows">' + '<div class="skeleton"></div>'.repeat(5) + '</div>';
   } else if (r.page === 'home') html += renderHome();
   else if (r.page === 'extra') html += renderExtra();
+  else if (r.page === 'color') html += window.ColorPage.html(state.lang);
   else if (r.page === 'settings') html += renderSettings();
   else if (r.page === 'cleanup') html += renderCleanup();
   else if (r.page === 'safemode') html += renderSafeMode();
@@ -777,6 +790,7 @@ function render() {
   content.querySelectorAll('[data-pct]').forEach((el) => { requestAnimationFrame(() => { el.style.width = `${el.dataset.pct}%`; }); });
   renderStatus();
   window.DashboardMedia.mount(state.lang);
+  if (r.page === 'color') window.ColorPage.mount(state.lang);
   // Ringe erst im nächsten Frame setzen, damit sie sichtbar von 0 aus hochlaufen
   if (r.page === 'home') requestAnimationFrame(paintUsage);
 }
@@ -1372,6 +1386,7 @@ setTimeout(hideSplash, 6000);
 
 bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings') render(); });
 window.DashboardMedia.bind(bridge);
+window.ColorPage.bind(bridge);
 load();
 
 

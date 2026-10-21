@@ -33,6 +33,12 @@ contextBridge.exposeInMainWorld('tweaker', {
   openSpotify: () => ipcRenderer.invoke('tweaker:spotify-open'),
   onSpotify: (cb) => ipcRenderer.on('tweaker:spotify', (_e, value) => cb(value)),
   restartPc: () => ipcRenderer.invoke('tweaker:restart-pc'),
+  // Extra > Color: { brightness, contrast, vibrance, hue } je 0-100
+  colorState: () => ipcRenderer.invoke('tweaker:color-state'),
+  colorSet: (look) => ipcRenderer.invoke('tweaker:color-set', look),
+  colorSave: (look) => ipcRenderer.invoke('tweaker:color-save', look),
+  colorReset: () => ipcRenderer.invoke('tweaker:color-reset'),
+  onColor: (cb) => ipcRenderer.on('tweaker:color', (_e, value) => cb(value)),
 });
 
 
