@@ -288,8 +288,6 @@ function renderHome() {
       ${metric('services',stopped,dict.stopped,dict.stoppedSub,'services','warn')}
     </div>
     <section class="h1t-monitor-panel" aria-label="Hardware monitoring">
-      <div class="h1t-monitor-label">${esc(state.lang==='de'?'SYSTEMMONITOR':state.lang==='it'?'MONITOR SISTEMA':'SYSTEM MONITOR')}</div>
-      <div class="rings">${ring('cpu',t().cpu)}${ring('gpu',t().gpu)}${ring('ram',t().ram)}</div>
       <div class="home-row">
         <div class="card chart-card">
           <div class="chart-head">
@@ -793,7 +791,7 @@ function render() {
     content.classList.add('enter');
     const stagger = (els) => els.forEach((el, i) => el.style.setProperty('--i', Math.min(i, 14)));
     stagger([...content.children]);
-    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers, .h1t-metrics, .h1t-quick-grid, .h1t-activity-list').forEach((g) => stagger([...g.children]));
+    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers, .h1t-metrics, .mod-grid, .cfg-list, .h1t-mods-grid').forEach((g) => stagger([...g.children]));
     countUp(content);
     clearTimeout(state.enterTimer);
     state.enterTimer = setTimeout(() => content.classList.remove('enter'), 1600);
@@ -822,25 +820,12 @@ function countUp(root) {
 }
 
 // Statusleiste unten: SafeMode, Neustart, laufendes Profil, Rechte, Version
+// Keine Fußleiste mehr (Safe Mode hat einen eigenen Tab). Ein ausstehender Neustart erscheint als kleiner Knopf oben.
 function renderStatus() {
-  const el=$('#statusbar');if(!el)return;
-  const sm=state.safe,run=state.profileRun;
-  const txt=state.lang==='de'
-    ?{title:'Safe Mode für PC-Check / Analysen',sub:'Systemzustand prüfen und kritische Dienste kontrollieren.',backup:'Sicherungen',restart:'PC neu starten',unknown:'Status prüfen'}
-    :state.lang==='it'
-    ?{title:'Modalità sicura / Analisi',sub:'Verifica i servizi e lo stato del sistema.',backup:'Backup',restart:'Riavvia PC',unknown:'Verifica stato'}
-    :{title:'Safe Mode / System analysis',sub:'Check essential services and system health.',backup:'Backups',restart:'Restart PC',unknown:'Check status'};
-  const checked=!!sm?.enabled;
-  el.innerHTML=`<button class="h1t-footer-safe" data-go="safemode">
-       <span class="h1t-footer-icon">${icon('safemode')}</span>
-       <span class="h1t-footer-copy"><b>${esc(txt.title)}</b><small>${esc(run?t().tierRunning(run.i,run.n,run.current||''):txt.sub)}</small></span></button>
-     <button class="h1t-footer-toggle" id="h1t-safe-toggle" role="switch" aria-label="${esc(txt.title)}"
-       aria-checked="${checked}" title="${esc(sm?(checked?t().smDisable:t().smEnable):txt.unknown)}"
-       ${!sm||state.safeBusy?'disabled':''}><span class="h1t-footer-switch"><i></i></span></button>
-     <div class="h1t-footer-actions">
-       <button class="pill dark" data-go="backups">${icon('backups')}<span>${esc(txt.backup)}</span></button>
-       <button class="pill h1t-amber" id="sb-restart">${icon('restartpc')}<span>${esc(txt.restart)}</span></button>
-     </div>`;
+  const bar=$('#statusbar');if(bar)bar.innerHTML='';
+  let slot=$('#h1t-restart-slot');
+  if(!slot){const meta=document.querySelector('.h1t-topbar-meta');if(!meta)return;slot=document.createElement('span');slot.id='h1t-restart-slot';meta.prepend(slot);}
+  slot.innerHTML=state.restartPending?`<button class="pill h1t-amber h1t-restart-pill" id="sb-restart" title="${esc(t().restartTitle||'')}">${icon('restartpc')}<span>${esc(t().needsRestartShort)}</span></button>`:'';
 }
 
 // Live-Werte nur im DOM nachziehen, damit die Seite nicht jede Sekunde neu gebaut wird.
@@ -1419,7 +1404,7 @@ bridge.version().then((v) => {
 });
 
 // Start-Animation: mindestens so lange zeigen, bis sie einmal durchgelaufen ist; spätestens nach 6 s weg.
-const SPLASH_MIN = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 3900;
+const SPLASH_MIN = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 2900;
 const splashStart = performance.now();
 let splashDone = false;
 function hideSplash() {

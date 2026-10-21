@@ -29,13 +29,13 @@
 .dashboard-lower .activity { margin:0; flex:1; padding:18px 20px; }
 .dashboard-activity-title { margin:0 0 12px; color:var(--muted); font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
 .spotify-card { padding:20px; position:relative; display:flex; align-items:center; flex-direction:column; overflow:hidden; min-width:0;
-  background:radial-gradient(ellipse at 50% 18%,rgba(45, 106, 79,.12),transparent 65%),linear-gradient(180deg,var(--card-a),var(--card-b)); }
+  background:radial-gradient(ellipse at 50% 18%,rgba(84, 84, 84,.12),transparent 65%),linear-gradient(180deg,var(--card-a),var(--card-b)); }
 .spotify-card::before { content:''; position:absolute; top:0; left:25%; right:25%; height:1px; background:linear-gradient(90deg,transparent,var(--accent),transparent); }
 .media-heading { display:flex; width:100%; justify-content:space-between; align-items:center; font-size:8px; font-weight:700; letter-spacing:.14em; color:var(--dim); }
 .spotify-label { color:#dedee3; display:flex; align-items:center; gap:6px; }
-.spotify-label i { width:6px; height:6px; background:#1ed760; border-radius:50%; }
+.spotify-label i { width:6px; height:6px; background:#e4e4e4; border-radius:50%; }
 .media-cover { width:108px; height:108px; position:relative; margin:20px 0 16px; border-radius:16px; display:grid; place-items:center;
-  background:linear-gradient(135deg,#12281c,#0d100e); border:1px solid #ffffff10; box-shadow:0 12px 30px #0006; overflow:hidden; }
+  background:linear-gradient(135deg,#202020,#0d100e); border:1px solid #ffffff10; box-shadow:0 12px 30px #0006; overflow:hidden; }
 .media-cover > svg { color:var(--accent-text); width:36px; height:36px; }
 .media-cover img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .media-cover img[hidden] { display:none; }

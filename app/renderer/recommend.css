@@ -1,5 +1,5 @@
 /* Profile "Recommended": system summary, reasons and actions inside the shared .tier card. */
-.tier-recommended { border-color: rgba(45, 106, 79, .45); }
+.tier-recommended { border-color: rgba(84, 84, 84, .45); }
 .rec-facts { display: flex; flex-wrap: wrap; gap: 6px; }
 .rec-fact { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, .05); border: 1px solid var(--line); color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rec-why summary { cursor: pointer; font-size: 12px; font-weight: 700; }

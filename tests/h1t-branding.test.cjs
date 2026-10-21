@@ -19,26 +19,19 @@ test('H1T.CC rebrand is consistent across Electron UI and application metadata',
   assert.match(packaged, /ProductName: 'H1T\.CC Tweak Utility'/);
 });
 
-test('the provided globe logo is embedded locally and used for splash and dashboard', () => {
-  const logo = read('app/renderer/assets/h1t-emblem.svg');
+test('the H1T.CC logo (cut out, transparent) is used for opening animation, sidebar, dashboard and app icon', () => {
   const index = read('app/renderer/index.html');
-  const app = read('app/renderer/app.js');
-  assert.match(logo, /^<svg[^>]+>/);
-  assert.match(logo, /data:image\/jpeg;base64,/);
-  const payload = logo.match(/data:image\/jpeg;base64,([^"]+)/)?.[1];
-  assert.ok(payload, 'embedded offline logo must be present');
-  const bytes = Buffer.from(payload, 'base64');
-  assert.equal(bytes.length, 4655);
-  assert.equal(require('node:crypto').createHash('sha256').update(bytes).digest('hex'),
-    '9d3702f4213f79caa88eb0c193cddeb7caf03d6c873c827c7a93f03fdbd60a02');
-
-  assert.match(index, /class="h1t-splash-emblem"/);
-  assert.match(app, /class="h1t-dash-hero"/);
-  // Dashboard hero shows only the globe with the H1T.CC lettering (user request), as a small local JPEG.
-  assert.match(read("app/renderer/h1t-dashboard.css"), /assets\/h1t-globe\.jpg/);
-  const globe = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets/h1t-globe.jpg'));
-  assert.equal(globe.subarray(0, 3).toString('hex'), 'ffd8ff');
-  assert.ok(globe.length < 120000, 'globe artwork stays small');
+  const logo = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets/h1t-logo.png'));
+  assert.equal(logo.subarray(1, 4).toString(), 'PNG');
+  assert.equal(logo[25], 6, 'RGBA PNG with transparency');
+  assert.match(index, /class="splash planet"/);
+  assert.match(index, /class="h1t-splash-emblem planet-logo"/);
+  assert.match(index, /WELCOME BACK TO/);
+  assert.match(index, /class="brand-logo" src="assets\/h1t-logo\.png"/);
+  assert.match(read('app/renderer/mono.css'), /assets\/h1t-logo\.png/);
+  const ico = fs.readFileSync(path.join(__dirname, '..', 'build/icon.ico'));
+  assert.equal(ico.readUInt16LE(2), 1); assert.equal(ico.readUInt16LE(4), 7, 'icon has 7 sizes (16-256 px)');
+  assert.ok(fs.readFileSync(path.join(__dirname, '..', 'app/assets/icon.ico')).equals(ico), 'window/taskbar icon matches the exe icon');
 });
 
 test('all routes retain navigation while page transitions honor reduced motion', () => {

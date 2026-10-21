@@ -1,8 +1,8 @@
-.opt-description{display:block}.row input[data-opt-select]{width:18px;height:18px;flex-shrink:0;accent-color:#2d6a4f}
+.opt-description{display:block}.row input[data-opt-select]{width:18px;height:18px;flex-shrink:0;accent-color:#545454}
 
 /* Shared live switches for Performance, Network, Services, Privacy and Visuals. */
 .opt-v2 .opt-tweaks { gap: 12px; }
 .opt-v2 .opt-tweaks .tile2 { min-height: 127px; }
-.opt-v2 .opt-tweaks .tile2.on { border-color: rgba(45,106,79,.45); }
+.opt-v2 .opt-tweaks .tile2.on { border-color: rgba(84, 84, 84,.45); }
 .opt-v2 .opt-tweaks .tile2 .switch input:disabled { cursor: not-allowed; }
 .opt-v2 .opt-tweaks[aria-busy="true"] .tile2 { opacity: .7; }
