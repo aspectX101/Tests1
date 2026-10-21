@@ -71,20 +71,30 @@ function start(onChange) {
   app.on('will-quit', () => { if (pending && !applying) apply(false); });
 }
 
+// Sucht auch dann weiter, wenn schon ein Update fertig geladen ist: erscheint inzwischen eine neuere Version,
+// ersetzt sie das geladene Update (sonst blieb die App bis zum Neustart auf dem ersten gefundenen Update stehen).
 async function check() {
-  if (!exePath || busy || pending) return;
+  if (!exePath || busy || applying) return;
   busy = true;
+  const waiting = pending;
   set({ status: 'checking', error: null });
   try {
     log('info', `GET ${API_LATEST}`);
     const res = await net.fetch(API_LATEST, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'UNDCC-Tweaker' }, cache: 'no-store' });
-    if (!res.ok) throw new Error(`GitHub antwortet mit ${res.status}`);
+    if (!res.ok) throw new Error(rateLimitText(res) || `GitHub antwortet mit ${res.status}`);
     const release = await res.json();
     const asset = pickAsset(release);
-    log('info', `latest tag=${release.tag_name} asset=${asset?.name || '-'} current=${app.getVersion()}`);
-    if (!asset || !newer(asset.version, app.getVersion())) {
-      set({ status: 'latest', latest: asset?.version, checkedAt: new Date().toISOString() });
+    const base = waiting?.version || app.getVersion();
+    log('info', `latest tag=${release.tag_name} asset=${asset?.name || '-'} current=${app.getVersion()} pending=${waiting?.version || '-'}`);
+    if (!asset || !newer(asset.version, base)) {
+      if (waiting) set({ status: 'ready', version: waiting.version, latest: asset?.version, checkedAt: new Date().toISOString() });
+      else set({ status: 'latest', latest: asset?.version, checkedAt: new Date().toISOString() });
       return;
+    }
+    if (waiting) {
+      log('info', `newer release ${asset.version} replaces downloaded ${waiting.version}`);
+      pending = null;
+      try { fs.rmSync(waiting.file, { force: true }); } catch { /* wird beim Download überschrieben */ }
     }
     set({ status: 'downloading', version: asset.version, percent: 0, checkedAt: new Date().toISOString() });
     const file = await download(asset, exePath);
@@ -93,10 +103,20 @@ async function check() {
     set({ status: 'ready', version: asset.version });
   } catch (err) {
     log('error', err?.stack || err);
-    set({ status: 'error', error: String(err?.message || err), checkedAt: new Date().toISOString() });
+    // Ein fertig geladenes Update bleibt installierbar, auch wenn die erneute Suche scheitert.
+    if (pending) set({ status: 'ready', version: pending.version, error: String(err?.message || err), checkedAt: new Date().toISOString() });
+    else set({ status: 'error', error: String(err?.message || err), checkedAt: new Date().toISOString() });
   } finally {
     busy = false;
   }
+}
+
+// GitHub erlaubt ohne Anmeldung 60 API-Abfragen pro Stunde und IP-Adresse; dann verständlich melden, wann es weitergeht.
+function rateLimitText(res) {
+  if (![403, 429].includes(res.status) || res.headers.get('x-ratelimit-remaining') !== '0') return null;
+  const reset = Number(res.headers.get('x-ratelimit-reset')) * 1000;
+  const at = Number.isFinite(reset) && reset > 0 ? new Date(reset).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : null;
+  return at ? `GitHub-Abfragelimit erreicht – neue Suche ab ${at} Uhr möglich` : 'GitHub-Abfragelimit erreicht – bitte später erneut suchen';
 }
 
 // GET mit Weiterleitungen über Nodes https: Electrons net.fetch bekommt vom GitHub-Download-Server
@@ -203,4 +223,5 @@ function install() {
 const openLog = () => logFile && shell.openPath(path.dirname(logFile));
 const openReleases = () => shell.openExternal(RELEASES_URL);
 
-module.exports = { start, check, install, openLog, openReleases, getState: () => state, _test: { newer, pickAsset, download, SWAP_SCRIPT } };
+module.exports = { start, check, install, openLog, openReleases, getState: () => state,
+  _test: { newer, pickAsset, download, rateLimitText, SWAP_SCRIPT, useExe(file) { exePath = file; }, pending: () => pending } };
