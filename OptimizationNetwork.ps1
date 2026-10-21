@@ -81,7 +81,7 @@ function Get-NetworkNativeValue($D) {
             $a.guid+'='+(ConvertTo-NetworkDnsList ([string]$v.value))
         } else {
             $v=Get-OptimizationRegistryValue (Get-NetworkRegistryDefinition $D $a.guid $map)
-            $kind=if ($D.valueKind -eq 'String') {'String'} else {'DWord'}
+            $kind=if (($D.ContainsKey('valueKind') -and $D.valueKind -eq 'String')) {'String'} else {'DWord'}
             if ($v.exists -and $v.kind -ne $kind) {throw 'unsupported_optimization_value'}
             if ($v.exists -and $kind -eq 'String' -and [string]$v.value -cnotmatch '^[0-9]{1,9}$') {throw 'unsupported_optimization_value'}
             $a.guid+'='+$(if ($v.exists) {[string]$v.value} else {'x'})
@@ -95,7 +95,7 @@ function Get-NetworkNativeTarget($D,$Current) {
     $wanted=if ($D.adapter -eq 'dns') {Get-NetworkDnsChoice} else {[string]$D.target}
     $now=ConvertFrom-NetworkValue $Current.value
     # Driver keywords: only cards whose driver offers the setting are changed.
-    $parts=foreach ($key in $now.Keys) {$key+'='+$(if ($D.onlyExisting -and $now[$key] -eq 'x') {'x'} else {$wanted})}
+    $parts=foreach ($key in $now.Keys) {$key+'='+$(if (($D.ContainsKey('onlyExisting') -and $D.onlyExisting) -and $now[$key] -eq 'x') {'x'} else {$wanted})}
     return [pscustomobject]@{exists=$true;kind=$D.kind;value=($parts -join '|')}
 }
 
@@ -112,7 +112,7 @@ function Set-NetworkNativeValue($D,$Value) {
         if ($D.adapter -eq 'dns') {Set-NetworkDnsServers @($adapters | Where-Object guid -eq $guid)[0] $wanted[$guid]}
         else {
             $v=[pscustomobject]@{exists=($wanted[$guid] -ne 'x');kind=$null;value=$null}
-            if ($v.exists) {if ($D.valueKind -eq 'String') {$v.kind='String';$v.value=[string]$wanted[$guid]} else {$v.kind='DWord';$v.value=[long]$wanted[$guid]}}
+            if ($v.exists) {if (($D.ContainsKey('valueKind') -and $D.valueKind -eq 'String')) {$v.kind='String';$v.value=[string]$wanted[$guid]} else {$v.kind='DWord';$v.value=[long]$wanted[$guid]}}
             Set-OptimizationRegistryValue (Get-NetworkRegistryDefinition $D $guid $map) $v
         }
     }

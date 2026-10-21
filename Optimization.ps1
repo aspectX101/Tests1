@@ -192,7 +192,7 @@ function Get-OptimizationDefault([string]$Field,$Current) {
     if ($d.adapter -in @('ifreg','dns')) {
         $empty=if ($d.adapter -eq 'dns') {''} else {'x'}
         $now=ConvertFrom-NetworkValue $Current.value
-        $parts=foreach ($key in $now.Keys) {$key+'='+$(if ($d.onlyExisting -and $now[$key] -ne 'x') {[string]$d.default} else {$empty})}
+        $parts=foreach ($key in $now.Keys) {$key+'='+$(if (($d.ContainsKey('onlyExisting') -and $d.onlyExisting) -and $now[$key] -ne 'x') {[string]$d.default} else {$empty})}
         return [pscustomobject]@{exists=$true;kind=$d.kind;value=($parts -join '|')}
     }
     if ($d.adapter -eq 'task') {
