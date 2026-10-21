@@ -44,10 +44,10 @@ if (relaunched) {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 1100,
-    height: 680,
-    minWidth: 900,
-    minHeight: 580,
+    width: 1400,
+    height: 860,
+    minWidth: 960,
+    minHeight: 660,
     frame: false,
     backgroundColor: '#000000',
     title: 'H1T.CC Tweak Utility',
@@ -195,6 +195,7 @@ ipcMain.handle('tweaker:open-mods-folder', async (e) => {
 ipcMain.handle('tweaker:mode', (e) => (trusted(e) ? (useMock ? 'mock' : 'powershell') : null));
 ipcMain.handle('tweaker:safemode-last', (e) => (trusted(e) ? lastSafeMode : null));
 ipcMain.on('window:minimize', (e) => trusted(e) && win?.minimize());
+ipcMain.on('window:maximize', (e) => { if (trusted(e) && win) { if (win.isMaximized()) win.unmaximize(); else win.maximize(); } });
 ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 
 if (!relaunched) app.whenReady().then(() => { createWindow(); displayColor.restore(); });
