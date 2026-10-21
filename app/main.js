@@ -49,7 +49,7 @@ function createWindow() {
     minHeight: 580,
     frame: false,
     backgroundColor: '#000000',
-    title: 'UND.CC Tweaker',
+    title: 'H1T.CC Tweak Utility',
     // Fenster-/Taskleisten-Icon zur Laufzeit; das Exe-Icon selbst lässt sich ohne Windows-Build nicht setzen.
     icon: path.join(__dirname, 'assets', 'icon.ico'),
     show: false,
@@ -122,7 +122,7 @@ ipcMain.handle('tweaker:restart-pc', (e) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
   if (process.platform !== 'win32') return { ok: false, error: 'not_portable' };
   const exe = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'shutdown.exe');
-  require('child_process').spawn(exe, ['/r', '/t', '10', '/c', 'UND.CC Tweaker: Neustart in 10 Sekunden'], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  require('child_process').spawn(exe, ['/r', '/t', '10', '/c', 'H1T.CC Tweak Utility: Neustart in 10 Sekunden'], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
   return { ok: true };
 });
 
@@ -142,10 +142,10 @@ ipcMain.handle('tweaker:create-shortcut', (e, where) => {
   const dir = where === 'startmenu'
     ? path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs')
     : app.getPath('desktop');
-  const lnk = path.join(dir, 'UND.CC Tweaker.lnk');
+  const lnk = path.join(dir, 'H1T.CC Tweak Utility.lnk');
   // 'create' legt an oder überschreibt eine vorhandene Verknüpfung
   const ok = shell.writeShortcutLink(lnk, 'create', {
-    target: portableExe(), cwd: path.dirname(portableExe()), icon: portableExe(), iconIndex: 0, description: 'UND.CC Tweaker',
+    target: portableExe(), cwd: path.dirname(portableExe()), icon: portableExe(), iconIndex: 0, description: 'H1T.CC Tweak Utility',
   });
   return ok ? { ok: true, path: lnk } : { ok: false, error: 'shortcut_failed' };
 });
