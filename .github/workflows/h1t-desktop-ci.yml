@@ -1,0 +1,20 @@
+name: H1T desktop integration checks
+on:
+  pull_request:
+    branches: [codex/performance-backend]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --check app/h1t-account.js
+      - run: node --check app/renderer/h1t-account-ui.js
+      - run: node --check app/main.js
+      - run: node --check app/preload.js
+      - run: npm test
