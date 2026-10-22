@@ -24,7 +24,8 @@ const sendToUi = (channel, payload) => win && !win.isDestroyed() && win.webConte
 
 // Echtes Backend (ChatGPT, electron/backend.cjs) unter Windows, sonst oder mit --mock die Testdaten.
 // Eine einzige Instanz: sie startet auch den SafeMode-Monitor (alle 30 s, nur solange die App offen ist).
-const useMock = process.argv.includes('--mock') || process.platform !== 'win32';
+const useMock = (!app.isPackaged && process.argv.includes('--mock')) || process.platform !== 'win32';
+const h1tAccount = require('./h1t-account').createH1tAccount(app, { bypass: !app.isPackaged && useMock });
 let backend;
 if (relaunched) {
   backend = async () => ({ ok: false, error: 'relaunching' });
@@ -46,13 +47,14 @@ if (relaunched) {
 const h1tMods = require('./h1t-mods').createH1tMods(app, (req) => backend(req));
 h1tMods.onProgress((p) => sendToUi('tweaker:h1tmods-progress', p));
 ipcMain.handle('tweaker:h1tmods-list', (e) => trusted(e) ? h1tMods.list() : { ok: false });
-ipcMain.handle('tweaker:h1tmods-install', (e, id) => trusted(e) && typeof id === 'string' ? h1tMods.install(id) : { ok: false });
+ipcMain.handle('tweaker:h1tmods-install', async (e, id) => trusted(e) && typeof id === 'string' && await h1tAccount.checkAccess() ? h1tMods.install(id) : { ok: false, error: 'license_required' });
 
 // FiveM > Hitreg: Live-Verbindungstest (UDP-Serverabfrage) mit Fortschritt für das Diagramm.
 const hitregNet = require('./hitreg-net');
 let hitregBusy = false;
 ipcMain.handle('tweaker:hitreg-test', async (e, target) => {
   if (!trusted(e) || typeof target !== 'string' || hitregBusy) return { ok: false, error: 'hitreg_busy' };
+  if (!await h1tAccount.checkAccess()) return { ok: false, error: 'license_required' };
   hitregBusy = true;
   try { return await hitregNet.runTest(target, (p) => sendToUi('tweaker:hitreg-progress', p)); }
   finally { hitregBusy = false; }
@@ -87,6 +89,25 @@ function createWindow() {
 
 // Nur Anfragen aus unserer eigenen, lokal geladenen Oberfläche annehmen.
 const trusted = (e) => e.senderFrame && e.senderFrame.url.split('#')[0] === INDEX_URL;
+
+// H1T.CC desktop API: credentials/tokens stay in this privileged process only.
+ipcMain.handle('tweaker:h1t-status', (e) => trusted(e) ? h1tAccount.refresh(true) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-login', (e,email,password) => trusted(e) ? h1tAccount.login(email,password) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-bind', (e,licenseId,consent) => trusted(e) ? h1tAccount.bind(licenseId,consent,app.getVersion()) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-logout', (e) => trusted(e) ? h1tAccount.logout() : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-portal', async (e) => {
+  if(!trusted(e))return {ok:false,error:'untrusted_sender'};
+  try { await shell.openExternal('https://dev.h1tutility.cc/account'); return {ok:true}; }
+  catch{return {ok:false,error:'portal_open_failed'};}
+});
+// Customer area / licenses / support: fixed kinds only; URLs come from the account module (own HTTPS hosts only).
+ipcMain.handle('tweaker:h1t-open', async (e, kind) => {
+  if(!trusted(e))return {ok:false,error:'untrusted_sender'};
+  const url=typeof kind==='string'?h1tAccount.link(kind):null;
+  if(!url)return {ok:false,error:'invalid_link'};
+  try { await shell.openExternal(url); return {ok:true}; }
+  catch{return {ok:false,error:'portal_open_failed'};}
+});
 spotify.onChange((value) => sendToUi('tweaker:spotify', value));
 ipcMain.on('tweaker:spotify-active', (e, active) => { if (trusted(e)) spotify.setActive(active === true); });
 ipcMain.handle('tweaker:spotify-state', (e) => trusted(e) ? spotify.getState() : null);
@@ -100,14 +121,15 @@ app.on('before-quit', () => spotify.stop());
 // Extra > Color: Werte nur als Ganzzahlen 0-100, Prüfung in display-color.js.
 displayColor.onChange((value) => sendToUi('tweaker:color', value));
 ipcMain.handle('tweaker:color-state', (e) => trusted(e) ? displayColor.getState() : null);
-ipcMain.handle('tweaker:color-set', (e, look) => trusted(e) ? displayColor.set(look) : {ok:false});
-ipcMain.handle('tweaker:color-save', (e, look) => trusted(e) ? displayColor.save(look) : {ok:false});
-ipcMain.handle('tweaker:color-reset', (e) => trusted(e) ? displayColor.reset() : {ok:false});
+ipcMain.handle('tweaker:color-set', async (e, look) => trusted(e) && await h1tAccount.checkAccess() ? displayColor.set(look) : {ok:false,error:'license_required'});
+ipcMain.handle('tweaker:color-save', async (e, look) => trusted(e) && await h1tAccount.checkAccess() ? displayColor.save(look) : {ok:false,error:'license_required'});
+ipcMain.handle('tweaker:color-reset', async (e) => trusted(e) && await h1tAccount.checkAccess() ? displayColor.reset() : {ok:false,error:'license_required'});
 app.on('before-quit', () => displayColor.stop());
 
 ipcMain.handle('tweaker:call', async (e, request) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
   if (!request || typeof request !== 'object') return { ok: false, error: 'invalid_action' };
+  if (!await h1tAccount.checkAccess()) return { ok: false, error: 'license_required' };
   // Nur die bekannten Felder weiterreichen; Pfade und Skripte kann die Oberfläche nicht setzen.
   // modPath fehlt bewusst: Mod-Pfade kommen nur aus dem Datei-Dialog (tweaker:mod-import).
   const { action, id, lang, backupId, confirmPurge, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss } = request;
@@ -143,8 +165,9 @@ ipcMain.handle('tweaker:export', async (e, what, backupId) => {
 });
 
 // PC neu starten: fester Windows-Befehl mit 10 s Vorlauf (abbrechen mit "shutdown /a").
-ipcMain.handle('tweaker:restart-pc', (e) => {
+ipcMain.handle('tweaker:restart-pc', async (e) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
+  if (!await h1tAccount.checkAccess()) return { ok: false, error: 'license_required' };
   if (process.platform !== 'win32') return { ok: false, error: 'not_portable' };
   const exe = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'shutdown.exe');
   require('child_process').spawn(exe, ['/r', '/t', '10', '/c', 'H1T.CC Tweak Utility: Neustart in 10 Sekunden'], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
@@ -182,6 +205,7 @@ ipcMain.on('tweaker:update-page', (e) => trusted(e) && updater.openReleases());
 // Mod importieren: Datei oder Ordner im Windows-Dialog wählen, dann ans Backend geben.
 ipcMain.handle('tweaker:mod-import', async (e, category, kind) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
+  if (!await h1tAccount.checkAccess()) return {ok:false,error:'license_required'};
   const folder = kind === 'folder';
   const pick = await dialog.showOpenDialog(win, folder
     ? { properties: ['openDirectory'] }
@@ -197,6 +221,7 @@ ipcMain.handle('tweaker:mod-import', async (e, category, kind) => {
 // FiveM-Mods-Ordner im Explorer öffnen (Pfad kommt vom Backend, nicht von der Oberfläche).
 ipcMain.handle('tweaker:open-mods-folder', async (e) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
+  if (!await h1tAccount.checkAccess()) return {ok:false,error:'license_required'};
   try {
     const list = await backend({ action: 'mods-list', lang: currentLang });
     if (!list?.ok || !list.root) return { ok: false, error: 'fivem_not_found' };
@@ -214,7 +239,7 @@ ipcMain.on('window:minimize', (e) => trusted(e) && win?.minimize());
 ipcMain.on('window:maximize', (e) => { if (trusted(e) && win) { if (win.isMaximized()) win.unmaximize(); else win.maximize(); } });
 ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 
-if (!relaunched) app.whenReady().then(() => { createWindow(); displayColor.restore(); });
+if (!relaunched) app.whenReady().then(async () => { await h1tAccount.load(); createWindow(); displayColor.restore(); });
 app.on('window-all-closed', () => {
   usage.stop();
   spotify.stop();
