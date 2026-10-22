@@ -78,38 +78,44 @@ test('the collector script reads model fields only - no serials, MACs, IPs or us
   for(const line of script.split('\n').filter(l=>/Get-CimInstance/.test(l)))assert.match(line,/-Property /);
 });
 
-test('diagnostics are off by default and nothing is collected or sent without opt-in',async()=>{
-  let collected=false;
-  const {client,calls,done}=await verifiedClient({collect:async()=>{collected=true;return {}}});
+test('the tweaker stays locked until the data-transfer notice is accepted; nothing is sent before',async()=>{
+  const {client,calls,done}=await verifiedClient();
   try{
     await asWindows(async()=>{
       const s=await client.refresh(true);
-      assert.equal(s.authorized,true);
-      assert.equal(s.diagnostics.consent,false);
-      assert.equal((await client.previewDiagnostics('0.9.26')).error,'diagnostics_consent_required');
+      assert.equal(s.status,'diagnostics_required');
+      assert.equal(s.authorized,false);
+      assert.equal(s.diagnostics.required,true);
+      assert.equal(s.diagnostics.ready,true);
+      assert.equal(await client.checkAccess(),false);
       assert.equal((await client.sendDiagnostics()).error,'diagnostics_consent_required');
+      assert.equal((await client.acceptDiagnostics()).error,'preview_required');
+      // The preview is local only.
+      assert.equal((await client.previewDiagnostics('0.9.27')).ok,true);
+      assert.equal(await client.autoReport('0.9.27'),null);
     });
-    assert.equal(collected,false);
     assert.equal(calls.some(c=>c.url.endsWith('/api/diagnostics')),false);
   }finally{done()}
 });
 
-test('a confirmed report sends exactly the previewed system with the verified device_id and device proof',async()=>{
+test('accepting sends exactly the shown preview with the verified device_id and device proof, then unlocks',async()=>{
   const {client,calls,done}=await verifiedClient();
   try{
     await asWindows(async()=>{
       await client.refresh(true);
-      assert.equal((await client.setDiagnosticsConsent(true)).diagnostics.consent,true);
-      assert.equal((await client.sendDiagnostics()).error,'preview_required');
-      const preview=await client.previewDiagnostics('0.9.26');
-      assert.equal(preview.ok,true);
+      const preview=await client.previewDiagnostics('0.9.27');
       assert.equal(JSON.stringify(preview).includes(TOKEN),false);
       assert.equal(JSON.stringify(preview).includes(DEVICE),false);
-      const s=await client.sendDiagnostics();
+      const s=await client.acceptDiagnostics();
       assert.equal(s.ok,true);
+      assert.equal(s.send_error,undefined);
+      assert.equal(s.status,'active');
+      assert.equal(s.authorized,true);
+      assert.equal(s.diagnostics.consent,true);
+      assert.ok(s.diagnostics.accepted_at>0);
       assert.equal(s.diagnostics.retention_days,30);
-      assert.ok(s.diagnostics.last_sent_at>0);
       assert.equal(JSON.stringify(s).includes(TOKEN),false);
+      assert.equal(await client.checkAccess(),true);
       const verifyProof=calls.find(c=>c.body?.action==='verify-device').body.device_proof;
       const report=calls.filter(c=>c.url==='https://dev.h1tutility.cc/api/diagnostics').pop();
       assert.equal(report.auth,'Bearer '+TOKEN);
@@ -117,40 +123,45 @@ test('a confirmed report sends exactly the previewed system with the verified de
       assert.equal(report.body.action,'report');
       assert.equal(report.body.consent,true);
       assert.equal(report.body.device_id,DEVICE);
-      assert.match(report.body.device_proof,/^[0-9a-f]{64}$/);
       assert.equal(report.body.device_proof,verifyProof);
+      assert.match(report.body.device_proof,/^[0-9a-f]{64}$/);
       assert.equal(JSON.stringify(report.body.system),JSON.stringify(preview.system));
-      assert.equal(report.body.system.gpu_model,'NVIDIA GeForce RTX 4070 SUPER');
       assert.equal('secure_boot_enabled' in report.body.system,false);
       assert.ok(Buffer.byteLength(JSON.stringify(report.body))<=6000);
-      // The same preview cannot be sent twice.
+      // A preview is used once; a manual report needs a new one.
       assert.equal((await client.sendDiagnostics()).error,'preview_required');
+      await client.previewDiagnostics('0.9.27');
+      assert.equal((await client.sendDiagnostics()).ok,true);
     });
   }finally{done()}
 });
 
-test('withdrawing consent drops a pending preview immediately',async()=>{
+test('withdrawing stops sending and locks the tweaker again',async()=>{
   const {client,calls,done}=await verifiedClient();
   try{
     await asWindows(async()=>{
-      await client.setDiagnosticsConsent(true);
-      assert.equal((await client.previewDiagnostics('1')).ok,true);
-      assert.equal((await client.setDiagnosticsConsent(false)).diagnostics.consent,false);
+      await client.previewDiagnostics('1');await client.acceptDiagnostics();
+      const before=calls.filter(c=>c.url.endsWith('/api/diagnostics')).length;
+      await client.previewDiagnostics('1');
+      const s=await client.withdrawDiagnostics();
+      assert.equal(s.status,'diagnostics_required');
+      assert.equal(s.diagnostics.consent,false);
+      assert.equal(await client.checkAccess(),false);
       assert.equal((await client.sendDiagnostics()).error,'diagnostics_consent_required');
-      await client.setDiagnosticsConsent(true);
-      assert.equal((await client.sendDiagnostics()).error,'preview_required');
+      assert.equal(await client.autoReport('2'),null);
+      assert.equal(calls.filter(c=>c.url.endsWith('/api/diagnostics')).length,before);
     });
-    assert.equal(calls.some(c=>c.url.endsWith('/api/diagnostics')),false);
   }finally{done()}
 });
 
-test('deleting shared diagnostics posts the own device_id and turns sharing off',async()=>{
-  const {client,calls,dir,done}=await verifiedClient({diagBody:{ok:true}});
+test('deleting shared diagnostics posts the own device_id and requires the notice again',async()=>{
+  const {client,calls,dir,done}=await verifiedClient();
   try{
     await asWindows(async()=>{
-      await client.setDiagnosticsConsent(true);
+      await client.previewDiagnostics('1');await client.acceptDiagnostics();
       const s=await client.deleteDiagnostics();
       assert.equal(s.ok,true);
+      assert.equal(s.status,'diagnostics_required');
       assert.equal(s.diagnostics.consent,false);
       const del=calls.filter(c=>c.url.endsWith('/api/diagnostics')).pop();
       assert.equal(JSON.stringify(del.body),JSON.stringify({action:'delete',device_id:DEVICE}));
@@ -160,29 +171,48 @@ test('deleting shared diagnostics posts the own device_id and turns sharing off'
   }finally{done()}
 });
 
-test('a missing server endpoint is reported as a server problem, and login stays authorized',async()=>{
+test('a missing server endpoint is reported as a server problem without locking out an accepted user',async()=>{
   const {client,done}=await verifiedClient({diagStatus:404,diagBody:{error:'API endpoint not found',code:'API_NOT_FOUND'}});
   try{
     await asWindows(async()=>{
-      await client.setDiagnosticsConsent(true);
       await client.previewDiagnostics('1');
-      const r=await client.sendDiagnostics();
-      assert.equal(r.error,'diagnostics_unavailable');
-      assert.equal(r.detail,'API_NOT_FOUND');
+      const s=await client.acceptDiagnostics();
+      assert.equal(s.send_error,'diagnostics_unavailable');
+      assert.equal(s.send_detail,'API_NOT_FOUND');
+      assert.equal(s.authorized,true);
+      assert.equal(s.diagnostics.last_sent_at,null);
       assert.equal((await client.deleteDiagnostics()).error,'diagnostics_unavailable');
       assert.equal(await client.checkAccess(),true);
     });
   }finally{done()}
 });
 
-test('the opt-in survives a restart and is cleared on sign-out',async()=>{
+test('on start an accepted device re-reports at most weekly or after an app update',async()=>{
+  const {client,calls,done}=await verifiedClient();
+  const uploads=()=>calls.filter(c=>c.body?.action==='report').length;
+  try{
+    await asWindows(async()=>{
+      await client.previewDiagnostics('0.9.27');await client.acceptDiagnostics();
+      assert.equal(uploads(),1);
+      assert.equal(await client.autoReport('0.9.27'),null);
+      assert.equal(uploads(),1);
+      assert.equal(await client.autoReport('0.9.28'),null);
+      assert.equal(uploads(),2);
+      assert.equal(calls.filter(c=>c.body?.action==='report').pop().body.system.app_version,'0.9.28');
+    });
+  }finally{done()}
+});
+
+test('acceptance survives a restart and is cleared on sign-out',async()=>{
   const {client,dir,done}=await verifiedClient();
   try{
     await asWindows(async()=>{
-      await client.setDiagnosticsConsent(true);
+      await client.previewDiagnostics('1');await client.acceptDiagnostics();
       const again=createH1tAccount({getPath:()=>dir});
       await again.load();
-      assert.equal((await again.refresh(true)).diagnostics.consent,true);
+      const s=await again.refresh(true);
+      assert.equal(s.status,'active');
+      assert.equal(s.diagnostics.consent,true);
       assert.equal((await again.logout()).diagnostics.consent,false);
     });
   }finally{done()}

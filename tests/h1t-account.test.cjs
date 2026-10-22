@@ -114,7 +114,7 @@ test('a verified device returns profile, avatar data URI and device details to t
   };
   try{
     // A previously consented session (device binding happened earlier).
-    fs.writeFileSync(path.join(dir,'h1t-session.json'),JSON.stringify({v:1,secret:Buffer.from('c'.repeat(64)).toString('base64'),consent:true}));
+    fs.writeFileSync(path.join(dir,'h1t-session.json'),JSON.stringify({v:1,secret:Buffer.from('c'.repeat(64)).toString('base64'),consent:true,diagnostics:{consent:true}}));
     await client.load();
     const platform=Object.getOwnPropertyDescriptor(process,'platform');
     if(process.platform!=='win32')Object.defineProperty(process,'platform',{value:'win32'});

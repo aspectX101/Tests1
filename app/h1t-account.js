@@ -57,10 +57,10 @@ function cleanProfile(d) {
 function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={}) {
   const file=path.join(app.getPath('userData'),'h1t-session.json');
   let token=null,consent=false,cache=null,checkedAt=0,rev=0,avatar={url:null,data:null};
-  // Voluntary diagnostics: separate opt-in (default off), the verified device_id from bind/verify,
-  // and the last previewed report, which is the only thing that may be sent.
+  // Diagnostics notice: acceptance state, the verified device_id from bind/verify,
+  // and the last previewed report, which is the only thing a user action may send.
   let deviceId=null,pending=null;
-  const DIAG_OFF={consent:false,last_sent_at:null,retention_days:null};
+  const DIAG_OFF={consent:false,accepted_at:null,last_sent_at:null,last_version:null,retention_days:null};
   let diag={...DIAG_OFF};
   async function req(method,body,url=API) {
     const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),12000);
@@ -91,7 +91,9 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
       if(obj.v===1&&/^[0-9a-f]{64}$/.test(value)){
         token=value;consent=obj.consent===true;
         const d=obj.diagnostics||{};
-        diag={consent:d.consent===true,last_sent_at:Number.isFinite(d.last_sent_at)?d.last_sent_at:null,
+        diag={consent:d.consent===true,accepted_at:Number.isFinite(d.accepted_at)?d.accepted_at:null,
+          last_sent_at:Number.isFinite(d.last_sent_at)?d.last_sent_at:null,
+          last_version:typeof d.last_version==='string'?d.last_version.slice(0,30):null,
           retention_days:Number.isInteger(d.retention_days)?d.retention_days:null};
       }
     }catch{}
@@ -125,13 +127,13 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
   }
   function snapshot(){
     if(bypass)return {ok:true,authorized:true,signed_in:true,status:'development',demo:true,links:{...DEFAULT_LINKS},
-      diagnostics:{...DIAG_OFF,ready:false,pending:false}};
+      diagnostics:{...DIAG_OFF,required:false,ready:false,pending:false}};
     const profile=cache?.profile||{};
     const user=profile.user?{...profile.user,avatar:avatar.url&&avatar.url===profile.user.avatar_url?avatar.data:null}:profile.user;
     return {ok:true,authorized:cache?.authorized===true,signed_in:!!token,consent,
       status:cache?.status||(token?'checking':'signed_out'),checked_at:checkedAt||null,
       ...profile,...(profile.user!==undefined?{user}:{}),links:profile.links||{...DEFAULT_LINKS},
-      diagnostics:{...diag,ready:cache?.authorized===true&&!!deviceId,pending:!!pending}};
+      diagnostics:{...diag,required:true,ready:cache?.verified===true&&!!deviceId,pending:!!pending}};
   }
   async function refresh(force=false){
     if(bypass)return snapshot();
@@ -161,7 +163,8 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
           }
         }
         if(!verified)deviceId=null;
-        cache={authorized:verified,status:verified?'active':'device_unbound',profile};
+        // A verified PC still needs the accepted data-transfer notice before the tweaker unlocks.
+        cache={authorized:verified&&diag.consent,verified,status:!verified?'device_unbound':diag.consent?'active':'diagnostics_required',profile};
       }
       checkedAt=Date.now();
     }catch(e){cache={authorized:false,status:e.message||'connection_unavailable',profile:cache?.profile};checkedAt=0;}
@@ -199,68 +202,102 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
   // Signed out / new session: nothing from the previous account survives, diagnostics opt-in included.
   function forget(){token=null;consent=false;cache=null;checkedAt=0;rev++;avatar={url:null,data:null};deviceId=null;pending=null;diag={...DIAG_OFF};}
 
-  // ---------- voluntary diagnostics (POST /api/diagnostics) ----------
+  // ---------- mandatory diagnostics notice (POST /api/diagnostics) ----------
+  // Since 0.9.27 the tweaker is unlocked only after the user accepted the data-transfer notice once, after
+  // seeing the exact values. Uploads still follow the contract: consent:true, verified device_id + binding proof.
+  const AUTO_REPORT_AGE=7*24*3600000;
   const DIAG_ERRORS={400:'diagnostics_rejected',401:'session_expired',403:'diagnostics_forbidden',404:'diagnostics_unavailable',
     405:'diagnostics_unavailable',409:'device_unbound',413:'report_too_large',422:'diagnostics_rejected',429:'rate_limited'};
   const diagError=(r)=>({ok:false,error:DIAG_ERRORS[r.code]||'server_rejected',
     detail:typeof r.data?.code==='string'&&/^[A-Z0-9_]{2,40}$/.test(r.data.code)?r.data.code:undefined});
-  // The upload needs a live, verified binding; re-check it instead of trusting an old snapshot.
+  // Uploads need a live, verified binding; re-check it instead of trusting an old snapshot.
   async function verifiedDevice(){
     const s=await refresh(true);
     if(!s.signed_in)return {ok:false,error:'signed_out'};
-    if(!s.authorized||!deviceId)return {ok:false,error:s.status==='active'?'device_id_missing':'device_unbound'};
+    if(cache?.verified!==true||!deviceId)return {ok:false,error:cache?.verified?'device_id_missing':'device_unbound'};
     return null;
   }
-  async function setDiagnosticsConsent(on){
-    if(bypass)return {ok:false,error:'development_build'};
-    if(!token)return {ok:false,error:'signed_out'};
-    diag.consent=on===true;
-    if(!diag.consent)pending=null; // withdrawing stops any further sending at once
-    await save();return snapshot();
+  async function collectFor(version){
+    try{return {system:await collect(String(version||''))}}
+    catch(e){return {ok:false,error:e.message==='windows_device_required'?e.message:'diagnostics_collect_failed'}}
   }
+  // Collect locally and show it; nothing leaves the PC here.
   async function previewDiagnostics(version){
     if(bypass)return {ok:false,error:'development_build'};
     if(!token)return {ok:false,error:'signed_out'};
-    if(!diag.consent)return {ok:false,error:'diagnostics_consent_required'};
     const bad=await verifiedDevice();if(bad)return bad;
-    let system;
-    try{system=await collect(String(version||''))}catch(e){return {ok:false,error:e.message==='windows_device_required'?e.message:'diagnostics_collect_failed'}}
-    pending={system,at:Date.now()};
-    return {ok:true,system};
+    const c=await collectFor(version);if(!c.system)return c;
+    pending={system:c.system,at:Date.now()};
+    return {ok:true,system:c.system};
   }
-  async function sendDiagnostics(){
-    if(bypass)return {ok:false,error:'development_build'};
-    if(!token)return {ok:false,error:'signed_out'};
-    if(!diag.consent){pending=null;return {ok:false,error:'diagnostics_consent_required'};}
-    if(!pending||Date.now()-pending.at>PREVIEW_MAX_AGE){pending=null;return {ok:false,error:'preview_required'};}
-    const bad=await verifiedDevice();if(bad)return bad;
+  // Returns null on success or an error object.
+  async function upload(system){
     let body;
-    try{body={action:'report',consent:true,device_id:deviceId,device_proof:proof(),system:pending.system};}
+    try{body={action:'report',consent:true,device_id:deviceId,device_proof:proof(),system};}
     catch(e){return {ok:false,error:e.message}}
     if(Buffer.byteLength(JSON.stringify(body))>diagnostics.MAX_REPORT_BYTES)return {ok:false,error:'report_too_large'};
     try{
       const r=await req('POST',body,DIAG_API);
       if(r.code===401)checkedAt=0;
       if(r.code!==200||r.data?.ok!==true)return diagError(r);
-      pending=null;
       diag.last_sent_at=Date.now();
+      diag.last_version=typeof system.app_version==='string'?system.app_version:null;
       diag.retention_days=Number.isInteger(r.data.retention_days)&&r.data.retention_days>0?r.data.retention_days:null;
-      await save();return snapshot();
+      await save();return null;
     }catch(e){return {ok:false,error:e.message}}
   }
+  const freshPreview=()=>pending&&Date.now()-pending.at<=PREVIEW_MAX_AGE?pending:(pending=null);
+  // "Accept and send": unlocks the tweaker and sends exactly the shown preview. A server outage does not
+  // lock the user out after accepting; the failed upload is reported and retried on the next start.
+  async function acceptDiagnostics(){
+    if(bypass)return {ok:false,error:'development_build'};
+    if(!token)return {ok:false,error:'signed_out'};
+    const shown=freshPreview();if(!shown)return {ok:false,error:'preview_required'};
+    const bad=await verifiedDevice();if(bad)return bad;
+    diag.consent=true;diag.accepted_at=Date.now();await save();
+    const err=await upload(shown.system);pending=null;
+    checkedAt=0;const s=await refresh(true);
+    return err?{...s,send_error:err.error,send_detail:err.detail}:s;
+  }
+  async function sendDiagnostics(){
+    if(bypass)return {ok:false,error:'development_build'};
+    if(!token)return {ok:false,error:'signed_out'};
+    if(!diag.consent){pending=null;return {ok:false,error:'diagnostics_consent_required'};}
+    const shown=freshPreview();if(!shown)return {ok:false,error:'preview_required'};
+    const bad=await verifiedDevice();if(bad)return bad;
+    const err=await upload(shown.system);if(err)return err;
+    pending=null;return snapshot();
+  }
   function discardDiagnosticsPreview(){pending=null;return snapshot();}
+  // Withdrawing stops all sending at once and locks the tweaker again until the notice is accepted.
+  async function withdrawDiagnostics(){
+    if(bypass)return {ok:false,error:'development_build'};
+    if(!token)return {ok:false,error:'signed_out'};
+    diag.consent=false;diag.accepted_at=null;pending=null;await save();
+    checkedAt=0;return refresh(true);
+  }
   async function deleteDiagnostics(){
     if(bypass)return {ok:false,error:'development_build'};
     if(!token)return {ok:false,error:'signed_out'};
-    if(!deviceId){const s=await refresh(true);if(!deviceId)return {ok:false,error:s.authorized?'device_id_missing':'device_unbound'};}
+    if(!deviceId){await refresh(true);if(!deviceId)return {ok:false,error:cache?.verified?'device_id_missing':'device_unbound'};}
     try{
       const r=await req('POST',{action:'delete',device_id:deviceId},DIAG_API);
       if(r.code===401)checkedAt=0;
       if(r.code!==200||r.data?.ok===false)return diagError(r);
-      // Deleting also withdraws the opt-in, so nothing is sent again without a new decision.
-      pending=null;diag={...DIAG_OFF};
-      await save();return snapshot();
+      // Deleting also withdraws the acceptance.
+      pending=null;diag={...DIAG_OFF};await save();
+      checkedAt=0;return refresh(true);
     }catch(e){return {ok:false,error:e.message}}
+  }
+  // On app start: after acceptance, send a current report at most weekly or after an app update.
+  async function autoReport(version){
+    if(bypass||!token||!diag.consent)return null;
+    const s=await refresh();
+    if(!s.authorized||!deviceId)return null;
+    const due=!diag.last_sent_at||Date.now()-diag.last_sent_at>AUTO_REPORT_AGE||diag.last_version!==String(version||'');
+    if(!due)return null;
+    const c=await collectFor(version);if(!c.system)return c;
+    return upload(c.system);
   }
   function link(kind){
     if(!Object.hasOwn(DEFAULT_LINKS,kind))return null;
@@ -269,6 +306,6 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
   function hasAccess(){return bypass||(cache?.authorized===true&&Date.now()-checkedAt<MAX_AGE)}
   async function checkAccess(){return bypass||(await refresh()).authorized===true}
   return {load,login,bind,refresh,logout,link,hasAccess,checkAccess,
-    setDiagnosticsConsent,previewDiagnostics,sendDiagnostics,discardDiagnosticsPreview,deleteDiagnostics};
+    previewDiagnostics,acceptDiagnostics,sendDiagnostics,discardDiagnosticsPreview,withdrawDiagnostics,deleteDiagnostics,autoReport};
 }
 module.exports={createH1tAccount,ownUrl,sniffImage,cleanProfile};

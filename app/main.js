@@ -101,8 +101,9 @@ ipcMain.handle('tweaker:h1t-portal', async (e) => {
   catch{return {ok:false,error:'portal_open_failed'};}
 });
 // Voluntary diagnostics: collection, token, device_id and device_proof stay in this process.
-// The renderer can only toggle the opt-in, request a preview, confirm that exact preview, or delete.
-ipcMain.handle('tweaker:h1t-diag-consent', (e, on) => trusted(e) ? h1tAccount.setDiagnosticsConsent(on === true) : {ok:false,error:'untrusted_sender'});
+// The renderer can only request a preview, accept/send that exact preview, withdraw, or delete.
+ipcMain.handle('tweaker:h1t-diag-accept', (e) => trusted(e) ? h1tAccount.acceptDiagnostics() : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-diag-withdraw', (e) => trusted(e) ? h1tAccount.withdrawDiagnostics() : {ok:false,error:'untrusted_sender'});
 ipcMain.handle('tweaker:h1t-diag-preview', (e) => trusted(e) ? h1tAccount.previewDiagnostics(app.getVersion()) : {ok:false,error:'untrusted_sender'});
 ipcMain.handle('tweaker:h1t-diag-send', (e) => trusted(e) ? h1tAccount.sendDiagnostics() : {ok:false,error:'untrusted_sender'});
 ipcMain.handle('tweaker:h1t-diag-discard', (e) => trusted(e) ? h1tAccount.discardDiagnosticsPreview() : {ok:false,error:'untrusted_sender'});
@@ -246,7 +247,11 @@ ipcMain.on('window:minimize', (e) => trusted(e) && win?.minimize());
 ipcMain.on('window:maximize', (e) => { if (trusted(e) && win) { if (win.isMaximized()) win.unmaximize(); else win.maximize(); } });
 ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 
-if (!relaunched) app.whenReady().then(async () => { await h1tAccount.load(); createWindow(); displayColor.restore(); });
+if (!relaunched) app.whenReady().then(async () => {
+  await h1tAccount.load(); createWindow(); displayColor.restore();
+  // Accepted data-transfer notice: refresh the report on start (at most weekly or after an update).
+  h1tAccount.autoReport(app.getVersion()).catch(() => {});
+});
 app.on('window-all-closed', () => {
   usage.stop();
   spotify.stop();
