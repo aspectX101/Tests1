@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('tweaker', {
   h1tAccountBind: (licenseId, consent) => ipcRenderer.invoke('tweaker:h1t-bind', licenseId, consent === true),
   h1tAccountLogout: () => ipcRenderer.invoke('tweaker:h1t-logout'),
   h1tOpenAccountPortal: () => ipcRenderer.invoke('tweaker:h1t-portal'),
+  h1tOpenAccountLink: (kind) => ipcRenderer.invoke('tweaker:h1t-open', String(kind)),
   // request: { action, id?, lang, backupId?, confirmPurge? }
   call: (request) => ipcRenderer.invoke('tweaker:call', request),
   mode: () => ipcRenderer.invoke('tweaker:mode'),

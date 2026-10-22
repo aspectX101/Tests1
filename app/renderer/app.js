@@ -248,6 +248,7 @@ function renderCrumbs() {
   else if (r.page === 'color') parts = [t().extra, t().colorPage];
   else if (r.page === 'h1tmods') parts = ['FiveM', 'H1T Mods'];
   else if (r.page === 'hitreg') parts = ['FiveM', 'Hitreg'];
+  else if (r.page === 'account') parts = ['H1T.CC', window.H1tAccountUI?.title() || 'Account'];
   else parts = [r.page === 'mods' ? t().modsPage : r.page === 'profiles' ? t().profilesPage : r.page === 'search' ? t().searchTitle : t()[r.page]];
   $('#crumbs').innerHTML = parts.map(esc).join('<span class="sep">·</span>');
 }
@@ -793,13 +794,14 @@ function render() {
     ? `<div class="restart"><span>${esc(t().upBanner(state.update.version || ''))}</span><button class="pill" id="up-install">${t().upInstall}</button></div>`
     : '';
   let html = upReady;
-  if (state.loading && !['settings', 'cleanup', 'safemode', 'backups', 'mods', 'profiles', 'search'].includes(r.page)) {
+  if (state.loading && !['settings', 'cleanup', 'safemode', 'backups', 'mods', 'profiles', 'search', 'account'].includes(r.page)) {
     html += '<div class="rows">' + '<div class="skeleton"></div>'.repeat(5) + '</div>';
   } else if (r.page === 'home') html += renderHome();
   else if (r.page === 'extra') html += renderExtra();
   else if (r.page === 'color') html += window.ColorPage.html(state.lang);
   else if (r.page === 'h1tmods') html += window.H1tMods.html();
   else if (r.page === 'hitreg') html += renderHitreg();
+  else if (r.page === 'account') html += window.H1tAccountUI?.page() || '';
   else if (r.page === 'settings') html += renderSettings();
   else if (r.page === 'cleanup') html += renderCleanup();
   else if (r.page === 'safemode') html += renderSafeMode();
@@ -818,7 +820,7 @@ function render() {
     content.classList.add('enter');
     const stagger = (els) => els.forEach((el, i) => el.style.setProperty('--i', Math.min(i, 14)));
     stagger([...content.children]);
-    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers, .h1t-metrics, .mod-grid, .cfg-list, .h1t-mods-grid, .gt-grid').forEach((g) => stagger([...g.children]));
+    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers, .h1t-metrics, .mod-grid, .cfg-list, .h1t-mods-grid, .gt-grid, .acc-grid').forEach((g) => stagger([...g.children]));
     countUp(content);
     clearTimeout(state.enterTimer);
     state.enterTimer = setTimeout(() => content.classList.remove('enter'), 1600);
@@ -827,6 +829,7 @@ function render() {
   renderStatus();
   window.DashboardMedia.mount(state.lang);
   if (r.page === 'color') window.ColorPage.mount(state.lang);
+  window.H1tAccountUI?.sync();
   // Ringe erst im nächsten Frame setzen, damit sie sichtbar von 0 aus hochlaufen
   if (r.page === 'home') requestAnimationFrame(paintUsage);
 }

@@ -100,6 +100,14 @@ ipcMain.handle('tweaker:h1t-portal', async (e) => {
   try { await shell.openExternal('https://dev.h1tutility.cc/account'); return {ok:true}; }
   catch{return {ok:false,error:'portal_open_failed'};}
 });
+// Customer area / licenses / support: fixed kinds only; URLs come from the account module (own HTTPS hosts only).
+ipcMain.handle('tweaker:h1t-open', async (e, kind) => {
+  if(!trusted(e))return {ok:false,error:'untrusted_sender'};
+  const url=typeof kind==='string'?h1tAccount.link(kind):null;
+  if(!url)return {ok:false,error:'invalid_link'};
+  try { await shell.openExternal(url); return {ok:true}; }
+  catch{return {ok:false,error:'portal_open_failed'};}
+});
 spotify.onChange((value) => sendToUi('tweaker:spotify', value));
 ipcMain.on('tweaker:spotify-active', (e, active) => { if (trusted(e)) spotify.setActive(active === true); });
 ipcMain.handle('tweaker:spotify-state', (e) => trusted(e) ? spotify.getState() : null);

@@ -36,3 +36,41 @@ Optional diagnostic reports **are not implemented** by this branch. CPU model, G
 - Network access is required periodically for license validation.
 - Server-side privacy controls/telemetry retention, payment webhooks and an admin diagnostics viewer are separate projects.
 - Never use this development API as a permanent customer production domain without replacing it with the production hostname and reviewing CSP/update policies.
+
+## Desktop account UI (Windows Tweaker)
+- **Sign-in gate** (`app/renderer/h1t-account-ui.js` / `.css`): full-window Premium Black / Graphite / White screen for sign-in, "no license", device linking (with the explicit consent checkbox) and verification errors. It has its own DE/EN/IT switch and window buttons, because it covers the title bar. Server error codes are translated; unknown codes are shown as a code.
+- **Account button** (top right): avatar or initials, display name, status dot. Its dropdown offers *My Account*, *Customer Area* (external), *Licenses* (account page, scrolls to the licenses), *Support* (external) and *Sign Out*. Keyboard: ↓ opens, ↑/↓/Home/End move, Esc closes.
+- **Account page** (`route page: 'account'`): profile, session & security, licenses (plan, status, expiry, devices, key hint, "This PC" marker), this device (binding, label, linked since, last seen, app version) and help links.
+- **Avatar**: the main process downloads `user.avatar_url` (own HTTPS host only, no redirects, ≤ 512 KB, PNG/JPEG/WebP/GIF checked by file signature) and hands the renderer a `data:` URI. That keeps the CSP at `img-src 'self' data:`. Without an avatar the UI shows initials.
+- **External links** go through IPC `tweaker:h1t-open` with a fixed kind (`customer_area`, `licenses`, `support`). Only `https://h1tutility.cc` / `*.h1tutility.cc` URLs are opened.
+- The license check, token storage, consent rule and device proof are unchanged. The UI only renders main-process snapshots.
+- Browser preview without Electron: `app/renderer/index.html#acc=signed_out|active|active_avatar|license|device|error` uses a local demo bridge (never active inside the app).
+
+## API fields the Tweaker needs (for the Cloudflare desktop API)
+All fields are optional. The app works without them and falls back as noted. Field names are exact.
+
+`GET /api/desktop` (authenticated):
+
+| Field | Type | Used for | Fallback today |
+|---|---|---|---|
+| `user.avatar_url` | string \| null — absolute `https://` URL on `h1tutility.cc` or a subdomain; served **directly with 200, no redirect**; PNG/JPEG/WebP/GIF, ≤ 512 KB, square (256×256 recommended). If it is on the API host (`dev.h1tutility.cc`) the app sends the same `Authorization: Bearer` token, so it may be private. Do **not** inline the image into the JSON (responses are capped at 64 KB). | Avatar in button, menu and account page | Initials |
+| `user.username` | string ≤ 50 | `@username` on the account page | hidden |
+| `user.id` | string ≤ 64 | Account ID (shortened) | `–` |
+| `user.created_at` | ISO 8601 string | "Member since" | `–` |
+| `licenses[].status` | `active` \| `expired` \| `revoked` \| `suspended` \| `pending` | License status pill | `active` |
+| `licenses[].key_hint` | string ≤ 12, **last 4 characters only** (never the full key) | `•••• ABCD` | `–` |
+| `licenses[].max_devices` | integer | Devices `used / max` | `–` |
+| `licenses[].devices_used` | integer | Devices `used / max` | `–` |
+| `links.customer_area` | https URL on h1tutility.cc | Menu → Customer Area | `https://dev.h1tutility.cc/account` |
+| `links.licenses` | https URL on h1tutility.cc | Account page → "Manage in Customer Area" | `https://dev.h1tutility.cc/account#licenses` |
+| `links.support` | https URL on h1tutility.cc | Menu → Support | `https://dev.h1tutility.cc/account#support` (no `/support` page exists yet, it returns 404) |
+
+`POST /api/desktop {action:'verify-device'}` response, when `verified: true`:
+
+| Field | Type | Used for |
+|---|---|---|
+| `device.label` | string ≤ 60 | Device name on the account page (default "Windows PC") |
+| `device.bound_at` | ISO 8601 string | "Linked since" |
+| `device.last_seen_at` | ISO 8601 string | "Last seen" |
+
+Existing fields that are still required unchanged: `token` (login), `user.display_name`, `user.email`, `entitled`, `licenses[].id/plan/expires_at`, `verified` (bind/verify), HTTP 401 for expired sessions.

@@ -6,11 +6,52 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { safeStorage } = require('electron');
 const API = 'https://dev.h1tutility.cc/api/desktop';
+const SITE = 'https://dev.h1tutility.cc';
 const MAX_AGE = 120000;
+const AVATAR_MAX = 512 * 1024;
+// Fallbacks until the desktop API delivers `links.*` (see docs/h1t-account.md).
+const DEFAULT_LINKS = { customer_area: SITE + '/account', licenses: SITE + '/account#licenses', support: SITE + '/account#support' };
+const str = (v, n) => (typeof v === 'string' || typeof v === 'number') ? String(v).slice(0, n) : '';
+const num = (v) => Number.isFinite(v) && v >= 0 && v < 1e6 ? Math.floor(v) : null;
+const date = (v) => (typeof v === 'string' && v.length < 40 && !Number.isNaN(Date.parse(v))) || (Number.isFinite(v) && v > 0) ? v : null;
+// Only our own HTTPS hosts may be opened or fetched from the main process.
+function ownUrl(v) {
+  if (typeof v !== 'string' || v.length > 500) return null;
+  try {
+    const u = new URL(v);
+    if (u.protocol !== 'https:' || u.username || u.password || u.port) return null;
+    return u.hostname === 'h1tutility.cc' || u.hostname.endsWith('.h1tutility.cc') ? u.href : null;
+  } catch { return null; }
+}
+// Image type from the first bytes, not from the server's header.
+function sniffImage(buf) {
+  if (buf.length > 8 && buf[0] === 0x89 && buf.toString('latin1', 1, 4) === 'PNG') return 'image/png';
+  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf.length > 12 && buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
+  if (buf.length > 6 && /^GIF8[79]a$/.test(buf.toString('latin1', 0, 6))) return 'image/gif';
+  return null;
+}
+function cleanProfile(d) {
+  const u = d.user && typeof d.user === 'object' ? d.user : null;
+  const links = {};
+  for (const k of Object.keys(DEFAULT_LINKS)) links[k] = ownUrl(d.links?.[k]) || DEFAULT_LINKS[k];
+  return {
+    user: u ? {
+      display_name: str(u.display_name, 50), email: str(u.email, 200), username: str(u.username, 50),
+      id: str(u.id, 64), created_at: date(u.created_at), avatar_url: ownUrl(u.avatar_url),
+    } : null,
+    licenses: Array.isArray(d.licenses) ? d.licenses.filter((l) => l && typeof l.id === 'string').slice(0, 50).map((l) => ({
+      id: l.id.slice(0, 64), plan: str(l.plan, 60), expires_at: l.expires_at ?? null,
+      status: str(l.status, 30), key_hint: str(l.key_hint, 12),
+      max_devices: num(l.max_devices), devices_used: num(l.devices_used),
+    })) : [],
+    links,
+  };
+}
 
 function createH1tAccount(app,{bypass=false}={}) {
   const file=path.join(app.getPath('userData'),'h1t-session.json');
-  let token=null,consent=false,cache=null,checkedAt=0,rev=0;
+  let token=null,consent=false,cache=null,checkedAt=0,rev=0,avatar={url:null,data:null};
   async function req(method,body) {
     const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),12000);
     try {
@@ -51,10 +92,29 @@ function createH1tAccount(app,{bypass=false}={}) {
     // Only a one-way digest crosses the network, after explicit consent.
     return crypto.createHash('sha256').update('H1T.CC device binding v1\n'+raw.toLowerCase()).digest('hex');
   }
+  // Avatars are fetched here and handed to the renderer as a data URI (CSP: img-src 'self' data:).
+  async function loadAvatar(url){
+    if(!url){avatar={url:null,data:null};return;}
+    if(avatar.url===url)return;
+    avatar={url,data:null};
+    const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
+    try{
+      const sameHost=new URL(url).host===new URL(API).host;
+      const r=await fetch(url,{headers:{Accept:'image/png,image/jpeg,image/webp,image/gif',...(sameHost&&token?{Authorization:'Bearer '+token}:{})},
+        signal:abort.signal,redirect:'error',cache:'no-store'});
+      if(r.status!==200||Number(r.headers.get('content-length')||0)>AVATAR_MAX)return;
+      const buf=Buffer.from(await r.arrayBuffer());
+      const type=buf.length<=AVATAR_MAX&&sniffImage(buf);
+      if(type&&avatar.url===url)avatar.data='data:'+type+';base64,'+buf.toString('base64');
+    }catch{}finally{clearTimeout(timer)}
+  }
   function snapshot(){
-    if(bypass)return {ok:true,authorized:true,signed_in:true,status:'development',demo:true};
+    if(bypass)return {ok:true,authorized:true,signed_in:true,status:'development',demo:true,links:{...DEFAULT_LINKS}};
+    const profile=cache?.profile||{};
+    const user=profile.user?{...profile.user,avatar:avatar.url&&avatar.url===profile.user.avatar_url?avatar.data:null}:profile.user;
     return {ok:true,authorized:cache?.authorized===true,signed_in:!!token,consent,
-      status:cache?.status||(token?'checking':'signed_out'),...(cache?.profile||{})};
+      status:cache?.status||(token?'checking':'signed_out'),checked_at:checkedAt||null,
+      ...profile,...(profile.user!==undefined?{user}:{}),links:profile.links||{...DEFAULT_LINKS}};
   }
   async function refresh(force=false){
     if(bypass)return snapshot();
@@ -66,12 +126,9 @@ function createH1tAccount(app,{bypass=false}={}) {
       if(generation!==rev)return snapshot();
       if(r.code===401){token=null;consent=false;cache=null;checkedAt=0;rev++;await save();return snapshot();}
       if(r.code!==200)throw Error('server_rejected');
-      const profile={
-        user:r.data.user?{display_name:String(r.data.user.display_name||'').slice(0,50),email:String(r.data.user.email||'').slice(0,200)}:null,
-        licenses:Array.isArray(r.data.licenses)?r.data.licenses.filter(l=>typeof l.id==='string').map(l=>({
-          id:l.id,plan:String(l.plan||'').slice(0,60),expires_at:l.expires_at??null
-        })):[]
-      };
+      const profile=cleanProfile(r.data||{});
+      await loadAvatar(profile.user?.avatar_url);
+      if(generation!==rev)return snapshot();
       if(!r.data.entitled||!profile.licenses.length)cache={authorized:false,status:'license_required',profile};
       else if(!consent)cache={authorized:false,status:'device_consent_required',profile};
       else {
@@ -79,7 +136,12 @@ function createH1tAccount(app,{bypass=false}={}) {
         for(const license of profile.licenses){
           const v=await req('POST',{action:'verify-device',license_id:license.id,device_proof:deviceProof});
           if(generation!==rev)return snapshot();
-          if(v.code===200&&v.data.verified===true){verified=true;break;}
+          if(v.code===200&&v.data.verified===true){
+            verified=true;
+            const dev=v.data.device&&typeof v.data.device==='object'?v.data.device:{};
+            profile.device={license_id:license.id,label:str(dev.label,60),bound_at:date(dev.bound_at),last_seen_at:date(dev.last_seen_at)};
+            break;
+          }
         }
         cache={authorized:verified,status:verified?'active':'device_unbound',profile};
       }
@@ -113,10 +175,14 @@ function createH1tAccount(app,{bypass=false}={}) {
   }
   async function logout(){
     if(!bypass&&token)await req('POST',{action:'logout'}).catch(()=>{});
-    token=null;consent=false;cache=null;checkedAt=0;rev++;await save();return snapshot();
+    token=null;consent=false;cache=null;checkedAt=0;rev++;avatar={url:null,data:null};await save();return snapshot();
+  }
+  function link(kind){
+    if(!Object.hasOwn(DEFAULT_LINKS,kind))return null;
+    return cache?.profile?.links?.[kind]||DEFAULT_LINKS[kind];
   }
   function hasAccess(){return bypass||(cache?.authorized===true&&Date.now()-checkedAt<MAX_AGE)}
   async function checkAccess(){return bypass||(await refresh()).authorized===true}
-  return {load,login,bind,refresh,logout,hasAccess,checkAccess};
+  return {load,login,bind,refresh,logout,link,hasAccess,checkAccess};
 }
-module.exports={createH1tAccount};
+module.exports={createH1tAccount,ownUrl,sniffImage,cleanProfile};
