@@ -1456,4 +1456,5 @@ window.ColorPage.bind(bridge);
 window.H1tMods.bind(bridge);
 hitreg.target = store.get('hitregTarget') || '';
 hitregBind(bridge);
+window.addEventListener('h1t:authorized', () => { void load(); });
 load();
