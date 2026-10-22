@@ -129,8 +129,8 @@
   },
   {
     "description": {
+      "de": "Nur Treiberdiagnose: wartet 8 statt standardm\u00e4\u00dfig 2 Sekunden vor GPU-Timeout. Kann H\u00e4nger verl\u00e4ngern und Fehler verdecken. Microsoft r\u00e4t Endnutzern von TDR-\u00c4nderungen ab; kein Leistungsgewinn.",
       "en": "Driver diagnostics only: waits 8 instead of the default 2 seconds before a GPU timeout. Can prolong freezes and mask faults. Microsoft advises end users against TDR changes; no performance gain.",
-      "de": "Nur Treiberdiagnose: wartet 8 statt standardmaessig 2 Sekunden vor GPU-Timeout. Kann Haenger verlaengern und Fehler verdecken. Microsoft raet Endnutzern von TDR-Aenderungen ab; kein Leistungsgewinn.",
       "it": "Solo diagnostica driver: attende 8 secondi invece di 2 prima del timeout GPU. Puo prolungare blocchi e nascondere guasti. Microsoft sconsiglia queste modifiche agli utenti; nessun aumento prestazioni."
     },
     "bulkSafe": false,
@@ -139,8 +139,8 @@
     "category": "performance",
     "requiresAdmin": true,
     "name": {
-      "en": "GPU TDR delay: 8 seconds",
       "de": "GPU-TDR-Wartezeit: 8 Sekunden",
+      "en": "GPU TDR delay: 8 seconds",
       "it": "Attesa TDR GPU: 8 secondi"
     },
     "requiresRestart": true,
@@ -150,8 +150,8 @@
   },
   {
     "description": {
+      "de": "Setzt das vorhandene MMCSS-Profil Games auf High / Priorit\u00e4t 2. Wirkt nur auf Threads, die dieses Profil verwenden. Kann andere Multimedia-Aufgaben beeintr\u00e4chtigen.",
       "en": "Sets the existing MMCSS Games profile to High / priority 2. Only affects threads registered with this profile. May affect other multimedia work.",
-      "de": "Setzt das vorhandene MMCSS-Profil Games auf High / Prioritaet 2. Wirkt nur auf Threads, die dieses Profil verwenden. Kann andere Multimedia-Aufgaben beeintraechtigen.",
       "it": "Imposta il profilo MMCSS Games esistente su High / priorita 2. Agisce solo sui thread registrati con questo profilo. Puo penalizzare altre attivita multimediali."
     },
     "bulkSafe": false,
@@ -160,8 +160,8 @@
     "category": "performance",
     "requiresAdmin": true,
     "name": {
+      "de": "Multimedia-Priorit\u00e4t f\u00fcr Spiele",
       "en": "Games multimedia priority",
-      "de": "Multimedia-Prioritaet fuer Spiele",
       "it": "Priorita multimedia giochi"
     },
     "requiresRestart": true,
@@ -171,8 +171,8 @@
   },
   {
     "description": {
+      "de": "Eigene Low-latency-Variante: SystemResponsiveness 10 statt 20. Nur f\u00fcr MMCSS-Anwendungen; kann Hintergrundarbeit verlangsamen. Kein erfundenes Profil, das Spiele nicht verwenden.",
       "en": "Our low-latency variant: SystemResponsiveness 10 instead of 20. Only affects MMCSS applications and can slow background work. Does not create an unused custom game profile.",
-      "de": "Eigene Low-latency-Variante: SystemResponsiveness 10 statt 20. Nur fuer MMCSS-Anwendungen; kann Hintergrundarbeit verlangsamen. Kein erfundenes Profil, das Spiele nicht verwenden.",
       "it": "Variante a bassa latenza: SystemResponsiveness 10 invece di 20. Solo per app MMCSS; puo rallentare attivita in background. Non crea un profilo inutilizzato dai giochi."
     },
     "bulkSafe": false,
@@ -181,8 +181,8 @@
     "category": "performance",
     "requiresAdmin": true,
     "name": {
-      "en": "MMCSS: 10% background reserve",
       "de": "MMCSS: Hintergrundreserve 10%",
+      "en": "MMCSS: 10% background reserve",
       "it": "MMCSS: riserva background 10%"
     },
     "requiresRestart": true,
@@ -698,8 +698,8 @@
   },
   {
     "description": {
+      "de": "Deaktiviert Starttipps der klassischen Game Bar. Versionsabh\u00e4ngige Komfortoption; Aufzeichnung bleibt separat.",
       "en": "Disables classic Game Bar startup tips. Version-dependent convenience setting; recording is separate.",
-      "de": "Deaktiviert Starttipps der klassischen Game Bar. Versionsabhaengige Komfortoption; Aufzeichnung bleibt separat.",
       "it": "Disattiva suggerimenti iniziali della Game Bar classica. Opzione comodita dipendente dalla versione; registrazione separata."
     },
     "bulkSafe": false,
@@ -708,8 +708,8 @@
     "category": "performance",
     "requiresAdmin": true,
     "name": {
-      "en": "Quiet Game Bar startup",
       "de": "Game-Bar-Starttipps aus",
+      "en": "Quiet Game Bar startup",
       "it": "Disattiva suggerimenti iniziali Game Bar"
     },
     "requiresRestart": true,
@@ -793,7 +793,7 @@
     },
     "description": {
       "en": "Disables Windows game capture including background clips. Can avoid recording overhead when capture was active. Manual Game Bar recording is also disabled. Existing videos are preserved. Restart required; no guaranteed FPS gain.",
-      "de": "Deaktiviert Windows-Spielaufnahmen einschliesslich Hintergrundclips. Kann Aufnahme-Last vermeiden, wenn diese vorher aktiv war. Manuelle Game-Bar-Aufnahmen sind ebenfalls aus. Bestehende Videos bleiben erhalten. Neustart erforderlich; kein garantierter FPS-Gewinn.",
+      "de": "Deaktiviert Windows-Spielaufnahmen einschlie\u00dflich Hintergrundclips. Kann Aufnahme-Last vermeiden, wenn diese vorher aktiv war. Manuelle Game-Bar-Aufnahmen sind ebenfalls aus. Bestehende Videos bleiben erhalten. Neustart erforderlich; kein garantierter FPS-Gewinn.",
       "it": "Disattiva le acquisizioni Windows, incluse le clip in background e le registrazioni manuali di Game Bar. Puo eliminare il carico delle registrazioni prima attive. Conserva i video esistenti. Riavvio necessario; nessun aumento FPS garantito."
     },
     "requiresRestart": true,
@@ -814,7 +814,7 @@
     },
     "description": {
       "en": "Enables Windows Game Mode for recognized games. May help under background load; already enabled on many PCs. Restart required. No guaranteed FPS gain.",
-      "de": "Aktiviert den Windows-Spielmodus fuer erkannte Spiele. Kann unter Hintergrundlast helfen; ist auf vielen PCs bereits aktiv. Neustart erforderlich. Kein garantierter FPS-Gewinn.",
+      "de": "Aktiviert den Windows-Spielmodus f\u00fcr erkannte Spiele. Kann unter Hintergrundlast helfen; ist auf vielen PCs bereits aktiv. Neustart erforderlich. Kein garantierter FPS-Gewinn.",
       "it": "Attiva Modalita gioco per i giochi riconosciuti. Puo aiutare con carichi in background; spesso e gia attiva. Riavvio necessario. Nessun aumento FPS garantito."
     },
     "requiresRestart": true,
@@ -1491,6 +1491,153 @@
       "it": "FiveM sempre con priorit\u00e0 CPU alta"
     },
     "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Die Grafikkarte plant ihre Arbeit selbst statt \u00fcber die CPU. Kann Eingabeverz\u00f6gerung und CPU-Last senken, besonders bei hoher GPU-Auslastung. Braucht eine aktuelle GPU und einen passenden Treiber (NVIDIA ab GTX 10, AMD ab RX 5000). Neustart erforderlich.",
+      "en": "The graphics card schedules its own work instead of the CPU. Can lower input latency and CPU load, especially at high GPU usage. Needs a recent GPU and driver (NVIDIA GTX 10+, AMD RX 5000+). Restart required.",
+      "it": "La scheda grafica pianifica da sola il proprio lavoro invece della CPU. Pu\u00f2 ridurre latenza di input e carico CPU, soprattutto con GPU molto usata. Richiede GPU e driver recenti (NVIDIA GTX 10+, AMD RX 5000+). Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "gaming.gpu.hags",
+    "risk": "medium",
+    "category": "gaming",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Hardware-GPU-Scheduling",
+      "en": "Hardware GPU scheduling",
+      "it": "Pianificazione GPU hardware"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Setzt die Windows-Latenztoleranz f\u00fcr Energiesparzust\u00e4nde auf das Minimum. Ger\u00e4te und GPU wechseln schneller aus Stromsparzust\u00e4nden zur\u00fcck. Wirkung h\u00e4ngt stark von Hardware und Treiber ab, oft kaum messbar; etwas mehr Stromverbrauch. Neustart erforderlich.",
+      "en": "Sets the Windows latency tolerance for power-saving states to the minimum, so devices and GPU leave power-saving states faster. The effect depends heavily on hardware and driver, often barely measurable; slightly more power use. Restart required.",
+      "it": "Imposta al minimo la tolleranza di latenza di Windows per gli stati di risparmio energetico: dispositivi e GPU ne escono pi\u00f9 in fretta. L\u2019effetto dipende molto da hardware e driver, spesso poco misurabile; consumo leggermente maggiore. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "gaming.gpu.latency",
+    "risk": "medium",
+    "category": "gaming",
+    "requiresAdmin": true,
+    "name": {
+      "de": "GPU- / Energie-Latenzschl\u00fcssel",
+      "en": "GPU / power latency keys",
+      "it": "Chiavi latenza GPU / energia"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "L\u00e4sst den Grafiktreiber GPU-Speicher in zusammenh\u00e4ngenden Bl\u00f6cken \u00fcber die IOMMU abbilden. Kleine Optimierung der Speicherzuordnung, wirkt nur auf Systemen mit aktiver IOMMU; bei Grafikproblemen wieder ausschalten. Neustart erforderlich.",
+      "en": "Lets the graphics driver map GPU memory in contiguous blocks through the IOMMU. A small memory-mapping optimization that only affects systems with an active IOMMU; switch off again if graphics problems appear. Restart required.",
+      "it": "Consente al driver grafico di mappare la memoria GPU in blocchi contigui tramite IOMMU. Piccola ottimizzazione che agisce solo con IOMMU attiva; disattivala in caso di problemi grafici. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "gaming.gpu.iommu",
+    "risk": "medium",
+    "category": "gaming",
+    "requiresAdmin": true,
+    "name": {
+      "de": "GPU-Speicherzuordnung zusammenh\u00e4ngend (DpiMapIommuContiguous)",
+      "en": "Contiguous GPU memory mapping (DpiMapIommuContiguous)",
+      "it": "Mappatura memoria GPU contigua (DpiMapIommuContiguous)"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Verkleinert den Eingabepuffer des Windows-Maustreibers von 100 auf 50 Ereignisse. Beliebter Gaming-Tweak; die messbare Wirkung ist gering, bei sehr hohen Abfrageraten (4000\u20138000 Hz) besser ausgeschaltet lassen. Neustart erforderlich.",
+      "en": "Shrinks the Windows mouse driver input queue from 100 to 50 events. A popular gaming tweak; the measurable effect is small, and with very high polling rates (4000\u20138000 Hz) it is better left off. Restart required.",
+      "it": "Riduce la coda di input del driver mouse di Windows da 100 a 50 eventi. Tweak da gioco popolare; l\u2019effetto misurabile \u00e8 piccolo, con polling molto alti (4000\u20138000 Hz) meglio lasciarlo disattivato. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "gaming.mouse.queue",
+    "risk": "low",
+    "category": "gaming",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Maus-Datenpuffer kompakt",
+      "en": "Compact mouse data queue",
+      "it": "Coda dati mouse compatta"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet Multiplane Overlay im Desktop-Fenstermanager ab. Behebt auf manchen GPUs Flackern, Ruckler und schwarze Bildschirme in randlosen Fenstern \u2013 eine von NVIDIA dokumentierte Abhilfe. Neustart erforderlich.",
+      "en": "Turns off multiplane overlay in the Desktop Window Manager. Fixes flicker, stutter and black screens in borderless windows on some GPUs \u2013 a workaround documented by NVIDIA. Restart required.",
+      "it": "Disattiva il multiplane overlay nel Desktop Window Manager. Risolve su alcune GPU sfarfallii, scatti e schermi neri in finestre senza bordi: soluzione documentata da NVIDIA. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "gaming.mpo.off",
+    "risk": "low",
+    "category": "gaming",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Multiplane Overlay (MPO) aus",
+      "en": "Disable multiplane overlay (MPO)",
+      "it": "Disattiva multiplane overlay (MPO)"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet die Speicherintegrit\u00e4t der Kernisolierung ab. Microsoft nennt bis zu 5\u201310 % mehr FPS in manchen Spielen. Senkt den Schutz vor Schadsoftware im Windows-Kern deutlich; manche Anti-Cheats setzen sie voraus. Bei UEFI-Sperre wirkungslos. Neustart erforderlich.",
+      "en": "Turns off core isolation memory integrity. Microsoft cites up to 5\u201310% more FPS in some games. Clearly lowers protection against malware in the Windows kernel; some anti-cheats require it. Has no effect if locked in UEFI. Restart required.",
+      "it": "Disattiva l\u2019integrit\u00e0 della memoria dell\u2019isolamento core. Microsoft indica fino al 5\u201310% di FPS in pi\u00f9 in alcuni giochi. Riduce nettamente la protezione dal malware nel kernel; alcuni anti-cheat la richiedono. Senza effetto se bloccata in UEFI. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "gaming.hvci.off",
+    "risk": "high",
+    "category": "gaming",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Speicherintegrit\u00e4t aus (VBS / Kernisolierung)",
+      "en": "Disable memory integrity (VBS / core isolation)",
+      "it": "Disattiva integrit\u00e0 della memoria (VBS / isolamento core)"
+    },
+    "requiresRestart": true,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "de": "Schaltet Xbox Game Bar und Spielaufnahme per Richtlinie ab: Win+G und der Controller-Knopf \u00f6ffnen kein Overlay mehr \u00fcber Spielen. Neustart erforderlich.",
+      "en": "Turns off Xbox Game Bar and game recording by policy: Win+G and the controller button no longer open an overlay over games. Restart required.",
+      "it": "Disattiva Xbox Game Bar e la registrazione tramite criterio: Win+G e il pulsante del controller non aprono pi\u00f9 l\u2019overlay sopra i giochi. Riavvio necessario."
+    },
+    "bulkSafe": false,
+    "id": "gaming.gamebar.off",
+    "risk": "low",
+    "category": "gaming",
+    "requiresAdmin": true,
+    "name": {
+      "de": "Game-Bar-Overlay aus",
+      "en": "Disable Game Bar overlay",
+      "it": "Disattiva overlay Game Bar"
+    },
+    "requiresRestart": true,
     "reversible": true,
     "available": true,
     "stateError": null

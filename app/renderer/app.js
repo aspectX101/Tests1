@@ -77,7 +77,7 @@ const ICONS = {
 };
 const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.other}</svg>`;
 
-const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'keyboard', 'services', 'visuals', 'hitreg'];
+const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'keyboard', 'services', 'visuals', 'hitreg', 'gaming'];
 const EXTRA_CATS = ['mouse', 'controller', 'power', 'display'];
 
 // ---------- State ----------
@@ -209,9 +209,9 @@ function renderNav() {
   const activeKey = r.page === 'cat' ? (r.parent || r.cat) : r.page;
   const de = state.lang === 'de', it = state.lang === 'it';
   const labels = {
-    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
-    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
-    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
+    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
+    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
+    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
   }[state.lang] || {};
   const item=(key,attrs)=>`<button class="nav-item${activeKey===key?' active':''}" ${attrs} title="${esc(labels[key]||key)}" ${activeKey===key?'aria-current="page"':''}>${icon(key)}<span class="nav-label">${esc(labels[key]||key)}</span></button>`;
   const section=(id,items)=>{
@@ -221,7 +221,7 @@ function renderNav() {
       <div class="nav-items">${items.join('')}</div></div>`;
   };
   const html=[
-    item('home','data-go="home"'),item('performance','data-cat="performance"'),item('profiles','data-go="profiles"'),
+    item('home','data-go="home"'),item('performance','data-cat="performance"'),item('profiles','data-go="profiles"'),item('gaming','data-cat="gaming"'),
     section('fivem',[item('hitreg','data-go="hitreg"'),item('h1tmods','data-go="h1tmods"'),item('mods','data-go="mods"'),item('cleanup','data-go="cleanup"')]),
     section('system',[
       item('network','data-cat="network"'),item('services','data-cat="services"'),
@@ -383,7 +383,8 @@ function tweakRow(tw, locked = false) {
 
 // Kopfkarte einer Kategorie (auch für ChatGPTs Leistungs- und Debloat-Seiten)
 function catHero(c, parent) {
-  const all = tweaksIn(c);
+  // Kuratierte Tabs (Gaming Tweaks) zählen ihre eigene Liste
+  const all = c === 'gaming' ? optTweaks('gaming') : tweaksIn(c);
   const active = all.filter((x) => x.applied);
   const pct = all.length ? Math.round((active.length / all.length) * 100) : 0;
   return `
@@ -401,7 +402,7 @@ function renderCategory(c, parent) {
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
   // Netzwerk, Dienste, Privatsphäre, Oberfläche: Start/Enable All + Revert All und Status-Kästchen wie im Leistungs-Tab
-  if (['network', 'keyboard', 'services', 'privacy', 'visuals'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
+  if (['network', 'keyboard', 'services', 'privacy', 'visuals', 'gaming'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
   const all = tweaksIn(c);
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);
@@ -955,7 +956,7 @@ const NOT_APPLICABLE = new Set(['optional_component_missing', 'legacy_feature_un
 async function call(action, id, extra = {}) {
   try {
     const res = await bridge.call({ action, id, lang: state.lang, ...extra });
-    if (action === 'list' && res?.ok && Array.isArray(res.tweaks)) res.tweaks = res.tweaks.filter((tw) => !HIDDEN_CATS.has(catOf(tw)) && !(tw.available === false && NOT_APPLICABLE.has(tw.stateError)));
+    if (action === 'list' && res?.ok && Array.isArray(res.tweaks)) res.tweaks = res.tweaks.filter((tw) => (!HIDDEN_CATS.has(catOf(tw)) || GAMING_IDS.includes(tw.id)) && !(tw.available === false && NOT_APPLICABLE.has(tw.stateError)));
     return res;
   } catch (err) {
     return { ok: false, error: err.message };

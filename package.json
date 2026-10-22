@@ -1,7 +1,7 @@
 {
   "name": "tweaker",
   "productName": "H1T.CC Tweak Utility",
-  "version": "0.9.22",
+  "version": "0.9.23",
   "description": "H1T.CC Tweak Utility",
   "author": "Tweaker",
   "private": true,
@@ -17,4 +17,4 @@
     "electron-builder": "25.1.8",
     "resedit": "3.1.0"
   }
-}
+}

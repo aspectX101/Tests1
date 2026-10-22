@@ -270,7 +270,7 @@ window.I18N = {
     tierHardWarn: 'Achtung: Ultimate schaltet Windows-Dienste ab und ändert das Scheduling – Updates, Diagnose und manche Programme können eingeschränkt sein.',
     cats: {
       performance: ['Leistung', 'CPU, Energieplan, Scheduling und Latenz'],
-      gaming: ['Gaming', 'Game Bar, Spielmodus, Aufnahme und FiveM'],
+      gaming: ['Gaming Tweaks', 'GPU, Spielmodus, Overlays und Eingabe – für mehr FPS und weniger Verzögerung'],
       network: ['Netzwerk', 'Ping, DNS und Durchsatz'],
       privacy: ['Privatsphäre', 'Telemetrie, Copilot, Vorschläge und Tracking'],
       debloat: ['Debloat', 'Vorinstallierte Apps entfernen'],
@@ -551,7 +551,7 @@ window.I18N = {
     tierHardWarn: 'Warning: Ultimate disables Windows services and changes scheduling – updates, diagnostics and some programs may be limited.',
     cats: {
       performance: ['Performance', 'CPU, power plan, scheduling and latency'],
-      gaming: ['Gaming', 'Game Bar, Game Mode, capture and FiveM'],
+      gaming: ['Gaming Tweaks', 'GPU, Game Mode, overlays and input – for more FPS and less delay'],
       network: ['Network', 'Ping, DNS and throughput'],
       privacy: ['Privacy', 'Telemetry, Copilot, suggestions and tracking'],
       debloat: ['Debloat', 'Remove preinstalled apps'],
@@ -832,7 +832,7 @@ window.I18N = {
     tierHardWarn: 'Attenzione: Ultimate disattiva servizi di Windows e modifica lo scheduling – aggiornamenti, diagnostica e alcuni programmi possono essere limitati.',
     cats: {
       performance: ['Prestazioni', 'CPU, piano energetico, scheduling e latenza'],
-      gaming: ['Gaming', 'Game Bar, modalità gioco, registrazione e FiveM'],
+      gaming: ['Gaming Tweaks', 'GPU, modalità gioco, overlay e input – più FPS e meno ritardo'],
       network: ['Rete', 'Ping, DNS e velocità'],
       privacy: ['Privacy', 'Telemetria, Copilot, suggerimenti e tracciamento'],
       debloat: ['Debloat', 'Rimuovi app preinstallate'],

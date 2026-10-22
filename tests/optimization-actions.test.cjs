@@ -58,3 +58,11 @@ test('Keyboard tab: Tweak Keyboard applies only keyboard tweaks; Revert All stay
  assert.deepEqual(calls.filter(x=>x.action==='apply').map(x=>x.id),['keyboard.a']);assert.equal(dialogs[0][0],'Tweak Keyboard');
  calls.length=0;await ctx.optimizationRun(true,'keyboard');assert.equal(calls.some(x=>x.action==='backup-restore'),false);assert.match(ctx.optState.result.note,/Tastatur/);
 });
+
+test('Gaming Tweaks tab: curated list across categories, Tweak Gaming applies only those',async()=>{
+ const {ctx,calls,state,dialogs}=setup();
+ state.tweaks.push({id:'gaming.gpu.hags',category:'gaming',name:'HAGS',description:'H',risk:'medium',available:true},{id:'windows.gpu.tdr',category:'performance',name:'TDR',description:'T',risk:'high',available:true},{id:'windows.gamemode.on',category:'gaming',name:'GM',description:'G',risk:'low',available:true,applied:true},{id:'gaming.unlisted',category:'gaming',name:'X',description:'X',risk:'low',available:true});
+ const html=ctx.renderOptimization('gaming');assert.match(html,/id="gmt-start"[^>]*>Tweak Gaming</);assert.doesNotMatch(html,/undefined/);
+ await ctx.optimizationRun(false,'gaming');
+ assert.deepEqual(calls.filter(x=>x.action==='apply').map(x=>x.id),['gaming.gpu.hags','windows.gpu.tdr']);assert.equal(dialogs[0][0],'Tweak Gaming');
+});

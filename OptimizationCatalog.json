@@ -148,7 +148,7 @@
         "it": "Attesa TDR GPU: 8 secondi"
       },
       "description": {
-        "de": "Nur Treiberdiagnose: wartet 8 statt standardmaessig 2 Sekunden vor GPU-Timeout. Kann Haenger verlaengern und Fehler verdecken. Microsoft raet Endnutzern von TDR-Aenderungen ab; kein Leistungsgewinn.",
+        "de": "Nur Treiberdiagnose: wartet 8 statt standardm\u00e4\u00dfig 2 Sekunden vor GPU-Timeout. Kann H\u00e4nger verl\u00e4ngern und Fehler verdecken. Microsoft r\u00e4t Endnutzern von TDR-\u00c4nderungen ab; kein Leistungsgewinn.",
         "en": "Driver diagnostics only: waits 8 instead of the default 2 seconds before a GPU timeout. Can prolong freezes and mask faults. Microsoft advises end users against TDR changes; no performance gain.",
         "it": "Solo diagnostica driver: attende 8 secondi invece di 2 prima del timeout GPU. Puo prolungare blocchi e nascondere guasti. Microsoft sconsiglia queste modifiche agli utenti; nessun aumento prestazioni."
       },
@@ -165,12 +165,12 @@
       "requiresAdmin": true,
       "restart": true,
       "name": {
-        "de": "Multimedia-Prioritaet fuer Spiele",
+        "de": "Multimedia-Priorit\u00e4t f\u00fcr Spiele",
         "en": "Games multimedia priority",
         "it": "Priorita multimedia giochi"
       },
       "description": {
-        "de": "Setzt das vorhandene MMCSS-Profil Games auf High / Prioritaet 2. Wirkt nur auf Threads, die dieses Profil verwenden. Kann andere Multimedia-Aufgaben beeintraechtigen.",
+        "de": "Setzt das vorhandene MMCSS-Profil Games auf High / Priorit\u00e4t 2. Wirkt nur auf Threads, die dieses Profil verwenden. Kann andere Multimedia-Aufgaben beeintr\u00e4chtigen.",
         "en": "Sets the existing MMCSS Games profile to High / priority 2. Only affects threads registered with this profile. May affect other multimedia work.",
         "it": "Imposta il profilo MMCSS Games esistente su High / priorita 2. Agisce solo sui thread registrati con questo profilo. Puo penalizzare altre attivita multimediali."
       },
@@ -193,7 +193,7 @@
         "it": "MMCSS: riserva background 10%"
       },
       "description": {
-        "de": "Eigene Low-latency-Variante: SystemResponsiveness 10 statt 20. Nur fuer MMCSS-Anwendungen; kann Hintergrundarbeit verlangsamen. Kein erfundenes Profil, das Spiele nicht verwenden.",
+        "de": "Eigene Low-latency-Variante: SystemResponsiveness 10 statt 20. Nur f\u00fcr MMCSS-Anwendungen; kann Hintergrundarbeit verlangsamen. Kein erfundenes Profil, das Spiele nicht verwenden.",
         "en": "Our low-latency variant: SystemResponsiveness 10 instead of 20. Only affects MMCSS applications and can slow background work. Does not create an unused custom game profile.",
         "it": "Variante a bassa latenza: SystemResponsiveness 10 invece di 20. Solo per app MMCSS; puo rallentare attivita in background. Non crea un profilo inutilizzato dai giochi."
       },
@@ -764,7 +764,7 @@
         "it": "Disattiva suggerimenti iniziali Game Bar"
       },
       "description": {
-        "de": "Deaktiviert Starttipps der klassischen Game Bar. Versionsabhaengige Komfortoption; Aufzeichnung bleibt separat.",
+        "de": "Deaktiviert Starttipps der klassischen Game Bar. Versionsabh\u00e4ngige Komfortoption; Aufzeichnung bleibt separat.",
         "en": "Disables classic Game Bar startup tips. Version-dependent convenience setting; recording is separate.",
         "it": "Disattiva suggerimenti iniziali della Game Bar classica. Opzione comodita dipendente dalla versione; registrazione separata."
       },
@@ -1354,6 +1354,168 @@
         "ifeoFiveM_b3323",
         "ifeoFiveM_b3407",
         "ifeoFiveM_b3570"
+      ]
+    },
+    {
+      "id": "gaming.gpu.hags",
+      "category": "gaming",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Hardware-GPU-Scheduling",
+        "en": "Hardware GPU scheduling",
+        "it": "Pianificazione GPU hardware"
+      },
+      "description": {
+        "de": "Die Grafikkarte plant ihre Arbeit selbst statt \u00fcber die CPU. Kann Eingabeverz\u00f6gerung und CPU-Last senken, besonders bei hoher GPU-Auslastung. Braucht eine aktuelle GPU und einen passenden Treiber (NVIDIA ab GTX 10, AMD ab RX 5000). Neustart erforderlich.",
+        "en": "The graphics card schedules its own work instead of the CPU. Can lower input latency and CPU load, especially at high GPU usage. Needs a recent GPU and driver (NVIDIA GTX 10+, AMD RX 5000+). Restart required.",
+        "it": "La scheda grafica pianifica da sola il proprio lavoro invece della CPU. Pu\u00f2 ridurre latenza di input e carico CPU, soprattutto con GPU molto usata. Richiede GPU e driver recenti (NVIDIA GTX 10+, AMD RX 5000+). Riavvio necessario."
+      },
+      "fields": [
+        "hags"
+      ]
+    },
+    {
+      "id": "gaming.gpu.latency",
+      "category": "gaming",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "GPU- / Energie-Latenzschl\u00fcssel",
+        "en": "GPU / power latency keys",
+        "it": "Chiavi latenza GPU / energia"
+      },
+      "description": {
+        "de": "Setzt die Windows-Latenztoleranz f\u00fcr Energiesparzust\u00e4nde auf das Minimum. Ger\u00e4te und GPU wechseln schneller aus Stromsparzust\u00e4nden zur\u00fcck. Wirkung h\u00e4ngt stark von Hardware und Treiber ab, oft kaum messbar; etwas mehr Stromverbrauch. Neustart erforderlich.",
+        "en": "Sets the Windows latency tolerance for power-saving states to the minimum, so devices and GPU leave power-saving states faster. The effect depends heavily on hardware and driver, often barely measurable; slightly more power use. Restart required.",
+        "it": "Imposta al minimo la tolleranza di latenza di Windows per gli stati di risparmio energetico: dispositivi e GPU ne escono pi\u00f9 in fretta. L\u2019effetto dipende molto da hardware e driver, spesso poco misurabile; consumo leggermente maggiore. Riavvio necessario."
+      },
+      "fields": [
+        "pwrLatExitLatency",
+        "pwrLatExitLatencyCheckEnabled",
+        "pwrLatLatency",
+        "pwrLatLatencyToleranceDefault",
+        "pwrLatLatencyToleranceFSVP",
+        "pwrLatLatencyTolerancePerfOverride",
+        "pwrLatLatencyToleranceScreenOffIR",
+        "pwrLatLatencyToleranceVSyncEnabled",
+        "pwrLatRtlCapabilityCheckLatency"
+      ]
+    },
+    {
+      "id": "gaming.gpu.iommu",
+      "category": "gaming",
+      "scope": "system",
+      "risk": "medium",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "GPU-Speicherzuordnung zusammenh\u00e4ngend (DpiMapIommuContiguous)",
+        "en": "Contiguous GPU memory mapping (DpiMapIommuContiguous)",
+        "it": "Mappatura memoria GPU contigua (DpiMapIommuContiguous)"
+      },
+      "description": {
+        "de": "L\u00e4sst den Grafiktreiber GPU-Speicher in zusammenh\u00e4ngenden Bl\u00f6cken \u00fcber die IOMMU abbilden. Kleine Optimierung der Speicherzuordnung, wirkt nur auf Systemen mit aktiver IOMMU; bei Grafikproblemen wieder ausschalten. Neustart erforderlich.",
+        "en": "Lets the graphics driver map GPU memory in contiguous blocks through the IOMMU. A small memory-mapping optimization that only affects systems with an active IOMMU; switch off again if graphics problems appear. Restart required.",
+        "it": "Consente al driver grafico di mappare la memoria GPU in blocchi contigui tramite IOMMU. Piccola ottimizzazione che agisce solo con IOMMU attiva; disattivala in caso di problemi grafici. Riavvio necessario."
+      },
+      "fields": [
+        "iommuContiguous"
+      ]
+    },
+    {
+      "id": "gaming.mouse.queue",
+      "category": "gaming",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Maus-Datenpuffer kompakt",
+        "en": "Compact mouse data queue",
+        "it": "Coda dati mouse compatta"
+      },
+      "description": {
+        "de": "Verkleinert den Eingabepuffer des Windows-Maustreibers von 100 auf 50 Ereignisse. Beliebter Gaming-Tweak; die messbare Wirkung ist gering, bei sehr hohen Abfrageraten (4000\u20138000 Hz) besser ausgeschaltet lassen. Neustart erforderlich.",
+        "en": "Shrinks the Windows mouse driver input queue from 100 to 50 events. A popular gaming tweak; the measurable effect is small, and with very high polling rates (4000\u20138000 Hz) it is better left off. Restart required.",
+        "it": "Riduce la coda di input del driver mouse di Windows da 100 a 50 eventi. Tweak da gioco popolare; l\u2019effetto misurabile \u00e8 piccolo, con polling molto alti (4000\u20138000 Hz) meglio lasciarlo disattivato. Riavvio necessario."
+      },
+      "fields": [
+        "mouseQueue"
+      ]
+    },
+    {
+      "id": "gaming.mpo.off",
+      "category": "gaming",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Multiplane Overlay (MPO) aus",
+        "en": "Disable multiplane overlay (MPO)",
+        "it": "Disattiva multiplane overlay (MPO)"
+      },
+      "description": {
+        "de": "Schaltet Multiplane Overlay im Desktop-Fenstermanager ab. Behebt auf manchen GPUs Flackern, Ruckler und schwarze Bildschirme in randlosen Fenstern \u2013 eine von NVIDIA dokumentierte Abhilfe. Neustart erforderlich.",
+        "en": "Turns off multiplane overlay in the Desktop Window Manager. Fixes flicker, stutter and black screens in borderless windows on some GPUs \u2013 a workaround documented by NVIDIA. Restart required.",
+        "it": "Disattiva il multiplane overlay nel Desktop Window Manager. Risolve su alcune GPU sfarfallii, scatti e schermi neri in finestre senza bordi: soluzione documentata da NVIDIA. Riavvio necessario."
+      },
+      "fields": [
+        "mpoOff"
+      ]
+    },
+    {
+      "id": "gaming.hvci.off",
+      "category": "gaming",
+      "scope": "system",
+      "risk": "high",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Speicherintegrit\u00e4t aus (VBS / Kernisolierung)",
+        "en": "Disable memory integrity (VBS / core isolation)",
+        "it": "Disattiva integrit\u00e0 della memoria (VBS / isolamento core)"
+      },
+      "description": {
+        "de": "Schaltet die Speicherintegrit\u00e4t der Kernisolierung ab. Microsoft nennt bis zu 5\u201310 % mehr FPS in manchen Spielen. Senkt den Schutz vor Schadsoftware im Windows-Kern deutlich; manche Anti-Cheats setzen sie voraus. Bei UEFI-Sperre wirkungslos. Neustart erforderlich.",
+        "en": "Turns off core isolation memory integrity. Microsoft cites up to 5\u201310% more FPS in some games. Clearly lowers protection against malware in the Windows kernel; some anti-cheats require it. Has no effect if locked in UEFI. Restart required.",
+        "it": "Disattiva l\u2019integrit\u00e0 della memoria dell\u2019isolamento core. Microsoft indica fino al 5\u201310% di FPS in pi\u00f9 in alcuni giochi. Riduce nettamente la protezione dal malware nel kernel; alcuni anti-cheat la richiedono. Senza effetto se bloccata in UEFI. Riavvio necessario."
+      },
+      "fields": [
+        "hvciOff"
+      ]
+    },
+    {
+      "id": "gaming.gamebar.off",
+      "category": "gaming",
+      "scope": "system",
+      "risk": "low",
+      "bulkSafe": false,
+      "requiresAdmin": true,
+      "restart": true,
+      "name": {
+        "de": "Game-Bar-Overlay aus",
+        "en": "Disable Game Bar overlay",
+        "it": "Disattiva overlay Game Bar"
+      },
+      "description": {
+        "de": "Schaltet Xbox Game Bar und Spielaufnahme per Richtlinie ab: Win+G und der Controller-Knopf \u00f6ffnen kein Overlay mehr \u00fcber Spielen. Neustart erforderlich.",
+        "en": "Turns off Xbox Game Bar and game recording by policy: Win+G and the controller button no longer open an overlay over games. Restart required.",
+        "it": "Disattiva Xbox Game Bar e la registrazione tramite criterio: Win+G e il pulsante del controller non aprono pi\u00f9 l\u2019overlay sopra i giochi. Riavvio necessario."
+      },
+      "fields": [
+        "gameBarPolicy"
       ]
     }
   ],
@@ -2391,6 +2553,141 @@
       "target": 3,
       "kind": "DWord",
       "maximum": 6
+    },
+    "hags": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers",
+      "name": "HwSchMode",
+      "target": 2,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "iommuContiguous": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers",
+      "name": "DpiMapIommuContiguous",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "mouseQueue": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Services\\mouclass\\Parameters",
+      "name": "MouseDataQueueSize",
+      "target": 50,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "mpoOff": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SOFTWARE\\Microsoft\\Windows\\Dwm",
+      "name": "OverlayTestMode",
+      "target": 5,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "hvciOff": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\DeviceGuard\\Scenarios\\HypervisorEnforcedCodeIntegrity",
+      "name": "Enabled",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "gameBarPolicy": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR",
+      "name": "AllowGameDVR",
+      "target": 0,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatExitLatency": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "ExitLatency",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatExitLatencyCheckEnabled": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "ExitLatencyCheckEnabled",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatLatency": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "Latency",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatLatencyToleranceDefault": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "LatencyToleranceDefault",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatLatencyToleranceFSVP": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "LatencyToleranceFSVP",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatLatencyTolerancePerfOverride": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "LatencyTolerancePerfOverride",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatLatencyToleranceScreenOffIR": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "LatencyToleranceScreenOffIR",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatLatencyToleranceVSyncEnabled": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "LatencyToleranceVSyncEnabled",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
+    },
+    "pwrLatRtlCapabilityCheckLatency": {
+      "adapter": "registry",
+      "hive": "LocalMachine",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Power",
+      "name": "RtlCapabilityCheckLatency",
+      "target": 1,
+      "kind": "DWord",
+      "maximum": 4294967295
     }
   }
 }

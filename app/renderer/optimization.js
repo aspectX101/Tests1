@@ -6,8 +6,11 @@ const OPT_TEXT = {
   it: { hint:'Usa gli interruttori per attivare o disattivare singole modifiche. Start Optimisations applica tutte quelle disponibili e inattive dopo conferma, incluse quelle rischiose.', select:'Seleziona modifiche sicure', confirm:'Verranno applicate tutte le seguenti impostazioni disponibili. Controlla rischi e descrizioni:', restore:'Verranno ripristinate solo le impostazioni salvate della scheda Ottimizzazione. Le altre sezioni restano invariate.', empty:'Nessun backup di ottimizzazione da ripristinare.', done:'Completato', partial:'Non completato interamente', applied:'Applicato', restored:'Ripristinato', active:'Attivo', failed:'Operazione non riuscita', refresh:'Impossibile aggiornare lo stato attuale.' }
 };
 // Same Start/Revert All batch for Leistung, Netzwerk, Dienste, Privatsphäre und Oberfläche; only label, ids and texts differ.
+// Gaming Tweaks: neue gaming.*-Tweaks plus passende vorhandene (eine gemeinsame Schalter-Logik).
+const GAMING_IDS = ['gaming.gpu.hags', 'windows.gpu.tdr', 'windows.capture.off', 'windows.gamemode.on', 'windows.mmcss.games', 'windows.mmcss.latency',
+  'gaming.gpu.latency', 'gaming.gpu.iommu', 'gaming.mouse.queue', 'windows.legacy.fps', 'windows.gamebar.quiet', 'gaming.mpo.off', 'gaming.hvci.off', 'gaming.gamebar.off'];
 const OPT_TABS = { performance: { start:'Start Optimisations', prefix:'opt' }, network: { start:'Start Network', prefix:'net' },
-  keyboard: { start:'Tweak Keyboard', prefix:'kbd' }, hitreg: { start:'Hitreg Boost', prefix:'hrb' }, services: { start:'Enable All', prefix:'svc' }, privacy: { start:'Enable All', prefix:'prv' }, visuals: { start:'Enable All', prefix:'vis' } };
+  keyboard: { start:'Tweak Keyboard', prefix:'kbd' }, hitreg: { start:'Hitreg Boost', prefix:'hrb' }, gaming: { start:'Tweak Gaming', prefix:'gmt' }, services: { start:'Enable All', prefix:'svc' }, privacy: { start:'Enable All', prefix:'prv' }, visuals: { start:'Enable All', prefix:'vis' } };
 const NET_TEXT = {
   de: { hint:'Du kannst Netzwerk-Tweaks einzeln schalten. Start Network wendet nach Bestätigung alle verfügbaren, noch nicht aktiven Netzwerk-Tweaks an – auch riskante. Jede Änderung wird gesichert und lässt sich mit Revert All exakt zurücksetzen.', restore:'Nur gesicherte Einstellungen aus dem Netzwerk-Tab werden wiederhergestellt. Andere Bereiche bleiben unverändert.', empty:'Keine Netzwerk-Sicherungen zum Wiederherstellen vorhanden.' },
   en: { hint:'Use the switches for individual network tweaks. Start Network applies all available, inactive network tweaks after confirmation, including high-risk ones. Every change is backed up and Revert All restores it exactly.', restore:'Only backed-up settings from the Network tab will be restored. Other sections remain unchanged.', empty:'No network backups available to restore.' },
@@ -23,14 +26,20 @@ const HRB_TEXT = {
   en: { hint:'Hitreg Boost applies all available, inactive hitreg optimizations after confirmation. Each one is switchable; Revert All restores them exactly.', restore:'Only backed-up hitreg optimizations will be restored.', empty:'No hitreg backups available to restore.' },
   it: { hint:'Hitreg Boost applica dopo conferma tutte le ottimizzazioni hitreg disponibili e inattive. Ognuna è attivabile singolarmente; Revert All le ripristina esattamente.', restore:'Verranno ripristinate solo le ottimizzazioni hitreg salvate.', empty:'Nessun backup hitreg da ripristinare.' }
 };
+const GMT_TEXT = {
+  de: { hint:'Tweak Gaming wendet nach Bestätigung alle verfügbaren, noch nicht aktiven Gaming-Tweaks an – auch riskante wie die Speicherintegrität. Jede Änderung wird gesichert; Revert All setzt nur diesen Tab exakt zurück.', restore:'Nur gesicherte Gaming-Tweaks werden wiederhergestellt.', empty:'Keine Gaming-Sicherungen zum Wiederherstellen vorhanden.' },
+  en: { hint:'Tweak Gaming applies all available, inactive gaming tweaks after confirmation – including risky ones such as memory integrity. Every change is backed up; Revert All restores only this tab exactly.', restore:'Only backed-up gaming tweaks will be restored.', empty:'No gaming backups available to restore.' },
+  it: { hint:'Tweak Gaming applica dopo conferma tutti i tweak di gioco disponibili e inattivi, anche quelli rischiosi come l’integrità della memoria. Ogni modifica viene salvata; Revert All ripristina esattamente solo questa scheda.', restore:'Verranno ripristinati solo i tweak di gioco salvati.', empty:'Nessun backup di gioco da ripristinare.' }
+};
 const TAB_TEXT = {
   de: { hint:'Enable All wendet nach Bestätigung alle verfügbaren, noch nicht aktiven Tweaks dieses Tabs an – auch riskante. Jede Änderung wird gesichert; Revert All setzt nur diesen Tab exakt zurück.', restore:'Nur gesicherte Einstellungen aus diesem Tab werden wiederhergestellt. Andere Bereiche bleiben unverändert.', empty:'Keine Sicherungen aus diesem Tab zum Wiederherstellen vorhanden.' },
   en: { hint:'Enable All applies all available, inactive tweaks in this tab after confirmation, including high-risk ones. Every change is backed up; Revert All restores only this tab exactly.', restore:'Only backed-up settings from this tab will be restored. Other sections remain unchanged.', empty:'No backups from this tab available to restore.' },
   it: { hint:'Enable All applica dopo conferma tutte le modifiche disponibili e inattive di questa scheda, anche quelle rischiose. Ogni modifica viene salvata; Revert All ripristina esattamente solo questa scheda.', restore:'Verranno ripristinate solo le impostazioni salvate di questa scheda. Le altre sezioni restano invariate.', empty:'Nessun backup di questa scheda da ripristinare.' }
 };
-const optText = (cat='performance') => ({ ...(OPT_TEXT[state.lang] || OPT_TEXT.en), ...(cat === 'network' ? NET_TEXT[state.lang] || NET_TEXT.en : cat === 'hitreg' ? HRB_TEXT[state.lang] || HRB_TEXT.en : cat === 'keyboard' ? KBD_TEXT[state.lang] || KBD_TEXT.en : cat !== 'performance' ? TAB_TEXT[state.lang] || TAB_TEXT.en : {}) });
+const optText = (cat='performance') => ({ ...(OPT_TEXT[state.lang] || OPT_TEXT.en), ...(cat === 'network' ? NET_TEXT[state.lang] || NET_TEXT.en : cat === 'hitreg' ? HRB_TEXT[state.lang] || HRB_TEXT.en : cat === 'gaming' ? GMT_TEXT[state.lang] || GMT_TEXT.en : cat === 'keyboard' ? KBD_TEXT[state.lang] || KBD_TEXT.en : cat !== 'performance' ? TAB_TEXT[state.lang] || TAB_TEXT.en : {}) });
 // Hitreg Boost zeigt eine kuratierte Liste (eigene hitreg.*-Tweaks plus passende aus anderen Tabs).
-const optTweaks = (cat='performance') => (cat === 'hitreg' && typeof hitregTweaks === 'function' ? hitregTweaks() : tweaksIn(cat));
+const optTweaks = (cat='performance') => (cat === 'hitreg' && typeof hitregTweaks === 'function' ? hitregTweaks()
+  : cat === 'gaming' ? GAMING_IDS.map((id) => state.tweaks.find((tw) => tw.id === id)).filter(Boolean) : tweaksIn(cat));
 const optSelection = (cat='performance') => optTweaks(cat).filter(x => x.available !== false && !x.applied);
 function renderOptimization(cat='performance') {
   const tr=optText(cat), all=optTweaks(cat), tab=OPT_TABS[cat];
