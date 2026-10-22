@@ -402,7 +402,9 @@ function renderCategory(c, parent) {
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
   // Netzwerk, Dienste, Privatsphäre, Oberfläche: Start/Enable All + Revert All und Status-Kästchen wie im Leistungs-Tab
-  if (['network', 'keyboard', 'services', 'privacy', 'visuals', 'gaming'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
+  // Gaming Tweaks: eigenes Layout nach der Vorlage (Karten mit Icon und On/Off-Knopf)
+  if (c === 'gaming') return renderGamingTweaks();
+  if (['network', 'keyboard', 'services', 'privacy', 'visuals'].includes(c)) return catHero(c, parent) + `<div class="opt-v2">${renderOptimization(c)}</div>`;
   const all = tweaksIn(c);
   let list = all;
   if (state.filter === 'on') list = list.filter((x) => x.applied);
@@ -816,7 +818,7 @@ function render() {
     content.classList.add('enter');
     const stagger = (els) => els.forEach((el, i) => el.style.setProperty('--i', Math.min(i, 14)));
     stagger([...content.children]);
-    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers, .h1t-metrics, .mod-grid, .cfg-list, .h1t-mods-grid').forEach((g) => stagger([...g.children]));
+    content.querySelectorAll('.rows, .tiles, .rings, .home-row, .settings, .tgrid, .stats, .quick, .tiers, .h1t-metrics, .mod-grid, .cfg-list, .h1t-mods-grid, .gt-grid').forEach((g) => stagger([...g.children]));
     countUp(content);
     clearTimeout(state.enterTimer);
     state.enterTimer = setTimeout(() => content.classList.remove('enter'), 1600);
