@@ -8,6 +8,11 @@ contextBridge.exposeInMainWorld('tweaker', {
   h1tAccountLogout: () => ipcRenderer.invoke('tweaker:h1t-logout'),
   h1tOpenAccountPortal: () => ipcRenderer.invoke('tweaker:h1t-portal'),
   h1tOpenAccountLink: (kind) => ipcRenderer.invoke('tweaker:h1t-open', String(kind)),
+  h1tDiagnosticsConsent: (on) => ipcRenderer.invoke('tweaker:h1t-diag-consent', on === true),
+  h1tDiagnosticsPreview: () => ipcRenderer.invoke('tweaker:h1t-diag-preview'),
+  h1tDiagnosticsSend: () => ipcRenderer.invoke('tweaker:h1t-diag-send'),
+  h1tDiagnosticsDiscard: () => ipcRenderer.invoke('tweaker:h1t-diag-discard'),
+  h1tDiagnosticsDelete: () => ipcRenderer.invoke('tweaker:h1t-diag-delete'),
   // request: { action, id?, lang, backupId?, confirmPurge? }
   call: (request) => ipcRenderer.invoke('tweaker:call', request),
   mode: () => ipcRenderer.invoke('tweaker:mode'),

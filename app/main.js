@@ -100,6 +100,13 @@ ipcMain.handle('tweaker:h1t-portal', async (e) => {
   try { await shell.openExternal('https://dev.h1tutility.cc/account'); return {ok:true}; }
   catch{return {ok:false,error:'portal_open_failed'};}
 });
+// Voluntary diagnostics: collection, token, device_id and device_proof stay in this process.
+// The renderer can only toggle the opt-in, request a preview, confirm that exact preview, or delete.
+ipcMain.handle('tweaker:h1t-diag-consent', (e, on) => trusted(e) ? h1tAccount.setDiagnosticsConsent(on === true) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-diag-preview', (e) => trusted(e) ? h1tAccount.previewDiagnostics(app.getVersion()) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-diag-send', (e) => trusted(e) ? h1tAccount.sendDiagnostics() : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-diag-discard', (e) => trusted(e) ? h1tAccount.discardDiagnosticsPreview() : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-diag-delete', (e) => trusted(e) ? h1tAccount.deleteDiagnostics() : {ok:false,error:'untrusted_sender'});
 // Customer area / licenses / support: fixed kinds only; URLs come from the account module (own HTTPS hosts only).
 ipcMain.handle('tweaker:h1t-open', async (e, kind) => {
   if(!trusted(e))return {ok:false,error:'untrusted_sender'};

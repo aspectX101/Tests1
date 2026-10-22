@@ -74,3 +74,14 @@ All fields are optional. The app works without them and falls back as noted. Fie
 | `device.last_seen_at` | ISO 8601 string | "Last seen" |
 
 Existing fields that are still required unchanged: `token` (login), `user.display_name`, `user.email`, `entitled`, `licenses[].id/plan/expires_at`, `verified` (bind/verify), HTTP 401 for expired sessions.
+
+## Voluntary device diagnostics (Account → Privacy & Diagnostics)
+Implements the "Desktop ↔ Cloudflare Device Diagnostics Contract" exactly; client side only.
+- **Default off**, own switch ("Share system diagnostics with H1T.CC support"), separate from the license/device consent. Login, license and device verification work the same with it off.
+- **Collection** (`app/h1t-diagnostics.js`, main process): one fixed Windows PowerShell script; every WMI query is limited with `-Property` to model/config columns, so serial numbers are never read. Fields: `app_version`, `windows_version`, `windows_build`, `cpu_model`, `gpu_model`, `ram_gb`, `motherboard_model`, `tpm_available`, `secure_boot_enabled`. Strings have control characters stripped and lengths capped; values Windows does not provide are omitted (booleans too), never guessed.
+- **Preview → confirm**: "Create report" collects and shows every value; only the "Send these values" button sends, and it sends the preview held in the main process (the renderer cannot change it; a preview expires after 10 minutes and is used once).
+- **Upload**: `POST https://dev.h1tutility.cc/api/diagnostics` with the existing bearer session, `{action:'report', consent:true, device_id, device_proof, system}`. `device_id` comes from the `bind-device`/`verify-device` response and is re-verified before each upload; `device_proof` is the same 64-hex pseudonymous proof as the binding. Body ≤ 6000 bytes. Response `{ok:true, retention_days}` is shown as "Last sent" / "Retention".
+- **Delete**: `{action:'delete', device_id}`; on success the local opt-in is switched off as well. Turning the switch off discards any pending preview immediately. Signing out clears the opt-in.
+- Token, `device_id` and `device_proof` never reach the renderer. No background or periodic uploads.
+- Server errors are shown separately: 404/405 → "service not available on the server", 403 → refused (license/device/consent), 400/422 → field validation, 429 → rate limit, 401 → session expired.
+- Tests: `tests/h1t-diagnostics.test.cjs` (allowlist, no serial/MAC/IP/user fields in the script, exact request body, consent/withdraw/delete, 404 handling, persistence) plus a Windows-only test that runs the real collector and checks it contains no user name, MAC or IP.
