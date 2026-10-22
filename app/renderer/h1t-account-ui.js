@@ -56,6 +56,8 @@
   });
   trigger.addEventListener('click',()=>{manual=!manual;render();});
   render();void run(()=>window.tweaker.h1tAccountStatus());
-  setInterval(()=>{if(!busy)void run(()=>window.tweaker.h1tAccountStatus())},120000);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!busy)void run(()=>window.tweaker.h1tAccountStatus())});
+  // Do not erase typed credentials when a periodic check refreshes the dialog.
+  const canRefresh=()=>!busy&&!gate.contains(document.activeElement);
+  setInterval(()=>{if(canRefresh())void run(()=>window.tweaker.h1tAccountStatus())},120000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&canRefresh())void run(()=>window.tweaker.h1tAccountStatus())});
 })();
