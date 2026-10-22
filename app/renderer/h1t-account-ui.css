@@ -1,0 +1,26 @@
+/* H1T.CC account gate. Local-only UI; main process checks privileges. */
+#h1t-license-gate{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:#030504fa;color:#e9eeeb;font:14px 'Segoe UI',system-ui,sans-serif;overflow-y:auto}
+#h1t-license-gate *{box-sizing:border-box}
+#h1t-license-gate .h1t-auth-card{width:min(100%,490px);padding:38px;border:1px solid #4f6958;border-radius:18px;background:linear-gradient(145deg,#19211b,#0a0d0b 80%);box-shadow:0 25px 110px #000d}
+#h1t-license-gate .h1t-auth-logo{font-weight:900;font-size:26px;color:white}
+#h1t-license-gate .h1t-auth-logo span{color:#70b28b}
+#h1t-license-gate .h1t-auth-logo small{display:block;font-size:9px;letter-spacing:.22em;color:#88a594;margin-top:5px}
+#h1t-license-gate .h1t-auth-kicker{margin-top:40px;letter-spacing:.2em;font-size:10px;color:#80a68e}
+#h1t-license-gate h2{font-size:30px;margin:9px 0 15px;color:#fff}
+#h1t-license-gate p{line-height:1.65;color:#aec2b5;overflow-wrap:anywhere}
+#h1t-license-gate .h1t-auth-form{display:grid;gap:18px;margin-top:24px}
+#h1t-license-gate .h1t-auth-form label{display:grid;gap:8px;color:#dbe7df;font-size:12px}
+#h1t-license-gate .h1t-auth-form input:not([type=checkbox]),#h1t-license-gate select{width:100%;background:#101813;border:1px solid #395343;color:#fff;border-radius:7px;height:44px;padding:0 12px}
+#h1t-license-gate .h1t-auth-form input:focus-visible,#h1t-license-gate select:focus-visible{outline:2px solid #74b48a}
+#h1t-license-gate button{background:#31533c;color:#fff;border:1px solid #567e63;border-radius:8px;padding:12px 15px;cursor:pointer;font-weight:700}
+#h1t-license-gate .h1t-auth-form button{background:#e5efe9;color:#132118}
+#h1t-license-gate .h1t-auth-consent{display:flex!important;flex-direction:row;align-items:start;gap:11px;line-height:1.6}
+#h1t-license-gate .h1t-auth-consent input{width:18px;height:18px;flex:none;accent-color:#4a8661}
+#h1t-license-gate .h1t-auth-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+#h1t-license-gate .h1t-auth-error{background:#4c2222;border:1px solid #c16565;color:#ffe0e0;padding:10px;border-radius:8px}
+#h1t-license-gate .h1t-auth-ok{color:#8bd6a8;font-weight:700}
+#h1t-license-gate .h1t-auth-foot{display:block;margin-top:33px;border-top:1px solid #344a3a;padding-top:15px;color:#71897a;font-size:10px}
+#h1t-license-profile{border:1px solid #466b52;background:#152b1d;color:#c2edcc;border-radius:7px;height:32px;padding:0 12px;cursor:pointer;font:700 11px 'Segoe UI',sans-serif}
+#h1t-license-profile:hover{background:#25452f}
+@media(max-width:520px){#h1t-license-gate .h1t-auth-card{padding:24px}}
+@media(prefers-reduced-motion:reduce){#h1t-license-gate *,#h1t-license-profile{animation:none!important;transition:none!important}}
