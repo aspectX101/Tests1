@@ -17,4 +17,17 @@ jobs:
       - run: node --check app/renderer/h1t-account-ui.js
       - run: node --check app/main.js
       - run: node --check app/preload.js
+      - run: node --test tests/h1t-account.test.cjs
       - run: npm test
+      - name: Prepare branding
+        shell: pwsh
+        run: ./build/generate-h1t-icon.ps1
+      - name: Build unsigned portable Windows test EXE
+        run: npm run dist
+      - name: Upload H1T.CC integration test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: H1T-Cloudflare-Integration-Windows-x64
+          path: dist/UNDCC-Tweaker-*.exe
+          if-no-files-found: error
+          retention-days: 7
