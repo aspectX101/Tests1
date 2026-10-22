@@ -30,6 +30,11 @@ function asWindows(fn){
   if(process.platform!=='win32')Object.defineProperty(process,'platform',{value:'win32'});
   return Promise.resolve().then(fn).finally(()=>Object.defineProperty(process,'platform',desc));
 }
+// Moves the clock past the 2-minute license cache for the duration of fn.
+async function withStaleCache(client,fn){
+  const realNow=Date.now;Date.now=()=>realNow()+5*60000;
+  try{return await fn()}finally{Date.now=realNow}
+}
 // Signed-in, licensed, consented and verified account against a fake API that records every request.
 async function verifiedClient({diagStatus=200,diagBody={ok:true,retention_days:30},collect}={}){
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'h1t-diag-test-'));
@@ -233,4 +238,51 @@ test('Windows collector returns real model data without personal identifiers',{s
   }
   assert.ok(Buffer.byteLength(JSON.stringify(s))<1000);
   console.log('collected on Windows:',JSON.stringify(s));
+});
+
+test('parallel license checks share one round trip to the API',async()=>{
+  const {client,calls,done}=await verifiedClient();
+  try{
+    await asWindows(async()=>{
+      await client.previewDiagnostics('1');await client.acceptDiagnostics();
+      const before=calls.length;
+      // Simulate the cache going stale, then several IPC handlers checking at once.
+      const results=await withStaleCache(client,()=>Promise.all([client.checkAccess(),client.checkAccess(),client.checkAccess(),client.refresh()]));
+      assert.equal(JSON.stringify(results.slice(0,3)),JSON.stringify([true,true,true]));
+      const fresh=calls.slice(before);
+      assert.equal(fresh.filter(c=>!c.body).length,1);
+      assert.equal(fresh.filter(c=>c.body?.action==='verify-device').length,1);
+    });
+  }finally{done()}
+});
+
+test('a rate limit or server fault on verify-device is a failed check, not an unlinked PC',async()=>{
+  for(const code of [429,503]){
+    const dir=fs.mkdtempSync(path.join(os.tmpdir(),'h1t-diag-test-'));
+    fs.writeFileSync(path.join(dir,'h1t-session.json'),JSON.stringify({v:1,secret:Buffer.from(TOKEN).toString('base64'),consent:true,diagnostics:{consent:true}}));
+    const old=global.fetch;
+    global.fetch=async(_u,options)=>options.body?json({error:'busy'},code)
+      :json({user:{display_name:'Neo'},entitled:true,licenses:[{id:'l1',plan:'Lifetime',expires_at:null}]});
+    try{
+      const client=createH1tAccount({getPath:()=>dir});await client.load();
+      const s=await asWindows(()=>client.refresh(true));
+      assert.equal(s.status,code===429?'rate_limited':'server_rejected');
+      assert.equal(s.authorized,false);
+    }finally{global.fetch=old;fs.rmSync(dir,{recursive:true,force:true})}
+  }
+});
+
+test('accepting, withdrawing and deleting do not re-run the device check',async()=>{
+  const {client,calls,done}=await verifiedClient();
+  try{
+    await asWindows(async()=>{
+      await client.refresh(true);
+      const verifies=()=>calls.filter(c=>c.body?.action==='verify-device').length;
+      const start=verifies();
+      await client.previewDiagnostics('1');
+      assert.equal((await client.acceptDiagnostics()).status,'active');
+      assert.equal((await client.withdrawDiagnostics()).status,'diagnostics_required');
+      assert.equal(verifies(),start);
+    });
+  }finally{done()}
 });

@@ -135,15 +135,24 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
       ...profile,...(profile.user!==undefined?{user}:{}),links:profile.links||{...DEFAULT_LINKS},
       diagnostics:{...diag,required:true,ready:cache?.verified===true&&!!deviceId,pending:!!pending}};
   }
+  // Concurrent unforced checks (startup report, window, several IPC calls) share one network round trip,
+  // so the server's rate limit on verify-device is not hit by the app itself.
+  let inflight=null;
   async function refresh(force=false){
     if(bypass)return snapshot();
     if(!token)return snapshot();
     if(!force&&cache&&Date.now()-checkedAt<MAX_AGE)return snapshot();
+    if(!force&&inflight)return inflight;
+    const run=check();inflight=run;
+    try{return await run}finally{if(inflight===run)inflight=null}
+  }
+  async function check(){
     const generation=rev;
     try{
       const r=await req('GET');
       if(generation!==rev)return snapshot();
       if(r.code===401){forget();await save();return snapshot();}
+      if(r.code===429)throw Error('rate_limited');
       if(r.code!==200)throw Error('server_rejected');
       const profile=cleanProfile(r.data||{});
       await loadAvatar(profile.user?.avatar_url);
@@ -155,6 +164,9 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
         for(const license of profile.licenses){
           const v=await req('POST',{action:'verify-device',license_id:license.id,device_proof:deviceProof});
           if(generation!==rev)return snapshot();
+          // A rate limit or server fault is not "this PC is unlinked": report it as a failed check instead.
+          if(v.code===429)throw Error('rate_limited');
+          if(v.code>=500)throw Error('server_rejected');
           if(v.code===200&&v.data.verified===true){
             verified=true;deviceId=uuid(v.data.device_id);
             const dev=v.data.device&&typeof v.data.device==='object'?v.data.device:{};
@@ -212,7 +224,7 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
     detail:typeof r.data?.code==='string'&&/^[A-Z0-9_]{2,40}$/.test(r.data.code)?r.data.code:undefined});
   // Uploads need a live, verified binding; re-check it instead of trusting an old snapshot.
   async function verifiedDevice(){
-    const s=await refresh(true);
+    const s=await refresh();
     if(!s.signed_in)return {ok:false,error:'signed_out'};
     if(cache?.verified!==true||!deviceId)return {ok:false,error:cache?.verified?'device_id_missing':'device_unbound'};
     return null;
@@ -246,6 +258,10 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
       await save();return null;
     }catch(e){return {ok:false,error:e.message}}
   }
+  // Acceptance changes only the local unlock; the device check itself is still current.
+  function applyDiag(){
+    if(cache?.verified)cache={...cache,authorized:diag.consent,status:diag.consent?'active':'diagnostics_required'};
+  }
   const freshPreview=()=>pending&&Date.now()-pending.at<=PREVIEW_MAX_AGE?pending:(pending=null);
   // "Accept and send": unlocks the tweaker and sends exactly the shown preview. A server outage does not
   // lock the user out after accepting; the failed upload is reported and retried on the next start.
@@ -256,7 +272,7 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
     const bad=await verifiedDevice();if(bad)return bad;
     diag.consent=true;diag.accepted_at=Date.now();await save();
     const err=await upload(shown.system);pending=null;
-    checkedAt=0;const s=await refresh(true);
+    applyDiag();const s=snapshot();
     return err?{...s,send_error:err.error,send_detail:err.detail}:s;
   }
   async function sendDiagnostics(){
@@ -274,7 +290,7 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
     if(bypass)return {ok:false,error:'development_build'};
     if(!token)return {ok:false,error:'signed_out'};
     diag.consent=false;diag.accepted_at=null;pending=null;await save();
-    checkedAt=0;return refresh(true);
+    applyDiag();return snapshot();
   }
   async function deleteDiagnostics(){
     if(bypass)return {ok:false,error:'development_build'};
@@ -286,7 +302,7 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
       if(r.code!==200||r.data?.ok===false)return diagError(r);
       // Deleting also withdraws the acceptance.
       pending=null;diag={...DIAG_OFF};await save();
-      checkedAt=0;return refresh(true);
+      applyDiag();return snapshot();
     }catch(e){return {ok:false,error:e.message}}
   }
   // On app start: after acceptance, send a current report at most weekly or after an app update.
