@@ -61,3 +61,7 @@ body, .app, .main, .content { background: #050505; }
 
 /* Config badges: one calm style for all cards */
 .tier .tier-badge, .cfg-featured .tier-badge, .tier-hardcore .tier-badge, .tier-aggressive .tier-badge, .tier-safe .tier-badge { background: #ffffff0d !important; color: #d6d6d9 !important; border: 1px solid #ffffff1f !important; box-shadow: none !important; }
+/* Pending-restart pill in the title bar: own look, not the topbar badge style */
+.h1t-topbar-meta .h1t-restart-pill { background: #f2f2f3 !important; color: #0b0b0c !important; border: 0 !important; box-shadow: none !important; }
+.h1t-topbar-meta .h1t-restart-pill span { all: unset; font: 700 11px/1 var(--font, inherit); letter-spacing: .02em; color: inherit; }
+.h1t-topbar-meta .h1t-restart-pill svg { stroke: currentColor; }
