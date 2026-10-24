@@ -103,3 +103,8 @@ body.booting #h1t-license-gate { visibility: hidden; }
   .boot-body, .boot-flare, .boot-flash, .boot-ring, .boot-shine, .boot-dust, .boot-skip { display: none; }
   .boot-logo, .boot-halo, .boot-text small, .boot-text i { opacity: 1; }
 }
+
+/* Halloween season: the canvas animation (halloween-boot.js) replaces the normal boot scene. */
+html.hw-boot .splash.boot > :not(.hw-boot-canvas) { display: none !important; }
+html.hw-boot .splash.boot { background: #000; }
+.hw-boot-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }

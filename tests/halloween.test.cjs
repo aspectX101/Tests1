@@ -47,3 +47,21 @@ test('in season the title-bar button is taken over in the capture phase', () => 
   const { listeners } = boot('2026-10-24T12:00:00');
   assert.ok(listeners.some((l) => l.type === 'click' && l.capture === true));
 });
+
+test('the boot animation is chosen before the first paint with the same season and preference', () => {
+  const head = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/halloween-boot-head.js'), 'utf8');
+  const run = (iso, stored) => {
+    const RealDate = Date;
+    class FakeDate extends RealDate { constructor(...a) { super(...(a.length ? a : [iso])); } }
+    const classes = new Set(), window = { matchMedia: () => ({ matches: false }) };
+    vm.runInNewContext(head, { window, Date: FakeDate, JSON, localStorage: { getItem: () => (stored ? JSON.stringify(stored) : null) },
+      document: { documentElement: { classList: { add: (c) => classes.add(c) } } } });
+    return { boot: classes.has('hw-boot'), ms: window.H1T_BOOT_MS };
+  };
+  assert.equal(JSON.stringify(run('2026-10-24T12:00:00')), JSON.stringify({ boot: true, ms: 6400 }));
+  assert.equal(run('2026-10-24T12:00:00', { year: 2026, on: false }).boot, false);
+  assert.equal(run('2026-12-24T12:00:00').boot, false);
+  const index = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/index.html'), 'utf8');
+  assert.ok(index.indexOf('halloween-boot-head.js') < index.indexOf('<body'), 'head script runs before the splash is painted');
+  assert.ok(fs.existsSync(path.join(__dirname, '..', 'app/renderer/assets/halloween-pumpkin.jpg')));
+});

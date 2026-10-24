@@ -1474,7 +1474,8 @@ bridge.version().then((v) => {
 });
 
 // Start-Animation (boot.css): einmal ganz durchlaufen lassen; Klick überspringt; spätestens nach 7 s weg.
-let SPLASH_MIN = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 4300;
+// Halloween season: halloween-boot-head.js sets a longer boot (the four-scene animation).
+let SPLASH_MIN = window.H1T_BOOT_MS || (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 4300);
 const splashStart = performance.now();
 let splashDone = false;
 function hideSplash() {
@@ -1490,7 +1491,7 @@ function hideSplash() {
     setTimeout(() => el?.remove(), 800);
   }, wait);
 }
-setTimeout(hideSplash, 7000);
+setTimeout(hideSplash, Math.max(7000, SPLASH_MIN + 1500));
 $('#splash')?.addEventListener('pointerdown', () => { SPLASH_MIN = 0; splashDone = false; hideSplash(); });
 
 bridge.mode().then((m) => { state.mode = m; if (state.route.page === 'settings') render(); });
