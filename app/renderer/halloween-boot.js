@@ -4,7 +4,7 @@
 //   2 Sheet      – the sheet is blown off, flutters towards the camera and wipes away to the next scene
 //   3 Pumpkin    – a carved jack-o'-lantern lights up in the dark, the camera rushes into its grin
 //   4 Burst      – a white flash bursts into smoke and dust, a glowing skeleton runs through the fog
-//   5 Logo       – the H1T.CC globe emerges from the smoke, a light sweep runs across it
+//   5 Logo       – the Halloween H1T.CC artwork condenses out of purple fog, its glowing cracks breathe
 // Everything is drawn in code (no video); heavy parts are pre-rendered into sprites once and each frame only
 // composes them. A cheap two-step bloom gives the glow. Active only when <html> has .hw-boot.
 (() => {
@@ -130,16 +130,23 @@
     g.fillStyle = grd; g.fillRect(-PCX, -PCY, PW, PH);
   });
 
-  // ---------- logo ----------
+  // ---------- logo: the Halloween artwork, its edges feathered into the purple fog ----------
   const logoImg = new Image();
   let logo = null, logoSoft = null;
   logoImg.onload = () => {
-    logo = logoImg;
-    logoSoft = sprite(logoImg.width, logoImg.height, (g) => { g.filter = 'blur(14px) brightness(1.6)'; g.drawImage(logoImg, 0, 0); });
+    const w = logoImg.width, h = logoImg.height;
+    logo = sprite(w, h, (g) => {
+      g.drawImage(logoImg, 0, 0);
+      g.globalCompositeOperation = 'destination-in';
+      g.translate(w / 2, h / 2); g.scale(1, h / w);
+      const grd = g.createRadialGradient(0, 0, w * .34, 0, 0, w * .52); grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = grd; g.fillRect(-w, -w, w * 2, w * 2);
+    });
+    logoSoft = sprite(w, h, (g) => { g.filter = 'blur(16px) brightness(1.4)'; g.drawImage(logo, 0, 0); });
     warm([logo, logoSoft]);
   };
-  logoImg.src = 'assets/h1t-logo.png';
-  const shineCanvas = document.createElement('canvas');
+  logoImg.src = 'assets/halloween-logo.webp';
+  const purpleSmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'sepia(1) saturate(3) hue-rotate(225deg) brightness(.9)'; g.drawImage(c, 0, 0); }));
 
   // ---------- particles (state-free: position is a function of time) ----------
   const motes = Array.from({ length: 90 }, () => ({ x: rnd() * W, y: rnd() * H, v: 6 + rnd() * 16, d: (rnd() - .5) * 20, s: .2 + rnd() * .5, p: rnd() * TAU }));
@@ -372,29 +379,26 @@
   // ---------- scene 5: logo ----------
   function drawLogo(t) {
     if (!logo) return;
-    const a = ss(T_LOGO, T_LOGO + .7, t); if (a <= 0) return;
-    const sharp = ss(T_LOGO + .35, T_LOGO + 1.1, t), sc = 1.1 - .1 * easeOut(lin(T_LOGO, T_LOGO + 1.6, t));
-    const lw = 470 * sc, lh = lw * logo.height / logo.width, x0 = W / 2 - lw / 2, y0 = 345 - lh / 2;
+    const a = ss(T_LOGO, T_LOGO + .8, t); if (a <= 0) return;
+    const sharp = ss(T_LOGO + .35, T_LOGO + 1.1, t), sc = 1.08 - .08 * easeOut(lin(T_LOGO, T_LOGO + 1.75, t));
+    const lh = 700 * sc, lw = lh * logo.width / logo.height, x0 = W / 2 - lw / 2, y0 = H / 2 - lh / 2;
     ctx.save();
-    let grd = ctx.createRadialGradient(W / 2, 345, 20, W / 2, 345, 420); grd.addColorStop(0, `rgba(255,255,255,${.14 * a})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    const grd = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 700); grd.addColorStop(0, `rgba(120,60,190,${.3 * a})`); grd.addColorStop(1, 'rgba(60,20,110,0)');
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-    grd = ctx.createRadialGradient(W / 2, 560, 10, W / 2, 560, 360); grd.addColorStop(0, `rgba(255,120,30,${.16 * a})`); grd.addColorStop(1, 'rgba(255,90,10,0)');
-    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = a * (1 - sharp * .6); ctx.drawImage(logoSoft, x0 - 10, y0 - 10, lw + 20, lh + 20);
+    // it condenses out of the smoke: a blurred copy first, then the sharp artwork
+    ctx.globalAlpha = a * (1 - sharp * .7); ctx.drawImage(logoSoft, x0 - 12, y0 - 12, lw + 24, lh + 24);
     ctx.globalAlpha = sharp; ctx.drawImage(logo, x0, y0, lw, lh);
+    // the glowing cracks and pumpkins breathe
+    const pulse = ss(T_LOGO + 1, T_LOGO + 1.5, t) * (.12 + .08 * Math.sin(t * 5) + .04 * Math.sin(t * 13));
+    if (pulse > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse; ctx.drawImage(logo, x0, y0, lw, lh); }
     ctx.restore();
-    // a light sweep across the chrome, masked to the logo
-    const sw = lin(T_LOGO + 1.05, T_LOGO + 1.75, t);
-    if (sw > 0 && sw < 1) {
-      const c = shineCanvas, g = c.getContext('2d');
-      if (c.width !== logo.width) { c.width = logo.width; c.height = logo.height; }
-      g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height);
-      const bx = -c.width * .4 + sw * c.width * 1.8, band = g.createLinearGradient(bx - 120, 0, bx + 120, c.height * .3);
-      band.addColorStop(0, 'rgba(255,255,255,0)'); band.addColorStop(.5, 'rgba(255,255,255,.85)'); band.addColorStop(1, 'rgba(255,255,255,0)');
-      g.fillStyle = band; g.fillRect(0, 0, c.width, c.height);
-      g.globalCompositeOperation = 'destination-in'; g.drawImage(logo, 0, 0);
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .75; ctx.drawImage(c, x0, y0, lw, lh); ctx.restore();
+    // purple fog drifting in front along the bottom
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    for (const f of fog) {
+      const s = 320 * f.s, x = ((f.x + t * f.v * 1.5) % (W + 500)) - 250;
+      ctx.globalAlpha = f.a * .5 * a; ctx.drawImage(purpleSmoke[f.k], x - s / 2, f.y + 40 - s / 2 + Math.sin(t + f.p) * 8, s, s * .6);
     }
+    ctx.restore();
   }
   function drawMotes(t, a, img, list, size) {
     if (a <= 0) return;
@@ -472,6 +476,9 @@
     if (t >= T_FLASH) {
       // scene 4–5: grey fog, dust, burst, skeleton, logo
       drawFogBackdrop(t, .55 + .45 * ss(T_FLASH, T_FLASH + 1, t));
+      // the grey fog turns into a purple Halloween night for the logo
+      const night = ss(T_LOGO - .3, T_LOGO + .8, t);
+      if (night > 0) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = night; ctx.fillStyle = 'rgb(150,95,215)'; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.restore(); }
       drawDust(t, (1 - .7 * ss(T_FLASH + .8, T_LOGO, t)) * ss(T_FLASH, T_FLASH + .08, t));
       drawBurst(t);
       drawSkeleton(t);
@@ -499,7 +506,7 @@
   }
 
   resize();
-  warm([...smoke, ...whiteSmoke, ...warmSmoke, ember, mote, vignette, web, pumpkinBody, pumpkinFace, pumpkinSpill]);
+  warm([...smoke, ...whiteSmoke, ...warmSmoke, ...purpleSmoke, ember, mote, vignette, web, pumpkinBody, pumpkinFace, pumpkinSpill]);
   // Render one frame of every scene up front (the screen is still black) so first-use costs never stall a scene.
   for (const t of [1.2, 2.7, 3.05, 3.25, 4.5, 4.75, 5.6]) frame(t);
   window.addEventListener('resize', resize);
