@@ -140,3 +140,44 @@ html body .mod-filter-cats button, html body .mod-sort button { border-radius: 9
 html body .mod-filter-cats button:hover, html body .mod-sort button:hover { color: var(--w) !important; border-color: var(--hair-3) !important; }
 html body .mod-filter-cats button.active, html body .mod-sort button.active { background: var(--w) !important; color: var(--k) !important; border-color: var(--w) !important; }
 html body .mod-filter-cats button.active span { color: var(--k) !important; }
+
+/* ---------------- v1 launch fixes ---------------- */
+/* Title-bar controls must not sit in the window drag region (Electron swallows clicks there). */
+html body .h1t-topbar-meta, html body .h1t-topbar-meta *, html body #h1t-restart-slot, html body .win-controls { -webkit-app-region: no-drag; }
+
+/* Account page, Gaming Tweaks and Configs in the same black/white surface language. */
+html body .acc-hero, html body .acc-card, html body .acc-lic, html body .acc-diag-info > div, html body .acc-diag-preview, html body .acc-empty {
+  background: var(--k-card) !important; border: 1px solid var(--hair) !important; box-shadow: none !important; }
+html body .acc-hero { border-color: var(--hair-2) !important; background: radial-gradient(700px 260px at 85% 0%, rgba(255, 255, 255, .08), transparent 60%), var(--k) !important; }
+html body .acc-hero::after { border-color: var(--hair); box-shadow: none; }
+html body .acc-lic.mine { border-color: var(--hair-3) !important; }
+html body .acc-row { border-color: var(--hair); }
+html body .gt-card { background: var(--k-card) !important; border: 1px solid var(--hair) !important; border-radius: var(--r-lg); }
+html body .gt-card.is-on { border-color: var(--hair-3) !important; }
+html body .gt-icon svg { color: var(--w); }
+html body .gt-toggle { background: var(--k) !important; border: 1px solid var(--hair-2) !important; color: var(--w-2) !important; }
+html body .gt-toggle.on { background: var(--w) !important; border-color: var(--w) !important; color: var(--k) !important; }
+html body .gt-card p { color: var(--w-2); }
+html body .cfg-featured, html body .tiers > *, html body .cfg-group { background: var(--k-card) !important; border-color: var(--hair) !important; }
+html body .cfg-featured { border: 1px solid var(--hair-2) !important; border-radius: var(--r-xl); }
+
+/* ---------------- Settings as a card grid ---------------- */
+.set-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.set-card { display: flex; flex-direction: column; gap: 10px; min-height: 210px; padding: 22px !important; }
+.set-card > svg { width: 42px; height: 42px; color: var(--w); stroke-width: 1.4; margin-bottom: 6px; }
+.set-card h3 { margin: 0; font: 700 16px/1.2 var(--font-ui); color: var(--w); }
+.set-card p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--w-2); flex: 1; overflow-wrap: anywhere; }
+.set-card .set-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.set-card .set-actions .pill { flex: 1; min-width: 0; height: 36px; }
+.set-card .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--w-2); }
+.set-card .set-row b { color: var(--w); font-weight: 600; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-card .mono { font-size: 11px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--hair); color: var(--w-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-card .seg { align-self: flex-start; }
+@media (max-width: 1100px) { .set-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+body.halloween .acc-hero, body.halloween .acc-card, body.halloween .acc-lic, body.halloween .gt-card, body.halloween .cfg-featured, body.halloween .set-card {
+  background: var(--hw-card) !important; border-color: var(--hw-line) !important; }
+body.halloween .gt-card.is-on, body.halloween .acc-lic.mine { border-color: var(--hw-line-2) !important; }
+body.halloween .gt-toggle.on { background: var(--hw-o) !important; border-color: var(--hw-o) !important; color: #140600 !important; box-shadow: 0 0 16px rgba(255, 122, 24, .4); }
+body.halloween .gt-icon svg, body.halloween .set-card > svg { color: var(--hw-o2) !important; }
+body.halloween .acc-hero { background: radial-gradient(700px 260px at 85% 0%, rgba(255, 122, 24, .16), transparent 60%), rgba(6, 3, 4, .85) !important; }
+html body .dashboard-home .home-row.no-media { grid-template-columns: minmax(0, 1fr) !important; }

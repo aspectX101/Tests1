@@ -310,7 +310,7 @@ function renderHome() {
       ${metric('services',stopped,dict.stopped,dict.stoppedSub,'services','warn')}
     </div>
     <section class="h1t-monitor-panel" aria-label="Hardware monitoring">
-      <div class="home-row">
+      <div class="home-row${store.get('spotifyCard', '1') === '1' ? '' : ' no-media'}">
         <div class="card chart-card">
           <div class="chart-head">
             <div><h2>${t()[state.metric]}</h2><p>${t().current} <span data-current>0</span>% · ${t().last60}</p></div>
@@ -327,7 +327,7 @@ function renderHome() {
             </svg>
           </div>
         </div>
-        ${window.DashboardMedia.html(state.lang)}
+        ${store.get('spotifyCard', '1') === '1' ? window.DashboardMedia.html(state.lang) : ''}
       </div>
     </section>
   </div>`;
@@ -767,30 +767,52 @@ function renderResolution() {
   return `<h3 class="section-title">${t().resTitle}</h3><div class="card cache-card res-card">${body}</div>`;
 }
 
+const SET_TEXT = {
+  de: { account: 'H1T.CC Account', accountDesc: 'Lizenz, verknüpfter PC, Profil und Datenschutz.', details: 'Details', support: 'Support', supportDesc: 'Hilfe, Tickets und Customer Area.', open: 'Öffnen',
+    sys: 'Systeminfo', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Halloween-Modus', halloweenDesc: 'Gruseliger Look mit Effekten – vom 15.10. bis 1.11. automatisch an. Auch über den Kürbis oben schaltbar.', halloweenOff: 'Nur in der Halloween-Zeit (15.10.–1.11.) verfügbar.',
+    spotify: 'Spotify', spotifyDesc: 'Zeigt den laufenden Song aus der Spotify-Desktop-App im Dashboard und steuert ihn (Windows-Medienwiedergabe, kein Login nötig).', spotifyShow: 'Im Dashboard anzeigen', spotifyOpen: 'Spotify öffnen',
+    reloadTitle: 'Daten neu laden', on: 'An', off: 'Aus' },
+  en: { account: 'H1T.CC account', accountDesc: 'License, linked PC, profile and privacy.', details: 'Details', support: 'Support', supportDesc: 'Help, tickets and Customer Area.', open: 'Open',
+    sys: 'System info', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Halloween mode', halloweenDesc: 'Spooky look with effects – on automatically from 15 Oct to 1 Nov. Also switchable with the pumpkin at the top.', halloweenOff: 'Only available during Halloween (15 Oct – 1 Nov).',
+    spotify: 'Spotify', spotifyDesc: 'Shows and controls the song playing in the Spotify desktop app on the dashboard (Windows media session, no login needed).', spotifyShow: 'Show on dashboard', spotifyOpen: 'Open Spotify',
+    reloadTitle: 'Reload data', on: 'On', off: 'Off' },
+  it: { account: 'Account H1T.CC', accountDesc: 'Licenza, PC collegato, profilo e privacy.', details: 'Dettagli', support: 'Supporto', supportDesc: 'Aiuto, ticket e Customer Area.', open: 'Apri',
+    sys: 'Info di sistema', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Modalità Halloween', halloweenDesc: 'Look spettrale con effetti – attivo automaticamente dal 15/10 al 1/11. Attivabile anche con la zucca in alto.', halloweenOff: 'Disponibile solo nel periodo di Halloween (15/10 – 1/11).',
+    spotify: 'Spotify', spotifyDesc: 'Mostra e controlla nel dashboard il brano dell’app desktop di Spotify (sessione multimediale di Windows, nessun login).', spotifyShow: 'Mostra nel dashboard', spotifyOpen: 'Apri Spotify',
+    reloadTitle: 'Ricarica dati', on: 'On', off: 'Off' },
+};
+const SET_ICONS = {
+  account: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="6.5" r="2.8"/><path d="M15.5 12.4c3 0 5.2 1.6 6 4.8"/>',
+  support: '<path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="M17 9h3a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v3l-4-3h-4"/>',
+  sys: '<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+  update: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',
+  halloween: '<path d="M12 7.5c-.3-2.2.6-3.8 2.6-4.6"/><path d="M12 7.2c-2.6-1.6-6.7-.6-8.1 2.9-1.4 3.5.3 8.4 3.7 9.6 1.6.6 3.2.2 4.4-.6 1.2.8 2.8 1.2 4.4.6 3.4-1.2 5.1-6.1 3.7-9.6-1.4-3.5-5.5-4.5-8.1-2.9Z"/><path d="m8 12.3 1.4-1.3 1.3 1.3M13.3 12.3l1.3-1.3 1.4 1.3M8.3 15.4c1.2.6 2.3.3 3.7-.4 1.4.7 2.5 1 3.7.4"/>',
+  spotify: '<circle cx="12" cy="12" r="10"/><path d="M7 9.5c3.5-1.2 7.4-.9 10.4.9M7.6 12.6c2.9-.9 6-.6 8.6.8M8.3 15.5c2.3-.6 4.6-.4 6.6.6"/>',
+  lang: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
+  file: '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v5h5"/>',
+  reload: '<path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"/>',
+};
 function renderSettings() {
-  const u = state.update || {};
-  const upBtn = u.status === 'ready'
-    ? `<button class="pill light" id="up-install">${t().upInstall}</button>`
-    : u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-check" ${u.status === 'checking' || u.status === 'downloading' ? 'disabled' : ''}>${t().upCheck}</button>`;
+  const s = SET_TEXT[state.lang] || SET_TEXT.de, u = state.update || {}, info = state.info || {};
+  const ic = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${SET_ICONS[k]}</svg>`;
+  const card = (k, title, desc, body) => `<section class="card set-card">${ic(k)}<h3>${esc(title)}</h3>${desc ? `<p>${desc}</p>` : ''}${body}</section>`;
+  const row = (a, b) => `<div class="set-row"><span>${esc(a)}</span><b title="${esc(b || '')}">${esc(b || '–')}</b></div>`;
+  const upBtn = u.status === 'ready' ? `<button class="pill light" id="up-install">${t().upInstall}</button>`
+    : u.status === 'unsupported' ? '' : `<button class="pill light" id="up-check" ${u.status === 'checking' || u.status === 'downloading' ? 'disabled' : ''}>${t().upCheck}</button>`;
+  const hw = window.H1tHalloween, season = !!hw?.inSeason();
+  const spotifyOn = store.get('spotifyCard', '1') === '1';
   const langBtn = (l, label) => `<button data-lang="${l}" class="${state.lang === l ? 'active' : ''}">${label}</button>`;
-  return `
-    <div class="settings">
-      <div class="card row"><div class="row-body"><div class="row-title">${t().updates} <span class="tag">${esc(t().version(state.version))}</span></div>
-        <div class="row-desc">${esc(updateText())}</div></div>${upBtn}</div>
-      ${u.status === 'unsupported' ? '' : `<div class="card row"><div class="row-body"><div class="row-title">${t().upHelp}</div><div class="row-desc">${t().upHelpDesc}</div></div>
-        <button class="pill dark" id="up-log">${t().upLog}</button><button class="pill dark" id="up-page">${t().upPage}</button></div>`}
-      ${state.exe ? `<div class="card row app-loc"><div class="row-body"><div class="row-title">${t().appLocTitle}</div>
-        <div class="row-desc">${t().appLocDesc}</div><div class="mono app-path" title="${esc(state.exe)}">${esc(state.exe)}</div></div>
-        <div class="app-loc-actions"><button class="pill dark" id="app-show">${t().appShow}</button>
-        <button class="pill dark" id="app-lnk-desktop">${t().appLnkDesktop}</button>
-        <button class="pill dark" id="app-lnk-start">${t().appLnkStart}</button></div></div>` : ''}
-      <div class="card row"><div class="row-body"><div class="row-title">${t().language}</div><div class="row-desc">${t().languageDesc}</div></div>
-        <div class="seg">${langBtn('de', 'Deutsch')}${langBtn('en', 'English')}${langBtn('it', 'Italiano')}</div></div>
-      <div class="card row"><div class="row-body"><div class="row-title">${t().backend}</div><div class="row-desc">${t().backendDesc}</div></div>
-        <b>${esc(t().modes[state.mode] || state.mode || '…')}</b></div>
-      <div class="card row"><div class="row-body"><div class="row-title">${t().reload}</div><div class="row-desc">${t().reloadDesc}</div></div>
-        <button class="pill dark" id="reload">${t().reload}</button></div>
-    </div>`;
+  return `<div class="set-grid">
+    ${card('account', s.account, esc(s.accountDesc), `<div class="set-actions"><button class="pill dark" data-go="account">${esc(s.details)}</button></div>`)}
+    ${card('support', s.support, esc(s.supportDesc), `<div class="set-actions"><button class="pill dark" id="side-help">${esc(s.open)}</button></div>`)}
+    ${card('sys', s.sys, '', `${row(s.cpu, info.cpu)}${row(s.gpu, info.gpu)}${row(s.ram, info.ramGB ? `${info.ramGB} GB` : '')}${row(s.os, info.os)}`)}
+    ${card('update', t().updates, `${esc(t().version(state.version))} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}${u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-log">${t().upLog}</button>`}</div>`)}
+    ${card('halloween', s.halloween, esc(season ? s.halloweenDesc : s.halloweenOff), `<div class="set-row"><span>${esc(hw?.isOn() ? s.on : s.off)}</span><label class="switch"><input type="checkbox" id="set-halloween" ${hw?.isOn() ? 'checked' : ''} ${season ? '' : 'disabled'} aria-label="${esc(s.halloween)}"><span></span></label></div>`)}
+    ${card('spotify', s.spotify, esc(s.spotifyDesc), `<div class="set-row"><span>${esc(s.spotifyShow)}</span><label class="switch"><input type="checkbox" id="set-spotify" ${spotifyOn ? 'checked' : ''} aria-label="${esc(s.spotifyShow)}"><span></span></label></div><div class="set-actions"><button class="pill dark" id="set-spotify-open">${esc(s.spotifyOpen)}</button></div>`)}
+    ${card('lang', t().language, esc(t().languageDesc), `<div class="seg">${langBtn('de', 'Deutsch')}${langBtn('en', 'English')}${langBtn('it', 'Italiano')}</div>`)}
+    ${state.exe ? card('file', t().appLocTitle, esc(t().appLocDesc), `<div class="mono" title="${esc(state.exe)}">${esc(state.exe)}</div><div class="set-actions"><button class="pill dark" id="app-show">${t().appShow}</button><button class="pill dark" id="app-lnk-desktop">${t().appLnkDesktop}</button></div>`) : ''}
+    ${card('reload', s.reloadTitle, `${esc(t().backend)}: <b>${esc(t().modes[state.mode] || state.mode || '…')}</b>`, `<div class="set-actions"><button class="pill dark" id="reload">${t().reload}</button></div>`)}
+  </div>`;
 }
 
 function render() {
@@ -1346,6 +1368,7 @@ document.addEventListener('click', (e) => {
   else if (el.dataset.bkExport) bkExport(el.dataset.bkExport);
   else if (el.id.startsWith('sm-')) safeAction(el.id.slice(3));
   else if (el.id === 'reload') load();
+  else if (el.id === 'set-spotify-open') bridge.openSpotify?.();
   else if (el.id === 'side-help') (bridge.h1tOpenAccountLink ? bridge.h1tOpenAccountLink('support') : Promise.resolve(bridge.openReleasePage?.()));
   else if (el.id === 'restart-later') { state.restartPending = false; render(); }
 });
@@ -1386,6 +1409,8 @@ document.addEventListener('input', (e) => {
 });
 
 document.addEventListener('change', async (e) => {
+  if (e.target.id === 'set-halloween') { window.H1tHalloween?.set(e.target.checked); render(); return; }
+  if (e.target.id === 'set-spotify') { store.set('spotifyCard', e.target.checked ? '1' : '0'); render(); return; }
   if (e.target.dataset?.modToggle) { modToggle(e.target.dataset.modToggle, e.target.checked); return; }
   const id = e.target.dataset?.toggle;
   if (!id) return;

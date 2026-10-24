@@ -13,9 +13,9 @@
     "category": "performance",
     "requiresAdmin": true,
     "name": {
-      "en": "UND.CC performance preset",
-      "de": "UND.CC Leistungsprofil",
-      "it": "Profilo prestazioni UND.CC"
+      "en": "H1T.CC performance preset",
+      "de": "H1T.CC Leistungsprofil",
+      "it": "Profilo prestazioni H1T.CC"
     },
     "requiresRestart": true,
     "reversible": true,

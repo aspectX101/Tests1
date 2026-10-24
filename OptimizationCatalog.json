@@ -9,9 +9,9 @@
       "requiresAdmin": true,
       "restart": true,
       "name": {
-        "de": "UND.CC Leistungsprofil",
-        "en": "UND.CC performance preset",
-        "it": "Profilo prestazioni UND.CC"
+        "de": "H1T.CC Leistungsprofil",
+        "en": "H1T.CC performance preset",
+        "it": "Profilo prestazioni H1T.CC"
       },
       "description": {
         "de": "Eigenes Profil statt Elux: setzt im aktiven Energieplan die minimale CPU-Leistung auf 100% und Standby auf Nie, nur am Netzteil. Mehr Verbrauch, Hitze und Luefter; kein FPS-Versprechen.",

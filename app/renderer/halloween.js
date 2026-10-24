@@ -159,9 +159,8 @@
   document.addEventListener('click', (e) => {
     if (!inSeason() || !e.target.closest('#h1t-ambient')) return;
     e.stopImmediatePropagation();
-    const next = !on;
-    write({ year: now().getFullYear(), on: next });
-    apply(next);
+    set(!on);
+    if (typeof state !== 'undefined' && state.route?.page === 'settings' && typeof render === 'function') render();
   }, true);
   document.addEventListener('pointermove', (e) => { if (on) onMove(e); }, { passive: true });
   document.addEventListener('pointerdown', (e) => { if (on) onDown(e); }, { passive: true });
@@ -171,6 +170,8 @@
   // Season can begin or end while the app stays open.
   setInterval(() => { if (wanted() !== on && (inSeason() || on)) apply(wanted()); }, 60 * 60000);
 
-  window.H1tHalloween = { inSeason, wanted, apply, isOn: () => on };
+  // Settings switch: same as the title-bar button.
+  function set(v) { if (!inSeason()) return; write({ year: now().getFullYear(), on: !!v }); apply(!!v); }
+  window.H1tHalloween = { inSeason, wanted, apply, set, isOn: () => on };
   apply(wanted());
 })();
