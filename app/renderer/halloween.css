@@ -6,6 +6,17 @@ body.halloween {
   --hx: 50vw; --hy: 50vh;
 }
 .hw-scene, .hw-fx { display: none; }
+/* Transparent seasonal artwork replaces the complete sidebar wordmark. */
+.brand-halloween-logo { display: none; }
+body.halloween .brand { justify-content: center; min-height: 182px; padding: 0 0 18px; flex-shrink: 0; }
+body.halloween .brand > .brand-logo,
+body.halloween .brand > .brand-mark,
+body.halloween .brand > .brand-text { display: none; }
+body.halloween .brand-halloween-logo {
+  display: block; width: 164px; height: 164px; max-width: 100%; object-fit: contain; flex: none;
+}
+body.halloween .collapsed .brand { min-height: 66px; padding: 6px 0 12px; }
+body.halloween .collapsed .brand-halloween-logo { width: 46px; height: 46px; }
 body.halloween .hw-scene { display: block; position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 body.halloween .hw-fx { display: block; position: fixed; inset: 0; z-index: 15; overflow: hidden; pointer-events: none; }
 

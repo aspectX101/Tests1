@@ -42,7 +42,9 @@ jobs:
           $version = $env:RELEASE_VERSION
           $exe = "dist/UNDCC-Tweaker-$version.exe"
           if (-not (Test-Path $exe) -or (Get-Item $exe).Length -eq 0) { throw 'Portable executable missing' }
-          gh release create "v$version" $exe --draft --target $env:GITHUB_SHA --title "H1T.CC Tweak Utility $version" --notes-file "release-notes/v$version.md"
+          $brandedExe = "dist/H1T.CC-Tweaker-$version.exe"
+          Copy-Item -LiteralPath $exe -Destination $brandedExe
+          gh release create "v$version" $exe $brandedExe --draft --target $env:GITHUB_SHA --title "H1T.CC Tweak Utility $version" --notes-file "release-notes/v$version.md"
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
           gh release edit "v$version" --draft=false --latest
           if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }
