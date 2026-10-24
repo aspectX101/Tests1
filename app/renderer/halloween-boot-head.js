@@ -8,6 +8,6 @@
     const p = JSON.parse(localStorage.getItem('h1tHalloween') || 'null');
     if (p && p.year === d.getFullYear() && p.on === false) return;
     document.documentElement.classList.add('hw-boot');
-    window.H1T_BOOT_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1400 : 6400;
+    window.H1T_BOOT_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1400 : 8000;
   } catch { /* normal boot */ }
 })();

@@ -58,7 +58,7 @@ test('the boot animation is chosen before the first paint with the same season a
       document: { documentElement: { classList: { add: (c) => classes.add(c) } } } });
     return { boot: classes.has('hw-boot'), ms: window.H1T_BOOT_MS };
   };
-  assert.equal(JSON.stringify(run('2026-10-24T12:00:00')), JSON.stringify({ boot: true, ms: 6400 }));
+  assert.equal(JSON.stringify(run('2026-10-24T12:00:00')), JSON.stringify({ boot: true, ms: 8000 }));
   assert.equal(run('2026-10-24T12:00:00', { year: 2026, on: false }).boot, false);
   assert.equal(run('2026-12-24T12:00:00').boot, false);
   const index = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/index.html'), 'utf8');

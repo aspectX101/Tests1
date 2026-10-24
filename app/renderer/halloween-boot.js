@@ -1,17 +1,18 @@
 'use strict';
-// H1T.CC Halloween boot animation (6.4 s, canvas, 60 fps). Four scenes after the concept board:
-//   1 Darkness awakes  – drifting smoke, two glowing eyes open and blink
-//   2 The pumpkin rises – the jack-o'-lantern forms around those eyes, throbs, glowing cracks run through it
-//   3 Into the shadows – it bursts (flash, shockwave, sparks, burning chunks) and a bat swarm pours out
-//   4 H1T.CC revealed   – lightning shows the castle under the blood moon, the lettering ignites left to right
-// Everything heavy (smoke, embers, bats, castle scene, lettering, pumpkin layers) is pre-rendered once into sprites;
-// each frame only composes them, so it stays smooth. Active only when <html> has .hw-boot (halloween-boot-head.js).
+// H1T.CC Halloween boot animation (8 s, canvas, 60 fps), a logo reveal in five scenes:
+//   1 Ghost      – a glowing sheet ghost rises into a spotlight between cobwebs, floats and blinks
+//   2 Sheet      – the sheet is blown off, flutters towards the camera and wipes away to the next scene
+//   3 Pumpkin    – a carved jack-o'-lantern lights up in the dark, the camera rushes into its grin
+//   4 Burst      – a white flash bursts into smoke and dust, a glowing skeleton runs through the fog
+//   5 Logo       – the H1T.CC globe emerges from the smoke, a light sweep runs across it
+// Everything is drawn in code (no video); heavy parts are pre-rendered into sprites once and each frame only
+// composes them. A cheap two-step bloom gives the glow. Active only when <html> has .hw-boot.
 (() => {
   if (!document.documentElement.classList.contains('hw-boot')) return;
   const splash = document.getElementById('splash');
   if (!splash) return;
-  const W = 1280, H = 720, DUR = 6.4;
-  const T_BURST = 2.95, T_BOLT = 4.12, T_IGNITE = 4.45;
+  const W = 1280, H = 720, DUR = 8.0;
+  const T_BLOW = 2.2, T_COVER = 3.0, T_PUMPKIN = 3.12, T_RUSH = 4.25, T_FLASH = 4.62, T_SKEL = 5.1, T_LOGO = 6.25;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canvas = document.createElement('canvas');
   canvas.className = 'hw-boot-canvas';
@@ -22,8 +23,9 @@
   // ---------- helpers ----------
   const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
   const ss = (a, b, t) => { const u = clamp((t - a) / (b - a), 0, 1); return u * u * (3 - 2 * u); };
+  const lin = (a, b, t) => clamp((t - a) / (b - a), 0, 1);
   const easeOut = (u) => 1 - Math.pow(1 - clamp(u, 0, 1), 3);
-  const bump = (t, at, w) => Math.exp(-(((t - at) / w) ** 2));
+  const easeIn = (u) => Math.pow(clamp(u, 0, 1), 3);
   const TAU = Math.PI * 2;
   let seed = 20261031;
   const rnd = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return ((seed >>> 0) % 100000) / 100000; };
@@ -33,443 +35,462 @@
   const smoke = [0, 1, 2].map(() => sprite(320, 320, (g, w, h) => {
     g.filter = 'blur(22px)';
     for (let i = 0; i < 16; i++) {
-      const r = 30 + rnd() * 60, x = w / 2 + (rnd() - .5) * 150, y = h / 2 + (rnd() - .5) * 110;
+      const r = 30 + rnd() * 60, x = w / 2 + (rnd() - .5) * 150, y = h / 2 + (rnd() - .5) * 110, c = 70 + rnd() * 40;
       const grd = g.createRadialGradient(x, y, 0, x, y, r);
-      grd.addColorStop(0, `rgba(${84 + rnd() * 30},${62 + rnd() * 18},${54 + rnd() * 14},.5)`); grd.addColorStop(1, 'rgba(40,30,28,0)');
+      grd.addColorStop(0, `rgba(${c},${c},${c},.5)`); grd.addColorStop(1, `rgba(${c},${c},${c},0)`);
       g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
     }
   }));
-  const darkSmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'brightness(.18)'; g.drawImage(c, 0, 0); }));
+  const whiteSmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'brightness(3.4)'; g.drawImage(c, 0, 0); }));
+  const warmSmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'sepia(1) saturate(4) hue-rotate(-12deg) brightness(.9)'; g.drawImage(c, 0, 0); }));
   const ember = sprite(48, 48, (g) => {
     const grd = g.createRadialGradient(24, 24, 0, 24, 24, 24);
     grd.addColorStop(0, 'rgba(255,236,170,1)'); grd.addColorStop(.18, 'rgba(255,150,40,.95)'); grd.addColorStop(.5, 'rgba(255,80,10,.25)'); grd.addColorStop(1, 'rgba(255,60,0,0)');
     g.fillStyle = grd; g.fillRect(0, 0, 48, 48);
   });
-  const BAT_PATH = new Path2D('M32 11c-1.6-3.6-5-5.4-5-5.4s.9 3.4-.7 5.4c-2.8-2.6-8.3-3.6-12-1.8 2.8 1 4.6 2.9 4.6 5.6-3.7-1.8-8.3-.9-12 1.8 5.5 0 8.3 1.8 10.1 4.6 2.8-1.8 6.4-2.7 9.2-1.8 1.8.9 3.7 2.7 5.8 5.4 2.1-2.7 4-4.5 5.8-5.4 2.8-.9 6.4 0 9.2 1.8 1.8-2.8 4.6-4.6 10.1-4.6-3.7-2.7-8.3-3.6-12-1.8 0-2.7 1.8-4.6 4.6-5.6-3.7-1.8-9.2-.8-12 1.8-1.6-2-.7-5.4-.7-5.4S33.6 7.4 32 11Z');
-  // Eight wing positions (a full flap cycle as vertical squash), black with a thin fire rim and glowing eyes.
-  const bats = [1, .9, .72, .5, .34, .5, .72, .9].map((k) => sprite(140, 70, (g) => {
-    g.translate(70, 35); g.scale(2, 2 * k); g.translate(-32, -15);
-    g.shadowColor = 'rgba(255,110,20,.8)'; g.shadowBlur = 5; g.fillStyle = '#040103'; g.fill(BAT_PATH);
-    g.shadowBlur = 0; g.fillStyle = '#ff7a1a'; g.beginPath(); g.arc(30.4, 12.4, .9, 0, TAU); g.arc(33.6, 12.4, .9, 0, TAU); g.fill();
-  }));
+  const mote = sprite(16, 16, (g) => {
+    const grd = g.createRadialGradient(8, 8, 0, 8, 8, 8); grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(.35, 'rgba(255,255,255,.5)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 16, 16);
+  });
   const vignette = sprite(W, H, (g) => {
-    const grd = g.createRadialGradient(W / 2, H / 2, 160, W / 2, H / 2, 820);
-    grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.86)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    const grd = g.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 820);
+    grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.8)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
   });
-  // Scene 4 backdrop: blood-orange moon, castle on the hill, dead trees, wet ground with reflections.
-  const MOON_X = 1060, MOON_Y = 200;
-  const castle = sprite(W, H, (g) => {
-    let grd = g.createLinearGradient(0, 0, 0, H);
-    grd.addColorStop(0, '#0a0303'); grd.addColorStop(.55, '#1a0602'); grd.addColorStop(1, '#050101'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
-    grd = g.createRadialGradient(MOON_X, MOON_Y, 0, MOON_X, MOON_Y, 420); grd.addColorStop(0, 'rgba(255,120,30,.35)'); grd.addColorStop(1, 'rgba(255,90,10,0)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
-    grd = g.createRadialGradient(MOON_X - 20, MOON_Y - 18, 0, MOON_X, MOON_Y, 92); grd.addColorStop(0, '#ffd59a'); grd.addColorStop(.6, '#ff9a3c'); grd.addColorStop(1, '#d4520c'); g.fillStyle = grd;
-    g.shadowColor = 'rgba(255,130,40,.9)'; g.shadowBlur = 60; g.beginPath(); g.arc(MOON_X, MOON_Y, 92, 0, TAU); g.fill(); g.shadowBlur = 0;
-    g.fillStyle = 'rgba(150,60,10,.3)'; for (const [x, y, r] of [[1088, 176, 16], [1036, 236, 11], [1040, 170, 8], [1094, 236, 7]]) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); }
-    // wisps of cloud across the moon
-    g.filter = 'blur(6px)'; g.fillStyle = 'rgba(20,6,4,.75)';
-    for (const [x, y, w, h] of [[990, 232, 190, 10], [1050, 178, 150, 7], [930, 262, 120, 6]]) { g.beginPath(); g.ellipse(x, y, w / 2, h / 2, 0, 0, TAU); g.fill(); }
-    g.filter = 'none';
-    g.fillStyle = '#030101';
-    g.beginPath(); g.moveTo(820, 520); g.bezierCurveTo(930, 455, 1080, 440, 1280, 470); g.lineTo(1280, 720); g.lineTo(820, 720); g.fill();
-    // castle
-    const tower = (x, y, w, h, roof) => { g.fillRect(x, y, w, h); g.beginPath(); g.moveTo(x - 4, y); g.lineTo(x + w / 2, y - roof); g.lineTo(x + w + 4, y); g.fill(); };
-    tower(1010, 330, 34, 170, 70); tower(1060, 360, 26, 140, 50); tower(1110, 300, 40, 200, 90); tower(1170, 350, 30, 150, 60); tower(1215, 380, 22, 120, 44);
-    g.fillRect(1000, 420, 250, 90);
-    g.fillStyle = 'rgba(255,150,50,.85)'; for (const [x, y] of [[1022, 380], [1124, 350], [1180, 400], [1070, 410], [1130, 440]]) g.fillRect(x, y, 5, 9);
-    // dead trees on the left
-    g.strokeStyle = '#030101'; g.lineCap = 'round';
-    const branch = (x, y, len, ang, w, depth) => {
-      if (depth === 0 || w < .6) return;
-      const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
-      g.lineWidth = w; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo((x + x2) / 2 + (rnd() - .5) * 18, (y + y2) / 2, x2, y2); g.stroke();
-      branch(x2, y2, len * (.62 + rnd() * .14), ang - .35 - rnd() * .35, w * .62, depth - 1);
-      branch(x2, y2, len * (.6 + rnd() * .14), ang + .3 + rnd() * .35, w * .6, depth - 1);
-    };
-    branch(110, 640, 150, -Math.PI / 2 - .08, 22, 7); branch(260, 660, 110, -Math.PI / 2 + .12, 14, 6);
-    // ground
-    grd = g.createLinearGradient(0, 600, 0, H); grd.addColorStop(0, '#0d0605'); grd.addColorStop(1, '#020101'); g.fillStyle = grd;
-    g.beginPath(); g.moveTo(0, 610); g.bezierCurveTo(300, 590, 700, 600, 1280, 605); g.lineTo(1280, H); g.lineTo(0, H); g.fill();
-    for (let i = 0; i < 70; i++) { g.fillStyle = `rgba(255,${90 + rnd() * 60},20,${.03 + rnd() * .08})`; g.fillRect(rnd() * W, 615 + rnd() * 100, 30 + rnd() * 160, 1 + rnd() * 1.5); }
+  // A cobweb anchored in the top-left corner; the other corners use mirrored copies.
+  const web = sprite(340, 340, (g) => {
+    const threads = 9, len = Array.from({ length: threads }, () => 250 + rnd() * 80), ang = Array.from({ length: threads }, (_, i) => (i / (threads - 1)) * Math.PI / 2 + (rnd() - .5) * .08);
+    g.strokeStyle = 'rgba(210,210,210,.5)'; g.lineWidth = 1.1;
+    for (let i = 0; i < threads; i++) { g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(ang[i]) * len[i], Math.sin(ang[i]) * len[i]); g.stroke(); }
+    g.lineWidth = .8;
+    for (let k = 1; k <= 10; k++) {
+      const r = k * 24 + rnd() * 6;
+      g.beginPath();
+      for (let i = 0; i < threads; i++) {
+        if (r > len[i]) break;
+        const x = Math.cos(ang[i]) * r, y = Math.sin(ang[i]) * r;
+        if (i === 0) g.moveTo(x, y);
+        else { const m = (ang[i] + ang[i - 1]) / 2, sag = r * .86; g.quadraticCurveTo(Math.cos(m) * sag, Math.sin(m) * sag, x, y); }
+      }
+      g.stroke();
+    }
   });
-  // Lightning bolt that reveals the castle: a jagged main channel with two forks, pre-rendered with its glow.
-  const bolt = sprite(W, H, (g) => {
-    const jag = (x, y, x2, y2, n, spread) => { const pts = [[x, y]]; for (let i = 1; i < n; i++) { const k = i / n; pts.push([x + (x2 - x) * k + (rnd() - .5) * spread, y + (y2 - y) * k + (rnd() - .5) * spread * .3]); } pts.push([x2, y2]); return pts; };
-    const main = jag(905, -10, 1128, 214, 16, 46);
-    const forks = [jag(...main[6], 1010, 150, 7, 26), jag(...main[10], 1205, 190, 6, 22)];
-    const stroke = (pts, w) => { g.lineWidth = w; g.beginPath(); g.moveTo(...pts[0]); for (const p of pts.slice(1)) g.lineTo(...p); g.stroke(); };
-    g.lineJoin = 'round'; g.lineCap = 'round';
-    g.shadowColor = 'rgba(255,170,90,1)'; g.shadowBlur = 28; g.strokeStyle = 'rgba(255,190,120,.55)';
-    stroke(main, 9); for (const f of forks) stroke(f, 5);
-    g.shadowBlur = 8; g.strokeStyle = '#fff8ec'; stroke(main, 2.6); for (const f of forks) stroke(f, 1.4);
-  });
-  // Burning lettering, rendered once at 2x so it stays crisp while it scales.
-  const LOGO_W = 1100, LOGO_H = 300;
-  const logo = sprite(LOGO_W * 2, LOGO_H * 2, (g) => {
-    g.scale(2, 2);
-    g.font = '900 176px Impact, "Arial Black", "Segoe UI Black", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    const x = LOGO_W / 2, y = LOGO_H / 2;
-    g.shadowColor = 'rgba(255,90,10,.95)'; g.shadowBlur = 46; g.fillStyle = '#ff6a00'; g.fillText('H1T.CC', x, y);
-    g.shadowBlur = 0;
-    const grd = g.createLinearGradient(0, y - 80, 0, y + 80);
-    grd.addColorStop(0, '#fff3c4'); grd.addColorStop(.35, '#ffb347'); grd.addColorStop(.7, '#ff6a00'); grd.addColorStop(1, '#a12a00');
-    g.fillStyle = grd; g.fillText('H1T.CC', x, y);
-    g.lineWidth = 2; g.strokeStyle = 'rgba(60,10,0,.85)'; g.strokeText('H1T.CC', x, y);
-    // fine cracks of darker char across the letters
-    g.globalCompositeOperation = 'source-atop'; g.strokeStyle = 'rgba(70,14,0,.4)'; g.lineWidth = 1.3;
-    for (let i = 0; i < 18; i++) { const cx = 230 + rnd() * 640, cy = y - 70 + rnd() * 140; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + (rnd() - .5) * 40, cy + (rnd() - .5) * 30); g.lineTo(cx + (rnd() - .5) * 60, cy + (rnd() - .5) * 50); g.stroke(); }
+
+  // ---------- jack-o'-lantern (pre-rendered at 2x: body, glowing face, light spill) ----------
+  const PK = 2, PW = 640, PH = 600, PCX = 320, PCY = 330; // sprite size and pumpkin centre inside it (1x units)
+  const facePath = (() => {
+    const p = new Path2D();
+    const eye = (s) => { p.moveTo(-108 * s, -42); p.lineTo(-24 * s, -8); p.quadraticCurveTo(-44 * s, 30, -82 * s, 20); p.quadraticCurveTo(-110 * s, 6, -108 * s, -42); p.closePath(); };
+    eye(1); eye(-1);
+    for (const s of [1, -1]) { p.moveTo(-3 * s, 24); p.lineTo(-17 * s, 52); p.lineTo(-2 * s, 48); p.closePath(); }
+    // grin with jagged teeth: top edge zigzags down, bottom edge zigzags up
+    const n = 14, top = [], bot = [];
+    for (let i = 0; i <= n; i++) {
+      const u = i / n, x = -118 + 236 * u, arc = Math.sin(u * Math.PI);
+      top.push([x, 46 + arc * 26 + (i % 2 && i > 1 && i < n - 1 ? 20 : 0)]);
+      bot.push([x, 46 + arc * 84 - (i % 2 === 0 && i > 2 && i < n - 2 ? 22 : 0)]);
+    }
+    top.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y)));
+    for (let i = bot.length - 1; i >= 0; i--) p.lineTo(...bot[i]);
+    p.closePath();
+    return p;
+  })();
+  const pumpkinBody = sprite(PW * PK, PH * PK, (g) => {
+    g.scale(PK, PK); g.translate(PCX, PCY);
+    // stem
+    let grd = g.createLinearGradient(-10, -175, 20, -110); grd.addColorStop(0, '#5a4a26'); grd.addColorStop(1, '#2a1d0c'); g.fillStyle = grd;
+    g.beginPath(); g.moveTo(-14, -108); g.bezierCurveTo(-12, -140, 0, -168, 22, -182); g.bezierCurveTo(26, -178, 24, -170, 18, -166); g.bezierCurveTo(6, -150, 8, -130, 12, -106); g.closePath(); g.fill();
+    // ribs, outer ones first so the centre rib sits on top
+    for (const i of [-3, 3, -2, 2, -1, 1, 0]) {
+      const cx = i * 31, rx = 66 - Math.abs(i) * 3, ry = 122 - Math.abs(i) * 8;
+      grd = g.createRadialGradient(cx - 18, -48, 4, cx, 0, ry * 1.05);
+      grd.addColorStop(0, '#e2741f'); grd.addColorStop(.45, '#b4480f'); grd.addColorStop(1, '#3d1203');
+      g.fillStyle = grd; g.beginPath(); g.ellipse(cx, 0, rx, ry, 0, 0, TAU); g.fill();
+      g.strokeStyle = 'rgba(40,10,0,.55)'; g.lineWidth = 2.5; g.stroke();
+    }
+    // darker top and bottom, then the carved holes (hollow, dark inside)
+    g.globalCompositeOperation = 'source-atop';
+    grd = g.createRadialGradient(0, 8, 70, 0, 8, 200); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.6)');
+    g.fillStyle = grd; g.fillRect(-200, -200, 400, 400);
     g.globalCompositeOperation = 'source-over';
-    // molten drips under the letters
-    for (let i = 0; i < 12; i++) {
-      const dx = 250 + rnd() * 600, dy = y + 62 + rnd() * 10, len = 10 + rnd() * 30;
-      const d = g.createLinearGradient(0, dy, 0, dy + len); d.addColorStop(0, '#ff7a18'); d.addColorStop(1, 'rgba(255,90,10,0)');
-      g.fillStyle = d; g.beginPath(); g.moveTo(dx - 3, dy); g.lineTo(dx + 3, dy); g.lineTo(dx + 1.5, dy + len); g.arc(dx, dy + len, 1.6, 0, Math.PI); g.fill();
-    }
+    g.fillStyle = '#1a0500'; g.fill(facePath);
   });
-  // White-hot letter shapes without any glow, for the burn front while the lettering ignites.
-  const logoCore = sprite(LOGO_W * 2, LOGO_H * 2, (g) => {
-    g.scale(2, 2);
-    g.font = '900 176px Impact, "Arial Black", "Segoe UI Black", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = '#ffd27a'; g.fillText('H1T.CC', LOGO_W / 2, LOGO_H / 2);
+  const pumpkinFace = sprite(PW * PK, PH * PK, (g) => {
+    g.scale(PK, PK); g.translate(PCX, PCY);
+    g.shadowColor = 'rgba(255,140,30,1)'; g.shadowBlur = 34;
+    const grd = g.createRadialGradient(0, 30, 10, 0, 30, 150);
+    grd.addColorStop(0, '#fff6c0'); grd.addColorStop(.45, '#ffc23e'); grd.addColorStop(1, '#ff7410');
+    g.fillStyle = grd; g.fill(facePath);
+    g.shadowBlur = 0; g.strokeStyle = 'rgba(255,170,70,.9)'; g.lineWidth = 3; g.stroke(facePath);
+  });
+  const pumpkinSpill = sprite(PW * PK, PH * PK, (g) => {
+    g.scale(PK, PK); g.translate(PCX, PCY);
+    g.drawImage(pumpkinBody, -PCX, -PCY, PW, PH);
+    g.globalCompositeOperation = 'source-in';
+    const grd = g.createRadialGradient(0, 30, 20, 0, 30, 170); grd.addColorStop(0, 'rgba(255,170,60,.85)'); grd.addColorStop(1, 'rgba(255,110,20,0)');
+    g.fillStyle = grd; g.fillRect(-PCX, -PCY, PW, PH);
   });
 
-  // ---------- pumpkin (1190x865 artwork) ----------
-  // Stage placement: image point (ix, iy) lands at PX + (ix - IMG_CX) * PS, PY + (iy - IMG_CY) * PS.
-  const PX = 640, PY = 400, PS = 0.78, IMG_CX = 1190 * .54, IMG_CY = 865 * .5;
-  const toStage = (ix, iy) => [PX + (ix - IMG_CX) * PS, PY + (iy - IMG_CY) * PS];
-  const EYE_L = toStage(405, 410), EYE_R = toStage(770, 430), MOUTH = toStage(640, 590);
-  const [FX, FY] = toStage(630, 425); // centre of the pumpkin body, where it breaks open
-  // Two layers: the pumpkin body (it fractures) and the smoky halo around it (it is blown away), plus a charred
-  // copy of the body for chunks that burn out while flying.
-  const pumpkinImg = new Image();
-  let body = null, halo = null, charred = null;
-  pumpkinImg.onload = () => {
-    const w = pumpkinImg.width, h = pumpkinImg.height;
-    const feathered = sprite(w, h, (g) => {
-      g.drawImage(pumpkinImg, 0, 0);
-      g.globalCompositeOperation = 'destination-in';
-      const grd = g.createRadialGradient(w * .54, h * .5, h * .22, w * .54, h * .5, h * .62);
-      grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = grd; g.fillRect(0, 0, w, h);
-    });
-    const bodyMask = (g, keep) => {
-      g.globalCompositeOperation = keep ? 'destination-in' : 'destination-out';
-      g.save(); g.translate(630, 405); g.scale(1, 350 / 345);
-      const grd = g.createRadialGradient(0, 0, 265, 0, 0, 345); grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = grd; g.fillRect(-w, -h * 2, w * 2, h * 4); g.restore();
-    };
-    body = sprite(w, h, (g) => { g.drawImage(feathered, 0, 0); bodyMask(g, true); });
-    halo = sprite(w, h, (g) => { g.drawImage(feathered, 0, 0); bodyMask(g, false); });
-    charred = sprite(w, h, (g) => { g.filter = 'brightness(.22) saturate(.5)'; g.drawImage(body, 0, 0); });
-    warm([body, halo, charred]);
+  // ---------- logo ----------
+  const logoImg = new Image();
+  let logo = null, logoSoft = null;
+  logoImg.onload = () => {
+    logo = logoImg;
+    logoSoft = sprite(logoImg.width, logoImg.height, (g) => { g.filter = 'blur(14px) brightness(1.6)'; g.drawImage(logoImg, 0, 0); });
+    warm([logo, logoSoft]);
   };
-  pumpkinImg.src = 'assets/halloween-pumpkin.jpg';
-
-  // Fracture pattern: a jittered polar web around the body centre. Neighbouring pieces share their vertices,
-  // so the pumpkin stays whole until it bursts and the glowing cracks run exactly along the break lines.
-  const RINGS = [0, 52, 112, 176, 238, 300], SECT = 11, ELL = 300 / 340;
-  const vtx = RINGS.map((r, i) => Array.from({ length: SECT }, (_, j) => {
-    if (i === 0) return [FX, FY];
-    const a = (j + (rnd() - .5) * .55) / SECT * TAU + i * .23, rr = r * (1 + (rnd() - .5) * .22) * (i === RINGS.length - 1 ? 1.25 : 1);
-    return [FX + Math.cos(a) * rr, FY + Math.sin(a) * rr * ELL];
-  }));
-  const mid = RINGS.map((r, i) => Array.from({ length: SECT }, (_, j) => {
-    if (i === 0) return null;
-    const [ax, ay] = vtx[i][j], [bx, by] = vtx[i][(j + 1) % SECT], k = .5 + (rnd() - .5) * .3, n = (rnd() - .5) * r * .16;
-    const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
-    return [ax + dx * k - (dy / len) * n, ay + dy * k + (dx / len) * n];
-  }));
-  const pieces = [];
-  for (let i = 1; i < RINGS.length; i++) for (let j = 0; j < SECT; j++) {
-    const j2 = (j + 1) % SECT;
-    const pts = i === 1 ? [vtx[0][0], vtx[1][j], mid[1][j], vtx[1][j2]]
-      : [vtx[i - 1][j], vtx[i][j], mid[i][j], vtx[i][j2], vtx[i - 1][j2], mid[i - 1][j]];
-    const path = new Path2D(); pts.forEach(([x, y], k) => (k ? path.lineTo(x, y) : path.moveTo(x, y))); path.closePath();
-    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
-    const bx = Math.min(...xs) - 2, by = Math.min(...ys) - 2, bw = Math.max(...xs) - bx + 4, bh = Math.max(...ys) - by + 4;
-    const dx = cx - FX, dy = cy - FY, d = Math.hypot(dx, dy) || 1, sp = 340 + rnd() * 520 + (1 - i / RINGS.length) * 260;
-    pieces.push({ path, cx, cy, bx, by, bw, bh, vx: (dx / d) * sp, vy: (dy / d) * sp - 140 - rnd() * 160,
-      spin: (rnd() - .5) * 7, grow: rnd() < .3 ? .9 + rnd() * .8 : rnd() * .25, life: .55 + rnd() * .4 });
-  }
-  // Glowing cracks that spread from the centre before the burst: jagged, wandering lines with short side branches.
-  // Each point carries its distance from the start, so the cracks can be revealed as they grow.
-  const cracks = [];
-  const crack = (x, y, ang, steps, d0) => {
-    const pts = [[x, y, d0]];
-    for (let i = 0; i < steps; i++) {
-      ang += (rnd() - .5) * .7; const len = 12 + rnd() * 12; x += Math.cos(ang) * len; y += Math.sin(ang) * len * ELL;
-      pts.push([x, y, pts[pts.length - 1][2] + len]);
-      if (steps > 5 && i > 1 && rnd() < .28) crack(x, y, ang + (rnd() < .5 ? -1 : 1) * (.6 + rnd() * .5), 2 + (rnd() * 3 | 0), pts[pts.length - 1][2]);
-    }
-    cracks.push(pts);
-  };
-  for (let k = 0; k < 10; k++) crack(FX, FY, (k + rnd() * .6) / 10 * TAU, 8 + (rnd() * 5 | 0), 0);
+  logoImg.src = 'assets/h1t-logo.png';
+  const shineCanvas = document.createElement('canvas');
 
   // ---------- particles (state-free: position is a function of time) ----------
-  const puffs = Array.from({ length: 26 }, () => ({ x: rnd() * W, y: 380 + rnd() * 380, s: .9 + rnd() * 1.6, v: 10 + rnd() * 26, a: .18 + rnd() * .3, k: (rnd() * 3) | 0, p: rnd() * TAU }));
-  const sparks = Array.from({ length: 110 }, () => ({ x: rnd() * W, y: rnd() * H, v: 40 + rnd() * 110, d: (rnd() - .5) * 40, s: .25 + rnd() * .6, p: rnd() * TAU }));
-  const blast = Array.from({ length: 240 }, () => ({ a: rnd() * TAU, v: 500 + rnd() * 1300, life: .45 + rnd() * .75, hot: rnd() }));
-  const blastSmoke = Array.from({ length: 16 }, (_, i) => ({ a: (i / 16) * TAU + rnd() * .3, v: 260 + rnd() * 260, s: 1 + rnd() * 1.2, k: i % 3 }));
-  // Bats pour out of the burst, mostly upwards; some fly at the camera and grow fast. Drawn far to near.
-  const swarm = Array.from({ length: 70 }, () => ({
-    a: -Math.PI / 2 + (rnd() - .5) * 3.6, v: 260 + rnd() * 420, z0: .55 + rnd() * .55,
-    zv: rnd() < .22 ? 2.2 + rnd() * 2 : .3 + rnd() * .8, d: rnd() * .5, f: rnd() * 8, wob: rnd() * TAU,
-  })).sort((p, q) => p.zv - q.zv);
-  const circlers = Array.from({ length: 9 }, () => ({ r: 90 + rnd() * 160, a: rnd() * TAU, v: (.6 + rnd() * .7) * (rnd() < .5 ? -1 : 1), z: .25 + rnd() * .35, y: rnd() * 60 }));
-  const igniteSparks = Array.from({ length: 70 }, () => ({ k: rnd(), y: rnd(), v: 60 + rnd() * 140, d: (rnd() - .5) * 60, s: .3 + rnd() * .5, life: .5 + rnd() * .7 }));
+  const motes = Array.from({ length: 90 }, () => ({ x: rnd() * W, y: rnd() * H, v: 6 + rnd() * 16, d: (rnd() - .5) * 20, s: .2 + rnd() * .5, p: rnd() * TAU }));
+  const embers = Array.from({ length: 70 }, () => ({ x: rnd() * W, y: rnd() * H, v: 30 + rnd() * 70, d: (rnd() - .5) * 30, s: .2 + rnd() * .45, p: rnd() * TAU }));
+  const fog = Array.from({ length: 18 }, () => ({ x: rnd() * W, y: 520 + rnd() * 260, s: 1.2 + rnd() * 1.6, v: 8 + rnd() * 18, a: .25 + rnd() * .35, k: (rnd() * 3) | 0, p: rnd() * TAU }));
+  const clouds = Array.from({ length: 22 }, () => ({ x: rnd() * W, y: rnd() * H, s: 1.4 + rnd() * 2, v: (rnd() - .5) * 30, a: .25 + rnd() * .35, k: (rnd() * 3) | 0, p: rnd() * TAU }));
+  const dust = Array.from({ length: 520 }, () => { const a = rnd() * TAU, r = 60 + Math.pow(rnd(), .6) * 620; return { a, r, v: 20 + rnd() * 90, s: .15 + rnd() * .5, p: rnd() * TAU }; });
+  const burstPuffs = Array.from({ length: 14 }, (_, i) => ({ a: (i / 14) * TAU + rnd() * .4, d: 20 + rnd() * 60, v: 120 + rnd() * 180, s: .9 + rnd() * .9, k: i % 3 }));
+  const streaks = Array.from({ length: 70 }, () => ({ a: rnd() * TAU, r: .2 + rnd() * .5, l: .15 + rnd() * .35, w: 1 + rnd() * 3 }));
 
-  // ---------- drawing ----------
-  function drawSmoke(t, alpha) {
-    if (alpha <= 0) return;
-    ctx.save(); ctx.globalCompositeOperation = 'screen';
-    for (const p of puffs) {
-      const x = ((p.x + t * p.v + Math.sin(t * .7 + p.p) * 30) % (W + 400)) - 200, y = p.y - t * p.v * .35 + Math.sin(t + p.p) * 12;
-      const s = 320 * p.s;
-      ctx.globalAlpha = alpha * p.a * (.7 + .3 * Math.sin(t * .9 + p.p));
-      ctx.drawImage(smoke[p.k], x - s / 2, y - s / 2, s, s);
+  // ---------- scene 1: ghost ----------
+  function ghostPath(R, wave, flare) {
+    const p = new Path2D(), hemY = 270, hw = R * (1.8 + flare);
+    p.moveTo(-R, 0); p.arc(0, 0, R, Math.PI, 0);
+    p.bezierCurveTo(R * 1.12, 70, hw * .9, 150, hw, hemY + Math.sin(wave) * 10);
+    // hem: soft scallops between little hanging points of cloth
+    const n = 7;
+    for (let i = 1; i <= n; i++) {
+      const u = i / n, x = hw - u * hw * 2, y = hemY + Math.sin(wave + u * 7) * (8 + flare * 30) + (i % 2 ? 10 : 0);
+      const cx = hw - (u - .5 / n) * hw * 2, cy = y - 16 + Math.cos(wave * 1.3 + u * 5) * 5;
+      p.quadraticCurveTo(cx, cy, x, y);
     }
-    ctx.restore();
+    p.bezierCurveTo(-hw * .9, 150, -R * 1.12, 70, -R, 0);
+    p.closePath();
+    return p;
   }
-  function drawEmbers(t, alpha) {
-    if (alpha <= 0) return;
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    for (const p of sparks) {
-      let y = (p.y - t * p.v) % (H + 40); if (y < -20) y += H + 40;
-      const x = (p.x + t * p.d + Math.sin(t * 2.2 + p.p) * 14 + W) % W, s = 48 * p.s * (.75 + .25 * Math.sin(t * 9 + p.p));
-      ctx.globalAlpha = alpha * (.45 + .55 * Math.abs(Math.sin(t * 3 + p.p)));
-      ctx.drawImage(ember, x - s / 2, y - s / 2, s, s);
-    }
-    ctx.restore();
-  }
-  function eye(x, y, w, h, open, glow, flip) {
-    if (open <= 0.01) return;
-    ctx.save(); ctx.translate(x, y); ctx.scale(flip ? -1 : 1, 1); ctx.rotate(.2);
-    const hh = h * open;
-    const path = new Path2D(); path.moveTo(-w / 2, -hh * .1); path.quadraticCurveTo(-w * .05, -hh * 1.1, w / 2, -hh * .1); path.quadraticCurveTo(w * .1, hh * .9, -w / 2, -hh * .1);
-    ctx.shadowColor = `rgba(255,110,20,${.9 * glow})`; ctx.shadowBlur = 44 * glow;
-    const grd = ctx.createRadialGradient(w * .05, -hh * .1, 0, 0, 0, w * .6);
-    grd.addColorStop(0, '#fff6c8'); grd.addColorStop(.35, '#ffb02e'); grd.addColorStop(1, '#ff4d00');
-    ctx.fillStyle = grd; ctx.fill(path); ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(40,6,0,.85)'; ctx.beginPath(); ctx.ellipse(w * .08, -hh * .15, w * .045, hh * .4, 0, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
-  // Pumpkin layers in stage coordinates, scaled by z around the body centre.
-  function placeImg(img, z, a) {
+  function drawGhost(t, x, y, s, rot, flare, a) {
     if (a <= 0) return;
-    ctx.globalAlpha = a;
-    ctx.drawImage(img, FX + (PX - IMG_CX * PS - FX) * z, FY + (PY - IMG_CY * PS - FY) * z, img.width * PS * z, img.height * PS * z);
-    ctx.globalAlpha = 1;
-  }
-  function fireGlow(t, a, z, boost) {
-    const f = .55 + .25 * Math.sin(t * 17) + .2 * Math.sin(t * 7.3 + 1) + boost;
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    for (const [[ex, ey], r] of [[EYE_L, 95], [EYE_R, 95], [MOUTH, 150]]) {
-      const x = FX + (ex - FX) * z, y = FY + (ey - FY) * z, rr = r * z;
-      ctx.globalAlpha = a * clamp(f, 0, 1.6) * .5;
-      const grd = ctx.createRadialGradient(x, y, 0, x, y, rr); grd.addColorStop(0, 'rgba(255,175,70,.95)'); grd.addColorStop(1, 'rgba(255,80,0,0)');
-      ctx.fillStyle = grd; ctx.fillRect(x - rr, y - rr, rr * 2, rr * 2);
-    }
-    ctx.restore();
-  }
-  function drawCracks(t, z) {
-    const grow = ss(2.3, 2.92, t); if (grow <= 0) return;
-    const reach = grow * 280;
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    ctx.translate(FX, FY); ctx.scale(z, z); ctx.translate(-FX, -FY);
-    const path = new Path2D();
-    for (const c of cracks) {
-      if (c[0][2] > reach) continue;
-      path.moveTo(c[0][0], c[0][1]);
-      for (let i = 1; i < c.length; i++) {
-        const [px, py, pd] = c[i - 1], [x, y, d] = c[i];
-        if (d <= reach) { path.lineTo(x, y); continue; }
-        const k = (reach - pd) / (d - pd); path.lineTo(px + (x - px) * k, py + (y - py) * k); break;
+    const R = 62, path = ghostPath(R, t * 3.2, flare);
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
+    ctx.shadowColor = 'rgba(255,255,255,.5)'; ctx.shadowBlur = 36;
+    let grd = ctx.createRadialGradient(-R * .35, -R * .45, 4, 0, 60, 300);
+    grd.addColorStop(0, '#ffffff'); grd.addColorStop(.35, '#e2e2e2'); grd.addColorStop(1, '#7a7a7a');
+    ctx.fillStyle = grd; ctx.fill(path); ctx.shadowBlur = 0;
+    ctx.clip(path);
+    // soft folds hanging from the head and shading towards the sides
+    ctx.lineCap = 'round';
+    for (const [fx, sway] of [[-.55, -1], [-.15, .6], [.3, -.4], [.7, 1]]) {
+      for (const [w, al] of [[26, .05], [12, .07], [4, .08]]) {
+        ctx.strokeStyle = `rgba(0,0,0,${al})`; ctx.lineWidth = w;
+        ctx.beginPath(); ctx.moveTo(fx * R * .7, R * .55);
+        ctx.quadraticCurveTo(fx * R * 1.3 + Math.sin(t * 2 + fx * 3) * 8 * sway, 160, fx * R * (2.2 + flare), 282); ctx.stroke();
       }
     }
-    const pulse = .8 + .2 * Math.sin(t * 40);
-    ctx.shadowColor = 'rgba(255,110,10,1)'; ctx.shadowBlur = 14; ctx.strokeStyle = `rgba(255,140,40,${.55 * pulse})`; ctx.lineWidth = 3 + grow * 3; ctx.stroke(path);
-    ctx.shadowBlur = 0; ctx.strokeStyle = `rgba(255,240,200,${.85 * pulse})`; ctx.lineWidth = .9 + grow * .8; ctx.stroke(path);
+    grd = ctx.createLinearGradient(-R * 1.6, 0, R * 1.6, 0);
+    grd.addColorStop(0, 'rgba(0,0,0,.32)'); grd.addColorStop(.3, 'rgba(0,0,0,0)'); grd.addColorStop(.7, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.36)');
+    ctx.fillStyle = grd; ctx.fillRect(-R * 3, -R * 2, R * 6, 360);
+    // eyes, blinking once
+    const blink = t > 1.55 && t < 1.72 ? Math.abs(Math.cos(((t - 1.55) / .17) * Math.PI)) : 1;
+    ctx.fillStyle = '#121212';
+    for (const sx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sx * R * .33, -R * .02, R * .14, R * .21 * blink + .5, 0, 0, TAU); ctx.fill(); }
     ctx.restore();
   }
-  function drawPieces(t) {
-    const u = t - T_BURST; if (!body || u < 0 || u > 1.3) return;
-    const k = (1 - Math.exp(-u * 2.6)) / 2.6; // travelled distance per unit speed, with air drag
-    for (const p of pieces) {
-      const a = clamp(1 - (u - p.life * .55) / (p.life * .45), 0, 1); if (a <= 0) continue;
-      const s = 1 + p.grow * u;
-      ctx.save(); ctx.globalAlpha = a;
-      ctx.translate(p.cx + p.vx * k, p.cy + p.vy * k + 420 * u * u); ctx.rotate(p.spin * u); ctx.scale(s, s); ctx.translate(-p.cx, -p.cy);
-      ctx.clip(p.path);
-      const sx = IMG_CX + (p.bx - PX) / PS, sy = IMG_CY + (p.by - PY) / PS, sw = p.bw / PS, sh = p.bh / PS;
-      ctx.drawImage(body, sx, sy, sw, sh, p.bx, p.by, p.bw, p.bh);
-      // chunks glow hot right after the burst, then cool down and char in flight
-      const heat = clamp(1 - u / .4, 0, 1), char = ss(.3, .8, u) * .9;
-      if (heat > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * heat * .8; ctx.drawImage(body, sx, sy, sw, sh, p.bx, p.by, p.bw, p.bh); }
-      else if (char > 0) { ctx.globalAlpha = a * char; ctx.drawImage(charred, sx, sy, sw, sh, p.bx, p.by, p.bw, p.bh); }
-      ctx.restore();
+
+  // ---------- scene 2: the blown-off sheet as a fluttering cloth mesh ----------
+  const NU = 34, NV = 24, F = 900;
+  // The cloth is rendered at half resolution and scaled up, which smooths the flat-shaded facets.
+  const clothCanvas = document.createElement('canvas'), cc = clothCanvas.getContext('2d');
+  const LIGHT = (() => { const v = [-.35, -.55, -.75], l = Math.hypot(...v); return v.map((c) => c / l); })();
+  const verts = Array.from({ length: (NU + 1) * (NV + 1) }, () => [0, 0, 0, 0, 0]);
+  const quads = Array.from({ length: NU * NV }, (_, q) => ({ i: q % NU, j: (q / NU) | 0, z: 0 }));
+  function drawCloth(t, cx, cy, cz, sw, sh, rx, ry, rz, amp, a) {
+    if (a <= 0) return;
+    const crx = Math.cos(rx), srx = Math.sin(rx), cry = Math.cos(ry), sry = Math.sin(ry), crz = Math.cos(rz), srz = Math.sin(rz);
+    for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
+      const u = i / NU, v = j / NV, vt = verts[j * (NU + 1) + i];
+      let X = (u - .5) * sw, Y = (v - .5) * sh;
+      let Z = (Math.sin(u * 5.2 - t * 10 + v * 1.8) * 40 * (.35 + u * .65) + Math.sin(v * 4.4 + u * 2.4 - t * 7) * 24) * amp;
+      [X, Y] = [X * crz - Y * srz, X * srz + Y * crz];
+      [Y, Z] = [Y * crx - Z * srx, Y * srx + Z * crx];
+      [X, Z] = [X * cry + Z * sry, -X * sry + Z * cry];
+      const wx = cx - W / 2 + X, wy = cy - H / 2 + Y, wz = cz + Z, k = F / Math.max(60, F + wz);
+      vt[0] = W / 2 + wx * k; vt[1] = H / 2 + wy * k; vt[2] = wx; vt[3] = wy; vt[4] = wz;
     }
+    for (const q of quads) { const a0 = verts[q.j * (NU + 1) + q.i], a1 = verts[(q.j + 1) * (NU + 1) + q.i + 1]; q.z = a0[4] + a1[4]; }
+    quads.sort((p, q) => q.z - p.z);
+    if (clothCanvas.width !== canvas.width >> 1 || clothCanvas.height !== canvas.height >> 1) { clothCanvas.width = canvas.width >> 1; clothCanvas.height = canvas.height >> 1; }
+    cc.setTransform(1, 0, 0, 1, 0, 0); cc.clearRect(0, 0, clothCanvas.width, clothCanvas.height);
+    cc.setTransform(fitS / 2, 0, 0, fitS / 2, fitX / 2, fitY / 2); cc.lineJoin = 'round'; cc.lineWidth = 1.4;
+    for (const q of quads) {
+      const p00 = verts[q.j * (NU + 1) + q.i], p10 = verts[q.j * (NU + 1) + q.i + 1], p01 = verts[(q.j + 1) * (NU + 1) + q.i], p11 = verts[(q.j + 1) * (NU + 1) + q.i + 1];
+      const ax = p10[2] - p00[2], ay = p10[3] - p00[3], az = p10[4] - p00[4], bx = p01[2] - p00[2], by = p01[3] - p00[3], bz = p01[4] - p00[4];
+      const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx, nl = Math.hypot(nx, ny, nz) || 1;
+      const lit = Math.abs((nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]) / nl), c = (128 + 127 * Math.pow(lit, .8)) | 0;
+      cc.fillStyle = cc.strokeStyle = `rgb(${c},${c},${c})`;
+      cc.beginPath(); cc.moveTo(p00[0], p00[1]); cc.lineTo(p10[0], p10[1]); cc.lineTo(p11[0], p11[1]); cc.lineTo(p01[0], p01[1]); cc.closePath();
+      cc.fill(); cc.stroke();
+    }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = a;
+    ctx.shadowColor = 'rgba(255,255,255,.35)'; ctx.shadowBlur = 30;
+    ctx.drawImage(clothCanvas, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
   }
-  // Core flash and shockwave ring, drawn behind the flying chunks so the gaps between them glow.
-  function drawFlash(t) {
-    const u = t - T_BURST; if (u < 0 || u > .55) return;
+  // Full-screen sheet used while it covers the camera, then slides off to the right with a wavy edge.
+  function drawSheetCover(t, edge, a) {
+    if (a <= 0) return;
+    ctx.save(); ctx.globalAlpha = a;
+    const rim = new Path2D(), path = new Path2D();
+    for (let y = -20; y <= H + 20; y += 40) { const x = edge + Math.sin(y * .011 + t * 7) * 46 + Math.sin(y * .03 - t * 11) * 12; rim.lineTo(x, y); path.lineTo(x, y); }
+    path.lineTo(W + 400, H + 20); path.lineTo(W + 400, -20); path.closePath();
+    // a soft shadow the sheet throws on the scene it uncovers
+    ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(0,0,0,.18)';
+    for (const w of [110, 70, 36]) { ctx.lineWidth = w; ctx.stroke(rim); }
+    const grd = ctx.createLinearGradient(edge, 0, edge + 900, H);
+    grd.addColorStop(0, '#f2f2f2'); grd.addColorStop(.25, '#bdbdbd'); grd.addColorStop(.5, '#e4e4e4'); grd.addColorStop(.8, '#a9a9a9'); grd.addColorStop(1, '#d8d8d8');
+    ctx.fillStyle = grd; ctx.fill(path);
+    ctx.restore();
+  }
+
+  // ---------- scene 3: pumpkin ----------
+  function drawPumpkinScene(t, rush) {
+    let grd = ctx.createRadialGradient(W / 2, 390, 40, W / 2, 390, 760);
+    grd.addColorStop(0, '#3a1a07'); grd.addColorStop(.5, '#170802'); grd.addColorStop(1, '#060201');
+    ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80);
+    ctx.globalAlpha = .35; ctx.drawImage(web, 0, 0); ctx.save(); ctx.translate(0, H); ctx.scale(1, -1); ctx.drawImage(web, 0, 0); ctx.restore(); ctx.globalAlpha = 1;
+    // lantern: a slow push-in, then the rush into the grin
+    const z = (1 + .14 * ss(T_PUMPKIN, T_RUSH, t)) * (1 + 9 * easeIn(lin(T_RUSH, T_FLASH, t)));
+    const cx = W / 2, cy = 360 + 30 * (z - 1) * .12, w = PW * z, h = PH * z, x0 = cx - PCX * z, y0 = cy - PCY * z - 60 * rush;
+    ctx.drawImage(pumpkinBody, x0, y0, w, h);
+    const light = ss(T_PUMPKIN + .12, T_PUMPKIN + .55, t) * (.82 + .1 * Math.sin(t * 23) + .08 * Math.sin(t * 9.7)) + .3 * rush;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    if (u < .4) {
-      const f = (1 - u / .4) ** 1.5, r = 140 + 420 * easeOut(u / .4);
-      // the pumpkin's own fire, blown up and over-exposed, fills the gaps between the chunks with real flames
-      if (body) { placeImg(body, 1.05 + .25 * easeOut(u / .4), f); placeImg(body, 1.15 + .35 * easeOut(u / .4), f * .6); }
-      const grd = ctx.createRadialGradient(FX, FY, 0, FX, FY, r);
-      grd.addColorStop(0, `rgba(255,244,210,${f})`); grd.addColorStop(.3, `rgba(255,150,40,${.6 * f})`); grd.addColorStop(1, 'rgba(255,60,0,0)');
+    ctx.globalAlpha = clamp(light * .45, 0, 1); ctx.drawImage(pumpkinSpill, x0, y0, w, h);
+    ctx.globalAlpha = clamp(light * .92, 0, 1); ctx.drawImage(pumpkinFace, x0, y0, w, h);
+    grd = ctx.createRadialGradient(cx, cy + 40 * z, 10, cx, cy + 40 * z, 260 * z); grd.addColorStop(0, `rgba(255,130,30,${.1 * light})`); grd.addColorStop(1, 'rgba(255,90,10,0)');
+    ctx.globalAlpha = 1; ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    // warm fog drifting along the ground
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    for (const f of fog) {
+      const s = 320 * f.s, x = ((f.x + t * f.v) % (W + 500)) - 250;
+      ctx.globalAlpha = f.a * .45 * (1 - rush); ctx.drawImage(warmSmoke[f.k], x - s / 2, f.y - s / 2 + Math.sin(t + f.p) * 8, s, s * .6);
+    }
+    ctx.restore();
+  }
+  function drawRush(t) {
+    const u = lin(T_RUSH + .08, T_FLASH, t); if (u <= 0) return;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for (const s of streaks) {
+      const r0 = (s.r + u * 1.4) * 700, r1 = r0 + s.l * 700 * (.4 + u);
+      ctx.globalAlpha = u * .7; ctx.strokeStyle = '#ffc070'; ctx.lineWidth = s.w * (1 + u * 2);
+      ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(s.a) * r0, H / 2 + Math.sin(s.a) * r0); ctx.lineTo(W / 2 + Math.cos(s.a) * r1, H / 2 + Math.sin(s.a) * r1); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ---------- scene 4: burst and skeleton ----------
+  function drawFogBackdrop(t, a) {
+    ctx.fillStyle = '#0d0d0d'; ctx.fillRect(-40, -40, W + 80, H + 80);
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    for (const c of clouds) {
+      const s = 320 * c.s, x = ((c.x + t * c.v + W + 600) % (W + 600)) - 300, y = c.y + Math.sin(t * .5 + c.p) * 14;
+      ctx.globalAlpha = c.a * a; ctx.drawImage(smoke[c.k], x - s / 2, y - s / 2, s, s * .7);
+    }
+    ctx.restore();
+  }
+  function drawBurst(t) {
+    const u = t - T_FLASH; if (u < 0 || u > 1.6) return;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    // white core that tears apart into puffs
+    const core = (1 - lin(0, .4, u)) ** 2;
+    if (core > 0) {
+      const r = 160 + 140 * easeOut(u / .4), grd = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, r);
+      grd.addColorStop(0, `rgba(255,255,255,${core})`); grd.addColorStop(.6, `rgba(255,255,255,${core * .9})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
     }
-    if (u < .55) {
-      const v = u / .55, r = 60 + 1000 * easeOut(v);
-      ctx.strokeStyle = '#ffb060'; ctx.beginPath(); ctx.ellipse(FX, FY, r, r * .82, 0, 0, TAU);
-      ctx.globalAlpha = (1 - v) * (1 - v) * .14; ctx.lineWidth = 30 * (1 - v) + 4; ctx.stroke();
-      ctx.globalAlpha = (1 - v) * (1 - v) * .22; ctx.lineWidth = 10 * (1 - v) + 1.5; ctx.stroke();
+    for (const p of burstPuffs) {
+      const k = easeOut(u / 1.2), d = p.d + p.v * k * 1.4, s = 200 * p.s * (1 + k);
+      ctx.globalAlpha = clamp(1 - u / .8, 0, 1) ** 1.5 * .4;
+      ctx.drawImage(whiteSmoke[p.k], W / 2 + Math.cos(p.a) * d - s / 2, H / 2 + Math.sin(p.a) * d * .7 - s / 2, s, s);
     }
     ctx.restore();
   }
-  function drawBlast(t) {
-    const u = t - T_BURST; if (u < 0 || u > 1.4) return;
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    // spark streaks: fast, with drag and gravity, drawn as short trails, batched per colour and brightness
-    ctx.lineCap = 'round'; ctx.lineWidth = 1.8;
-    const pos = (b, q) => { const k = (1 - Math.exp(-q * 3.2)) / 3.2; return [FX + Math.cos(b.a) * b.v * k, FY + Math.sin(b.a) * b.v * k * .85 + 300 * q * q]; };
-    const batches = Array.from({ length: 12 }, () => new Path2D());
-    for (const b of blast) {
-      if (u > b.life) continue;
-      const [x, y] = pos(b, u), [x0, y0] = pos(b, Math.max(0, u - .045)), level = Math.min(3, ((1 - u / b.life) * 4) | 0);
-      const path = batches[(b.hot > .6 ? 0 : b.hot > .25 ? 1 : 2) * 4 + level]; path.moveTo(x0, y0); path.lineTo(x, y);
-    }
-    batches.forEach((path, i) => { ctx.strokeStyle = ['#fff1c4', '#ffb347', '#ff6a10'][i >> 2]; ctx.globalAlpha = ((i & 3) + 1) / 4; ctx.stroke(path); });
-    ctx.restore();
-    // a ring of black smoke rolling outwards
-    ctx.save();
-    for (const p of blastSmoke) {
-      const k = easeOut(u / 1.4), d = 60 + p.v * k, s = 260 * p.s * (.6 + k);
-      ctx.globalAlpha = .7 * (1 - u / 1.4) * clamp((u - .08) * 5, 0, 1);
-      ctx.drawImage(darkSmoke[p.k], FX + Math.cos(p.a) * d - s / 2, FY + Math.sin(p.a) * d * .8 - s / 2, s, s);
-    }
-    ctx.restore();
-  }
-  function drawSwarm(t) {
-    const u0 = t - (T_BURST + .06); if (u0 < 0 || u0 > 2) return;
-    for (const b of swarm) {
-      const u = u0 - b.d * .6; if (u < 0) continue;
-      const z = b.z0 * (1 + b.zv * u * u * 1.3), dist = b.v * u * (1 + u * .6);
-      const x = FX + Math.cos(b.a) * dist + Math.sin(u * 5 + b.wob) * 16, y = FY + Math.sin(b.a) * dist * .7 - 90 * u + Math.cos(u * 7 + b.wob) * 10;
-      const w = 70 * z, h = 35 * z;
-      if (x < -w || x > W + w || y < -h || y > H + h) continue;
-      ctx.globalAlpha = clamp(u * 6, 0, 1) * clamp((2 - u0) * 2.5, 0, 1);
-      ctx.drawImage(bats[((t * 26 + b.f) | 0) % bats.length], x - w / 2, y - h / 2, w, h);
-    }
-    ctx.globalAlpha = 1;
-  }
-  function drawCirclers(t, a) {
+  function drawDust(t, a) {
     if (a <= 0) return;
-    for (const c of circlers) {
-      const ang = c.a + t * c.v, x = MOON_X + Math.cos(ang) * c.r, y = MOON_Y + Math.sin(ang) * c.r * .45 + c.y;
-      const spr = bats[((t * 20 + c.r) | 0) % bats.length], w = 70 * c.z, h = 35 * c.z;
-      ctx.globalAlpha = a; ctx.drawImage(spr, x - w / 2, y - h / 2, w, h);
-    }
-    ctx.globalAlpha = 1;
-  }
-  const boltFlash = (t) => bump(t, T_BOLT + .02, .035) + .7 * bump(t, T_BOLT + .14, .03) + .25 * bump(t, T_BOLT + .24, .03);
-  function drawLightning(t) {
-    const flash = clamp(boltFlash(t), 0, 1); if (flash < .01) return;
+    const u = Math.max(0, t - T_FLASH);
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = flash; ctx.drawImage(bolt, 0, 0);
-    ctx.globalAlpha = flash * .16; ctx.fillStyle = '#ffd0a0'; ctx.fillRect(0, 0, W, H);
+    for (const p of dust) {
+      const r = p.r * (.55 + .45 * easeOut(u / .9)) + p.v * u * .3, x = W / 2 + Math.cos(p.a) * r, y = H / 2 + Math.sin(p.a) * r * .62 - u * 6;
+      const s = 16 * p.s;
+      ctx.globalAlpha = a * (.35 + .65 * Math.abs(Math.sin(t * 2.4 + p.p)));
+      ctx.drawImage(mote, x - s / 2, y - s / 2, s, s);
+    }
     ctx.restore();
   }
+  // Side view of a running skeleton facing left. Angles are measured from straight down; positive swings forward.
+  function drawSkeleton(t) {
+    const u = lin(T_SKEL, T_SKEL + 1.35, t); if (u <= 0 || u >= 1) return;
+    const hipX = 1460 - 1720 * u, p = (t - T_SKEL) * TAU * 2.1, S = 1.22;
+    const hipY = 470 - Math.abs(Math.sin(p)) * 14 * S, lean = .5;
+    const at = (x, y, ang, len) => [x - Math.sin(ang) * len * S, y + Math.cos(ang) * len * S];
+    const bone = (a, b, w) => { ctx.lineWidth = w * S; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke(); };
+    const knob = (pt, r) => { ctx.beginPath(); ctx.arc(pt[0], pt[1], r * S, 0, TAU); ctx.fill(); };
+    const shoulder = at(hipX, hipY, Math.PI - lean, 150), neck = at(hipX, hipY, Math.PI - lean, 178);
+    const limb = (root, a1, l1, a2, l2, w) => { const j = at(...root, a1, l1), e = at(...j, a2, l2); bone(root, j, w); bone(j, e, w * .85); knob(j, w * .62); return [j, e]; };
+    const leg = (ph) => { const th = Math.sin(ph) * .85, kn = .25 + .95 * Math.max(0, Math.sin(ph + 1.9)); return [th, th - kn]; };
+    const arm = (ph) => { const sh = -Math.sin(ph) * .95 + .35; return [sh, sh + 1.1 + .35 * Math.sin(ph + .6)]; };
+    const foot = (ankle, ang) => bone(ankle, at(...ankle, ang + Math.PI / 2 + .2, 30), 6);
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(255,255,255,.7)'; ctx.shadowBlur = 16;
+    // far leg and arm, dimmer
+    ctx.globalAlpha = .55; ctx.strokeStyle = ctx.fillStyle = '#bdbdbd';
+    const [bth, bsh] = leg(p + Math.PI), [, bAnkle] = limb([hipX, hipY], bth, 118, bsh, 112, 9); foot(bAnkle, bsh);
+    const [ba1, ba2] = arm(p + Math.PI), [, bWrist] = limb(shoulder, ba1, 78, ba2, 74, 7); bone(bWrist, at(...bWrist, ba2, 22), 5);
+    ctx.globalAlpha = 1; ctx.strokeStyle = ctx.fillStyle = '#f4f4f4';
+    // spine with vertebrae, ribcage, pelvis
+    ctx.lineWidth = 6 * S; ctx.beginPath(); ctx.moveTo(hipX, hipY);
+    const spineMid = at(hipX, hipY, Math.PI - lean + .12, 90); ctx.quadraticCurveTo(...spineMid, ...neck); ctx.stroke();
+    for (let k = 0; k <= 9; k++) knob(at(hipX, hipY, Math.PI - lean + .06 * Math.sin(k / 9 * Math.PI), 18 * k), 4.2);
+    ctx.save(); ctx.translate(...at(hipX, hipY, Math.PI - lean, 92)); ctx.rotate(-lean); ctx.lineWidth = 4 * S;
+    for (let k = 0; k < 6; k++) { const y = -k * 13 * S; ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(-30 * S, y - 8 * S, -58 * S, y + 6 * S, -50 * S + k * 3 * S, y + 26 * S); ctx.stroke(); }
+    ctx.restore();
+    ctx.beginPath(); ctx.ellipse(hipX + 4, hipY - 6, 24 * S, 17 * S, -lean, 0, TAU); ctx.fill();
+    // skull looking ahead, slightly up
+    ctx.save(); ctx.translate(...at(...neck, Math.PI - lean * .4, 26)); ctx.rotate(-.2);
+    let grd = ctx.createRadialGradient(-6 * S, -10 * S, 2, 0, 0, 34 * S); grd.addColorStop(0, '#ffffff'); grd.addColorStop(1, '#a8a8a8'); ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.ellipse(0, 0, 30 * S, 27 * S, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-26 * S, 8 * S); ctx.lineTo(-24 * S, 24 * S); ctx.lineTo(-4 * S, 30 * S); ctx.lineTo(6 * S, 16 * S); ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0; ctx.fillStyle = '#151515';
+    ctx.beginPath(); ctx.ellipse(-15 * S, -1 * S, 8 * S, 9 * S, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-27 * S, 10 * S); ctx.lineTo(-22 * S, 12 * S); ctx.lineTo(-25 * S, 16 * S); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = ctx.fillStyle = '#f4f4f4';
+    // front leg and arm
+    const [th, sh] = leg(p), [, ankle] = limb([hipX, hipY], th, 118, sh, 112, 9.5); foot(ankle, sh);
+    const [a1, a2] = arm(p), [, wrist] = limb(shoulder, a1, 78, a2, 74, 7.5);
+    for (const d of [-.3, 0, .3]) bone(wrist, at(...wrist, a2 + d, 22), 3.5);
+    ctx.restore();
+  }
+
+  // ---------- scene 5: logo ----------
   function drawLogo(t) {
-    const a = ss(T_IGNITE - .05, T_IGNITE + .15, t); if (a <= 0) return;
-    const sc = 1.05 - .05 * easeOut((t - T_IGNITE) / 1.1);
-    const dw = LOGO_W * .92 * sc, dh = LOGO_H * .92 * sc, x0 = W / 2 - dw / 2, y0 = 360 - dh / 2;
-    // the letters catch fire from left to right; the burn front glows white-hot and throws sparks
-    const span = (k) => x0 + (.2 + .6 * k) * dw; // lettering covers 20–80 % of the sprite width
-    const sweep = easeOut((t - T_IGNITE) / .75), front = span(sweep);
-    const strip = (from, to, img, alpha, op) => {
-      ctx.save(); ctx.beginPath(); ctx.rect(from, 0, to - from, H); ctx.clip();
-      ctx.globalCompositeOperation = op; ctx.globalAlpha = alpha; ctx.drawImage(img, x0, y0, dw, dh); ctx.restore();
-    };
-    if (sweep >= 1) strip(0, W, logo, a, 'source-over');
-    else {
-      // burnt-in part, a soft edge, then the white-hot front fading back into the flames
-      strip(0, front - 24, logo, a, 'source-over'); strip(front - 24, front, logo, a * .7, 'source-over'); strip(front, front + 16, logo, a * .3, 'source-over');
-      [[110, .2], [70, .3], [40, .4], [18, .5]].forEach(([w, k]) => strip(front - w, front + 2, logoCore, k * a * .6, 'lighter'));
+    if (!logo) return;
+    const a = ss(T_LOGO, T_LOGO + .7, t); if (a <= 0) return;
+    const sharp = ss(T_LOGO + .35, T_LOGO + 1.1, t), sc = 1.1 - .1 * easeOut(lin(T_LOGO, T_LOGO + 1.6, t));
+    const lw = 470 * sc, lh = lw * logo.height / logo.width, x0 = W / 2 - lw / 2, y0 = 345 - lh / 2;
+    ctx.save();
+    let grd = ctx.createRadialGradient(W / 2, 345, 20, W / 2, 345, 420); grd.addColorStop(0, `rgba(255,255,255,${.14 * a})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+    grd = ctx.createRadialGradient(W / 2, 560, 10, W / 2, 560, 360); grd.addColorStop(0, `rgba(255,120,30,${.16 * a})`); grd.addColorStop(1, 'rgba(255,90,10,0)');
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = a * (1 - sharp * .6); ctx.drawImage(logoSoft, x0 - 10, y0 - 10, lw + 20, lh + 20);
+    ctx.globalAlpha = sharp; ctx.drawImage(logo, x0, y0, lw, lh);
+    ctx.restore();
+    // a light sweep across the chrome, masked to the logo
+    const sw = lin(T_LOGO + 1.05, T_LOGO + 1.75, t);
+    if (sw > 0 && sw < 1) {
+      const c = shineCanvas, g = c.getContext('2d');
+      if (c.width !== logo.width) { c.width = logo.width; c.height = logo.height; }
+      g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height);
+      const bx = -c.width * .4 + sw * c.width * 1.8, band = g.createLinearGradient(bx - 120, 0, bx + 120, c.height * .3);
+      band.addColorStop(0, 'rgba(255,255,255,0)'); band.addColorStop(.5, 'rgba(255,255,255,.85)'); band.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = band; g.fillRect(0, 0, c.width, c.height);
+      g.globalCompositeOperation = 'destination-in'; g.drawImage(logo, 0, 0);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .75; ctx.drawImage(c, x0, y0, lw, lh); ctx.restore();
     }
-    // heat shimmer after ignition: a soft additive copy that breathes
-    const glow = ss(T_IGNITE + .5, T_IGNITE + 1.1, t);
-    if (glow > 0) {
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = glow * (.16 + .08 * Math.sin(t * 6) + .05 * Math.sin(t * 17));
-      ctx.drawImage(logo, x0, y0 - 1.5, dw, dh); ctx.restore();
-    }
+  }
+  function drawMotes(t, a, img, list, size) {
+    if (a <= 0) return;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    for (const p of igniteSparks) {
-      const born = T_IGNITE + p.k * .75, u = t - born; if (u < 0 || u > p.life) continue;
-      const x = span(easeOut(p.k)) + p.d * u, y = y0 + dh * (.3 + p.y * .4) - p.v * u - 40 * u * u, s = 48 * p.s * (1 - u / p.life * .5);
-      ctx.globalAlpha = 1 - u / p.life; ctx.drawImage(ember, x - s / 2, y - s / 2, s, s);
+    for (const p of list) {
+      let y = (p.y - t * p.v) % (H + 40); if (y < -20) y += H + 40;
+      const x = (p.x + t * p.d + Math.sin(t * 1.7 + p.p) * 12 + W) % W, s = size * p.s;
+      ctx.globalAlpha = a * (.4 + .6 * Math.abs(Math.sin(t * 2.6 + p.p)));
+      ctx.drawImage(img, x - s / 2, y - s / 2, s, s);
     }
     ctx.restore();
   }
 
   // ---------- frame ----------
   let fitS = 1, fitX = 0, fitY = 0;
+  const bloomA = document.createElement('canvas'), bloomB = document.createElement('canvas');
+  const bA = bloomA.getContext('2d'), bB = bloomB.getContext('2d');
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2), cw = splash.clientWidth || innerWidth, ch = splash.clientHeight || innerHeight;
     canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
     canvas.style.width = `${cw}px`; canvas.style.height = `${ch}px`;
     fitS = Math.max(canvas.width / W, canvas.height / H); fitX = (canvas.width - W * fitS) / 2; fitY = (canvas.height - H * fitS) / 2;
+    bloomA.width = Math.max(1, canvas.width >> 2); bloomA.height = Math.max(1, canvas.height >> 2);
+    bloomB.width = Math.max(1, canvas.width >> 4); bloomB.height = Math.max(1, canvas.height >> 4);
   }
   function frame(t) {
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(fitS, 0, 0, fitS, fitX, fitY);
-    // camera: slow push-in towards the pumpkin, a punch and a decaying shake at the burst, then a gentle drift
-    const sb = t - T_BURST, shake = sb > 0 && sb < .5 ? Math.pow(1 - sb / .5, 2) * 9 : 0;
-    const cam = 1 + .06 * ss(0, T_BURST, t) - .06 * ss(T_BURST, T_BURST + .6, t) + .035 * ss(T_BOLT, DUR, t) + .03 * bump(t, T_BURST + .05, .08);
-    ctx.translate(W / 2 + Math.sin(t * 61) * shake, H / 2 + Math.cos(t * 53) * shake); ctx.scale(cam, cam); ctx.translate(-W / 2, -H / 2);
 
-    // scene 4 backdrop: dimly there after the burst, lit by the lightning and then fully revealed
-    const lit = ss(T_BOLT, T_BOLT + .35, t);
-    const back = Math.max(ss(T_BURST + .45, T_BOLT - .1, t) * .4, lit) + .9 * clamp(boltFlash(t), 0, 1) * (1 - lit);
-    if (back > 0) { ctx.globalAlpha = clamp(back, 0, 1); ctx.drawImage(castle, 0, 0); ctx.globalAlpha = 1; }
-    // the blast clears the smoke, which then slowly drifts back in thinner
-    const cleared = 1 - .85 * ss(T_BURST, T_BURST + .12, t) + .4 * ss(T_BURST + .5, T_BURST + 1.5, t);
-    drawSmoke(t, (.72 + .28 * ss(1.4, 2.4, t)) * cleared * (1 - .6 * lit));
+    if (t < T_PUMPKIN + .3) {
+      // scene 1–2: spotlight, cobwebs, ghost, the sheet blowing at the camera
+      const room = ss(.15, .9, t);
+      let grd = ctx.createRadialGradient(W / 2, -60, 20, W / 2, 120, 640);
+      grd.addColorStop(0, `rgba(255,255,255,${.2 * room})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+      grd = ctx.createRadialGradient(W / 2, H + 60, 10, W / 2, H, 420 * ss(.1, .6, t) + 1);
+      grd.addColorStop(0, `rgba(255,255,255,${.35 * (1 - ss(.9, 1.6, t))})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+      const webs = ss(.5, 1.4, t) * .55;
+      if (webs > 0) {
+        ctx.globalAlpha = webs;
+        for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) { ctx.save(); ctx.translate(sx < 0 ? W : 0, sy < 0 ? H : 0); ctx.scale(sx, sy); ctx.drawImage(web, 0, 0); ctx.restore(); }
+        ctx.globalAlpha = 1;
+      }
+      drawMotes(t, room * .6, mote, motes, 14);
+      // the ghost rises into the light, then floats a little further back and sways
+      const rise = easeOut(lin(.2, 1.15, t)), back = ss(1.0, 1.7, t);
+      const gy = 1000 - rise * 720 + back * -40 + Math.sin(t * 2.4) * 8 * back;
+      const gs = 1.32 - .32 * back, blow = ss(T_BLOW, T_BLOW + .35, t);
+      drawGhost(t, W / 2 + Math.sin(t * 1.6) * 10 * back - blow * 40, gy - blow * 30, gs * (1 + blow * .1), Math.sin(t * 1.9) * .05 * back - blow * .5, blow * .7, 1 - ss(T_BLOW + .2, T_BLOW + .38, t));
+      // the sheet: takes over from the ghost, flutters up and left, then swoops into the camera
+      const c0 = ss(T_BLOW + .22, T_BLOW + .34, t);
+      if (c0 > 0 && t < T_COVER + .12) {
+        const fly = Math.pow(lin(T_BLOW + .3, T_COVER + .06, t), 2.2), drift = easeOut(lin(T_BLOW + .2, T_BLOW + .7, t));
+        drawCloth(t, W / 2 - 70 * drift + 200 * fly, 250 - 30 * drift + 110 * fly, -840 * fly, 330 + 80 * drift, 330, .2 + .3 * drift - .3 * fly, -1.2 + .55 * drift + .75 * fly, -.35 * drift + .2 * fly, .6 + .7 * drift, c0);
+      }
+    }
+    if (t >= T_COVER - .05) {
+      // scene 3 underneath, uncovered by the sheet sliding off
+      const rush = lin(T_RUSH, T_FLASH, t);
+      if (t >= T_PUMPKIN - .02 && t < T_FLASH + .05) {
+        drawPumpkinScene(t, rush);
+        drawMotes(t, ss(T_PUMPKIN, T_PUMPKIN + .5, t) * (1 - rush), ember, embers, 40);
+        drawRush(t);
+      }
+      const cover = ss(T_COVER - .05, T_COVER + .06, t), edge = easeIn(lin(T_PUMPKIN, T_PUMPKIN + .32, t)) * (W + 260) - 60;
+      if (t < T_PUMPKIN + .34) drawSheetCover(t, t < T_PUMPKIN ? -200 : edge, cover);
+    }
+    if (t >= T_RUSH + .1 && t < T_FLASH + .25) {
+      // white-out at the end of the rush
+      const wf = ss(T_RUSH + .1, T_FLASH, t) * (1 - ss(T_FLASH + .02, T_FLASH + .25, t));
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = wf; ctx.fillStyle = t < T_FLASH ? '#ffe6c4' : '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
+    }
+    if (t >= T_FLASH) {
+      // scene 4–5: grey fog, dust, burst, skeleton, logo
+      drawFogBackdrop(t, .55 + .45 * ss(T_FLASH, T_FLASH + 1, t));
+      drawDust(t, (1 - .7 * ss(T_FLASH + .8, T_LOGO, t)) * ss(T_FLASH, T_FLASH + .08, t));
+      drawBurst(t);
+      drawSkeleton(t);
+      drawLogo(t);
+      drawMotes(t, ss(T_LOGO, T_LOGO + 1, t) * .5, ember, embers, 30);
+    }
 
-    // scene 1: eyes open where the pumpkin's eyes will be, blink, then the pumpkin forms around them
-    const eyesA = ss(.3, .9, t) * (1 - ss(1.75, 2.3, t));
-    if (eyesA > 0) {
-      const blink = t > 1.08 && t < 1.3 ? Math.abs(Math.cos(((t - 1.08) / .22) * Math.PI)) : 1;
-      const open = ss(.3, 1.0, t) * blink, glow = eyesA * (.8 + .2 * Math.sin(t * 6));
-      ctx.globalAlpha = eyesA; eye(EYE_L[0], EYE_L[1], 104, 38, open, glow, false); eye(EYE_R[0], EYE_R[1], 104, 38, open, glow, true); ctx.globalAlpha = 1;
-    }
-    // scene 2: the pumpkin materialises, throbs faster and faster while cracks of fire spread, then bursts
-    if (body && t < T_BURST) {
-      const form = ss(1.25, 2.3, t);
-      const throb = (.022 * bump(t, 2.36, .05) + .03 * bump(t, 2.62, .045) + .042 * bump(t, 2.83, .04)) * (1 - ss(2.9, T_BURST, t));
-      const z = .9 + .1 * easeOut((t - 1.25) / 1.1) + throb;
-      placeImg(halo, z, form); placeImg(body, z, form);
-      fireGlow(t, form, z, ss(2.3, T_BURST, t) * 1.1 + throb * 12);
-      drawCracks(t, z);
-    }
-    // scene 3: the smoky halo is blown away, burning chunks fly, blast, then the bat swarm
-    if (halo && sb >= 0 && sb < .45) placeImg(halo, 1.02 + .5 * easeOut(sb / .45), 1 - ss(0, .45, sb));
-    drawFlash(t);
-    drawPieces(t);
-    drawBlast(t);
-    drawSwarm(t);
-    // scene 4: lightning, bats around the moon, the lettering
-    drawLightning(t);
-    drawCirclers(t, lit);
-    drawLogo(t);
-    drawEmbers(t, ss(1.6, 2.4, t) * (1 - .45 * ss(T_BURST, T_BURST + 1, t)));
+    // bloom: brightest parts, blurred by down-scaling, added back on top
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    bA.filter = 'brightness(.62) contrast(3)'; bA.drawImage(canvas, 0, 0, bloomA.width, bloomA.height); bA.filter = 'none';
+    bB.drawImage(bloomA, 0, 0, bloomB.width, bloomB.height);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = .16; ctx.drawImage(bloomA, 0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = .22; ctx.drawImage(bloomB, 0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
     ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
-    const fadeIn = 1 - ss(0, .35, t);
+    const fadeIn = 1 - ss(0, .3, t);
     if (fadeIn > 0) { ctx.globalAlpha = fadeIn; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
   }
-
   // Draw every sprite once into a hidden corner so the GPU uploads happen now, not mid-scene.
   function warm(list) {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -478,7 +499,9 @@
   }
 
   resize();
-  warm([...smoke, ...darkSmoke, ember, ...bats, vignette, castle, bolt, logo, logoCore]);
+  warm([...smoke, ...whiteSmoke, ...warmSmoke, ember, mote, vignette, web, pumpkinBody, pumpkinFace, pumpkinSpill]);
+  // Render one frame of every scene up front (the screen is still black) so first-use costs never stall a scene.
+  for (const t of [1.2, 2.7, 3.05, 3.25, 4.5, 4.75, 5.6]) frame(t);
   window.addEventListener('resize', resize);
   const start = performance.now();
   let raf = 0;
@@ -490,5 +513,5 @@
   }
   raf = requestAnimationFrame(tick);
   // Test/preview hook: render any moment (used by the frame captures).
-  window.H1tHalloweenBoot = { renderAt: (t) => { cancelAnimationFrame(raf); frame(t); }, duration: DUR, ready: () => !!body };
+  window.H1tHalloweenBoot = { renderAt: (t) => { cancelAnimationFrame(raf); frame(t); }, duration: DUR, ready: () => !!logo };
 })();
