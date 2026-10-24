@@ -39,6 +39,7 @@
       g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
     }
   }));
+  const darkSmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'brightness(.18)'; g.drawImage(c, 0, 0); }));
   const ember = sprite(48, 48, (g) => {
     const grd = g.createRadialGradient(24, 24, 0, 24, 24, 24);
     grd.addColorStop(0, 'rgba(255,236,170,1)'); grd.addColorStop(.18, 'rgba(255,150,40,.95)'); grd.addColorStop(.5, 'rgba(255,80,10,.25)'); grd.addColorStop(1, 'rgba(255,60,0,0)');
@@ -158,6 +159,7 @@
     body = sprite(w, h, (g) => { g.drawImage(feathered, 0, 0); bodyMask(g, true); });
     halo = sprite(w, h, (g) => { g.drawImage(feathered, 0, 0); bodyMask(g, false); });
     charred = sprite(w, h, (g) => { g.filter = 'brightness(.22) saturate(.5)'; g.drawImage(body, 0, 0); });
+    warm([body, halo, charred]);
   };
   pumpkinImg.src = 'assets/halloween-pumpkin.jpg';
 
@@ -306,13 +308,16 @@
       ctx.restore();
     }
   }
-  function drawBlast(t) {
-    const u = t - T_BURST; if (u < 0 || u > 1.4) return;
+  // Core flash and shockwave ring, drawn behind the flying chunks so the gaps between them glow.
+  function drawFlash(t) {
+    const u = t - T_BURST; if (u < 0 || u > .55) return;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    // core flash and shockwave ring
-    if (u < .35) {
-      const f = (1 - u / .35) ** 2, r = 120 + 800 * easeOut(u / .35);
-      const grd = ctx.createRadialGradient(FX, FY, 0, FX, FY, r); grd.addColorStop(0, `rgba(255,236,190,${f})`); grd.addColorStop(.3, `rgba(255,150,50,${.7 * f})`); grd.addColorStop(1, 'rgba(255,80,0,0)');
+    if (u < .4) {
+      const f = (1 - u / .4) ** 1.5, r = 140 + 420 * easeOut(u / .4);
+      // the pumpkin's own fire, blown up and over-exposed, fills the gaps between the chunks with real flames
+      if (body) { placeImg(body, 1.05 + .25 * easeOut(u / .4), f); placeImg(body, 1.15 + .35 * easeOut(u / .4), f * .6); }
+      const grd = ctx.createRadialGradient(FX, FY, 0, FX, FY, r);
+      grd.addColorStop(0, `rgba(255,244,210,${f})`); grd.addColorStop(.3, `rgba(255,150,40,${.6 * f})`); grd.addColorStop(1, 'rgba(255,60,0,0)');
       ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
     }
     if (u < .55) {
@@ -321,6 +326,11 @@
       ctx.globalAlpha = (1 - v) * (1 - v) * .14; ctx.lineWidth = 30 * (1 - v) + 4; ctx.stroke();
       ctx.globalAlpha = (1 - v) * (1 - v) * .22; ctx.lineWidth = 10 * (1 - v) + 1.5; ctx.stroke();
     }
+    ctx.restore();
+  }
+  function drawBlast(t) {
+    const u = t - T_BURST; if (u < 0 || u > 1.4) return;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
     // spark streaks: fast, with drag and gravity, drawn as short trails, batched per colour and brightness
     ctx.lineCap = 'round'; ctx.lineWidth = 1.8;
     const pos = (b, q) => { const k = (1 - Math.exp(-q * 3.2)) / 3.2; return [FX + Math.cos(b.a) * b.v * k, FY + Math.sin(b.a) * b.v * k * .85 + 300 * q * q]; };
@@ -332,12 +342,12 @@
     }
     batches.forEach((path, i) => { ctx.strokeStyle = ['#fff1c4', '#ffb347', '#ff6a10'][i >> 2]; ctx.globalAlpha = ((i & 3) + 1) / 4; ctx.stroke(path); });
     ctx.restore();
-    // a ring of smoke rolling outwards
-    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    // a ring of black smoke rolling outwards
+    ctx.save();
     for (const p of blastSmoke) {
       const k = easeOut(u / 1.4), d = 60 + p.v * k, s = 260 * p.s * (.6 + k);
-      ctx.globalAlpha = .3 * (1 - u / 1.4) * clamp(u * 8, 0, 1);
-      ctx.drawImage(smoke[p.k], FX + Math.cos(p.a) * d - s / 2, FY + Math.sin(p.a) * d * .8 - s / 2, s, s);
+      ctx.globalAlpha = .7 * (1 - u / 1.4) * clamp((u - .08) * 5, 0, 1);
+      ctx.drawImage(darkSmoke[p.k], FX + Math.cos(p.a) * d - s / 2, FY + Math.sin(p.a) * d * .8 - s / 2, s, s);
     }
     ctx.restore();
   }
@@ -423,7 +433,9 @@
     const lit = ss(T_BOLT, T_BOLT + .35, t);
     const back = Math.max(ss(T_BURST + .45, T_BOLT - .1, t) * .4, lit) + .9 * clamp(boltFlash(t), 0, 1) * (1 - lit);
     if (back > 0) { ctx.globalAlpha = clamp(back, 0, 1); ctx.drawImage(castle, 0, 0); ctx.globalAlpha = 1; }
-    drawSmoke(t, (.72 + .28 * ss(1.4, 2.4, t)) * (1 - .45 * ss(T_BURST, T_BURST + .9, t)) * (1 - .6 * lit));
+    // the blast clears the smoke, which then slowly drifts back in thinner
+    const cleared = 1 - .85 * ss(T_BURST, T_BURST + .12, t) + .4 * ss(T_BURST + .5, T_BURST + 1.5, t);
+    drawSmoke(t, (.72 + .28 * ss(1.4, 2.4, t)) * cleared * (1 - .6 * lit));
 
     // scene 1: eyes open where the pumpkin's eyes will be, blink, then the pumpkin forms around them
     const eyesA = ss(.3, .9, t) * (1 - ss(1.75, 2.3, t));
@@ -443,6 +455,7 @@
     }
     // scene 3: the smoky halo is blown away, burning chunks fly, blast, then the bat swarm
     if (halo && sb >= 0 && sb < .45) placeImg(halo, 1.02 + .5 * easeOut(sb / .45), 1 - ss(0, .45, sb));
+    drawFlash(t);
     drawPieces(t);
     drawBlast(t);
     drawSwarm(t);
@@ -457,7 +470,15 @@
     if (fadeIn > 0) { ctx.globalAlpha = fadeIn; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
   }
 
+  // Draw every sprite once into a hidden corner so the GPU uploads happen now, not mid-scene.
+  function warm(list) {
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const c of list) ctx.drawImage(c, 0, 0, 1, 1);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 2, 2); ctx.restore();
+  }
+
   resize();
+  warm([...smoke, ...darkSmoke, ember, ...bats, vignette, castle, bolt, logo, logoCore]);
   window.addEventListener('resize', resize);
   const start = performance.now();
   let raf = 0;
