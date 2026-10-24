@@ -157,12 +157,12 @@ body.h1t-gated .h1t-acc { visibility: hidden; }
 
 /* ---------- top-right account button + menu ---------- */
 .h1t-acc { position: relative; display: flex; align-items: center; -webkit-app-region: no-drag; }
-.h1t-acc-btn { display: flex; align-items: center; gap: 9px; height: 38px; max-width: 230px; padding: 0 10px 0 5px; border-radius: 999px;
-  border: 1px solid #ffffff1c; background: linear-gradient(180deg, #1c1c20, #121215); color: var(--acc-text); cursor: pointer;
+.h1t-acc-btn { display: flex; align-items: center; gap: 9px; height: 36px; max-width: 230px; padding: 0 10px 0 4px; border-radius: 11px;
+  border: 1px solid #ffffff14; background: #0b0b0c; color: var(--acc-text); cursor: pointer;
   font: 600 12px/1 var(--acc-font); transition: border-color .18s, background .18s; -webkit-app-region: no-drag; }
-.h1t-acc-btn:hover, .h1t-acc.open .h1t-acc-btn { border-color: #ffffff40; background: linear-gradient(180deg, #232328, #17171a); }
+.h1t-acc-btn:hover, .h1t-acc.open .h1t-acc-btn { border-color: #ffffff2e; background: #121214; }
 .h1t-acc-btn:focus-visible { outline: 2px solid var(--acc-white); outline-offset: 2px; }
-.h1t-acc-btn .h1t-avatar-sm { width: 28px; height: 28px; }
+.h1t-acc-btn .h1t-avatar-sm { width: 28px; height: 28px; border-radius: 8px; }
 .h1t-acc-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .h1t-acc-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--acc-mute); box-sizing: border-box; }
 .h1t-acc-dot.ok { background: var(--acc-white); box-shadow: 0 0 8px #ffffffb0; }
@@ -171,8 +171,8 @@ body.h1t-gated .h1t-acc { visibility: hidden; }
 .h1t-acc.open .h1t-acc-btn > svg { transform: rotate(180deg); }
 
 .h1t-acc-menu { position: absolute; top: calc(100% + 10px); right: 0; z-index: 9000; width: 290px; padding: 6px; border-radius: 16px;
-  border: 1px solid var(--acc-line2); background: linear-gradient(180deg, #17171b, #0e0e10); color: var(--acc-text);
-  box-shadow: 0 28px 70px #000000e6, inset 0 1px 0 #ffffff10; font: 13px/1.4 var(--acc-font); transform-origin: top right;
+  border: 1px solid #ffffff14; background: #0a0a0b; color: var(--acc-text);
+  box-shadow: 0 28px 70px #000000f0, inset 0 1px 0 #ffffff0a; font: 13px/1.4 var(--acc-font); transform-origin: top right;
   animation: h1t-pop .16s cubic-bezier(.2, .8, .2, 1) both; }
 .h1t-acc-menu[hidden] { display: none; }
 @keyframes h1t-pop { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
@@ -302,3 +302,29 @@ body.h1t-gated .h1t-acc { visibility: hidden; }
 .h1t-revert.warn { border-color: var(--acc-err-line); background: var(--acc-err-bg); }
 .h1t-revert.warn p + p { color: var(--acc-err); }
 .h1t-revert .h1t-spin { margin-top: 2px; }
+
+/* ---------- Title bar controls: language, ambient and account share one dark shape ---------- */
+.h1t-topbar-meta > .h1t-lang.h1t-lang-native { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; border: 0; }
+.h1t-langpick { position: relative; -webkit-app-region: no-drag; }
+.h1t-langpick-btn { display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 10px 0 11px; border-radius: 11px; border: 1px solid #ffffff14;
+  background: #0b0b0c; color: #e8e8ea; font: 600 12px/1 var(--acc-font); cursor: pointer; transition: border-color .18s, background .18s; -webkit-app-region: no-drag; }
+.h1t-langpick-btn:hover, .h1t-langpick.open .h1t-langpick-btn { border-color: #ffffff2e; background: #121214; }
+.h1t-langpick-btn:focus-visible { outline: 2px solid var(--acc-white); outline-offset: 2px; }
+.h1t-flag { width: 20px; height: 14px; flex: none; border-radius: 3px; box-shadow: 0 0 0 1px #ffffff26; overflow: hidden; display: block;
+  stroke: none; stroke-linecap: butt; stroke-linejoin: miter; } /* the global svg stroke would paint over the stripes */
+.h1t-langpick-chev { width: 14px; height: 14px; fill: none; stroke: var(--acc-dim); stroke-width: 2; transition: transform .2s; }
+.h1t-langpick.open .h1t-langpick-chev { transform: rotate(180deg); }
+.h1t-langpick-menu { position: absolute; top: calc(100% + 10px); right: 0; z-index: 9000; min-width: 178px; padding: 6px; border-radius: 14px;
+  border: 1px solid #ffffff14; background: #0a0a0b; box-shadow: 0 24px 60px #000000f0, inset 0 1px 0 #ffffff0a; animation: h1t-pop .16s cubic-bezier(.2, .8, .2, 1) both; }
+.h1t-langpick-menu[hidden] { display: none; }
+.h1t-langpick-menu button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 11px; width: 100%; height: 38px; padding: 0 10px; border-radius: 9px;
+  color: #d6d6da; font: 500 13px/1 var(--acc-font); cursor: pointer; }
+.h1t-langpick-menu button span { flex: 1; }
+.h1t-langpick-menu button:hover, .h1t-langpick-menu button:focus-visible { background: #ffffff0d; color: #fff; }
+.h1t-langpick-menu button[aria-selected=true] { color: #fff; font-weight: 600; }
+.h1t-langpick-check { width: 15px; height: 15px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.h1t-topbar-meta .h1t-ambient { height: 36px; width: 36px; border-radius: 11px; border-color: #ffffff14; background: #0b0b0c; }
+.h1t-topbar-meta .h1t-ambient:hover { border-color: #ffffff2e; background: #121214; }
+/* Sign-in window language switch: flags too. */
+.h1t-gate-langs button { display: inline-flex; align-items: center; gap: 6px; }
+.h1t-gate-langs .h1t-flag { width: 16px; height: 11px; border-radius: 2px; }

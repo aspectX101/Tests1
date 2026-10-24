@@ -287,7 +287,7 @@
     // Keep a half-typed password when only a periodic check re-renders.
     const keep = gate.querySelector('#h1t-login-form input[name=password]')?.value || '';
     const err = error ? `<p class="h1t-alert" role="alert">${esc(errorMessage(error))}${tx().errors[error] ? '' : ` <code>${esc(error)}</code>`}</p>` : '';
-    const langs = ['de', 'en', 'it'].map((l) => `<button type="button" data-acc-lang="${l}" class="${l === lang() ? 'on' : ''}" aria-pressed="${l === lang()}">${l.toUpperCase()}</button>`).join('');
+    const langs = ['de', 'en', 'it'].map((l) => `<button type="button" data-acc-lang="${l}" class="${l === lang() ? 'on' : ''}" aria-pressed="${l === lang()}">${window.H1tFlag ? window.H1tFlag(l) : ''}${l.toUpperCase()}</button>`).join('');
     gate.innerHTML = `
       <div class="h1t-gate-bar"><div class="h1t-gate-langs" role="group" aria-label="Language">${langs}</div>
         <div class="h1t-gate-win"><button type="button" data-acc="win-min" aria-label="Minimize">${svg('min')}</button><button type="button" data-acc="win-close" class="x" aria-label="Close">${svg('close')}</button></div></div>

@@ -31,8 +31,10 @@ test('the H1T.CC logo (cut out, transparent) is used for opening animation, side
   // The specular sweep is masked by the logo itself (CSP: img-src 'self').
   assert.match(read('app/renderer/boot.css'), /mask: url\(assets\/h1t-logo\.png\)/);
   assert.match(read('app/renderer/boot.css'), /prefers-reduced-motion: reduce/);
-  assert.match(index, /class="brand-logo" src="assets\/h1t-logo\.png"/);
-  assert.match(read('app/renderer/mono.css'), /assets\/h1t-logo\.png/);
+  assert.match(index, /class="brand-logo" src="assets\/h1t-statue\.png"/);
+  const statue = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets/h1t-statue.png'));
+  assert.equal(statue[25], 6, 'statue logo is an RGBA PNG with a transparent background');
+  assert.match(read('app/renderer/mono.css'), /\.h1t-dash-hero:after \{ display: none !important; \}/);
   const ico = fs.readFileSync(path.join(__dirname, '..', 'build/icon.ico'));
   assert.equal(ico.readUInt16LE(2), 1); assert.equal(ico.readUInt16LE(4), 7, 'icon has 7 sizes (16-256 px)');
   assert.ok(fs.readFileSync(path.join(__dirname, '..', 'app/assets/icon.ico')).equals(ico), 'window/taskbar icon matches the exe icon');
