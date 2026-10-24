@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('tweaker', {
   h1tAccountLogout: () => ipcRenderer.invoke('tweaker:h1t-logout'),
   h1tOpenAccountPortal: () => ipcRenderer.invoke('tweaker:h1t-portal'),
   h1tOpenAccountLink: (kind) => ipcRenderer.invoke('tweaker:h1t-open', String(kind)),
+  h1tExpiryState: () => ipcRenderer.invoke('tweaker:h1t-expiry-state'),
+  onH1tExpiry: (cb) => ipcRenderer.on('tweaker:h1t-expiry', (_e, st) => cb(st)),
   h1tDiagnosticsAccept: () => ipcRenderer.invoke('tweaker:h1t-diag-accept'),
   h1tDiagnosticsWithdraw: () => ipcRenderer.invoke('tweaker:h1t-diag-withdraw'),
   h1tDiagnosticsPreview: () => ipcRenderer.invoke('tweaker:h1t-diag-preview'),

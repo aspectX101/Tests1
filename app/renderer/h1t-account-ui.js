@@ -17,6 +17,7 @@
       consent: 'Ich stimme zu, dass eine pseudonyme Kennung dieser Windows-Installation zur Lizenzbindung übertragen wird. Es werden keine Hardware-Seriennummern übertragen.',
       bind: 'Gerät aktivieren', errTitle: 'Prüfung fehlgeschlagen', err: 'Keine Verbindung oder die Lizenzprüfung ist fehlgeschlagen.',
       check: 'Erneut prüfen', signOut: 'Abmelden', foot: 'HTTPS · Serverseitige Lizenzprüfung · Token bleibt verschlüsselt im Hauptprozess',
+      revertRunning: 'Deine Lizenz ist abgelaufen. Alle Änderungen des Tweakers werden auf die Originalwerte zurückgesetzt…', revertDone: (n) => `Lizenz abgelaufen: ${n} Änderung(en) des Tweakers wurden auf die Originalwerte zurückgesetzt.`, revertNothing: 'Lizenz abgelaufen: Es waren keine Tweaks aktiv, nichts musste zurückgesetzt werden.', revertFailed: (n) => `${n} Änderung(en) konnten nicht zurückgesetzt werden. Die App versucht es in einer Stunde erneut; du kannst sie auch unter Sicherungen zurücksetzen.`, revertRestart: 'Bitte starte den PC neu, damit alles wieder wie vorher wirkt.',
       myAccount: 'Mein Account', customerArea: 'Customer Area', licenses: 'Lizenzen', support: 'Support', account: 'Account',
       lifetime: 'Lifetime', expires: 'Läuft ab', plan: 'Plan', status: 'Status', devices: 'Geräte', key: 'Key', thisDevice: 'Dieser PC',
       profile: 'Profil', displayName: 'Anzeigename', username: 'Benutzername', accountId: 'Konto-ID', memberSince: 'Mitglied seit',
@@ -42,6 +43,7 @@
       consent: 'I consent to transmitting a pseudonymous identifier for this Windows installation to bind the license. No hardware serial numbers are transmitted.',
       bind: 'Activate device', errTitle: 'Verification failed', err: 'Network unavailable or license verification failed.',
       check: 'Check again', signOut: 'Sign out', foot: 'HTTPS · Server-side license checks · Token stays encrypted in the main process',
+      revertRunning: 'Your license has expired. All changes made by the tweaker are being restored to their original values…', revertDone: (n) => `License expired: ${n} change(s) made by the tweaker were restored to their original values.`, revertNothing: 'License expired: no tweaks were active, nothing had to be restored.', revertFailed: (n) => `${n} change(s) could not be restored. The app retries in an hour; you can also restore them under Backups.`, revertRestart: 'Please restart the PC so everything works as before.',
       myAccount: 'My Account', customerArea: 'Customer Area', licenses: 'Licenses', support: 'Support', account: 'Account',
       lifetime: 'Lifetime', expires: 'Expires', plan: 'Plan', status: 'Status', devices: 'Devices', key: 'Key', thisDevice: 'This PC',
       profile: 'Profile', displayName: 'Display name', username: 'Username', accountId: 'Account ID', memberSince: 'Member since',
@@ -67,6 +69,7 @@
       consent: 'Acconsento alla trasmissione di un identificatore pseudonimo di questa installazione Windows per la licenza. Nessun numero di serie hardware viene trasmesso.',
       bind: 'Attiva dispositivo', errTitle: 'Verifica fallita', err: 'Connessione non disponibile o verifica della licenza fallita.',
       check: 'Riprova', signOut: 'Esci', foot: 'HTTPS · Verifica licenze lato server · Il token resta cifrato nel processo principale',
+      revertRunning: 'La tua licenza è scaduta. Tutte le modifiche del tweaker vengono riportate ai valori originali…', revertDone: (n) => `Licenza scaduta: ${n} modifica/e del tweaker sono state riportate ai valori originali.`, revertNothing: 'Licenza scaduta: nessun tweak era attivo, non c’era nulla da ripristinare.', revertFailed: (n) => `${n} modifica/e non sono state ripristinate. L’app riprova tra un’ora; puoi ripristinarle anche in Backup.`, revertRestart: 'Riavvia il PC perché tutto torni come prima.',
       myAccount: 'Il mio account', customerArea: 'Customer Area', licenses: 'Licenze', support: 'Supporto', account: 'Account',
       lifetime: 'Lifetime', expires: 'Scade', plan: 'Piano', status: 'Stato', devices: 'Dispositivi', key: 'Chiave', thisDevice: 'Questo PC',
       profile: 'Profilo', displayName: 'Nome visualizzato', username: 'Nome utente', accountId: 'ID account', memberSince: 'Membro dal',
@@ -174,6 +177,8 @@
   let profile = null, busy = false, error = '', previouslyAuthorized = false, lastEmail = '', pendingScroll = '', shownLang = '';
   // Diagnostics UI state: busy step, last error/notice and the preview the main process will send.
   let diagBusy = '', diagError = '', diagDetail = '', diagNotice = '', diagPreview = null;
+  // License expiry restore (main process): running flag and the last result, shown in the sign-in window.
+  let licenseRevert = null;
 
   // ---------- helpers ----------
   const AVATAR_RE = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
@@ -225,6 +230,15 @@
   gate.hidden = true;
   document.body.append(gate);
 
+  function revertBanner(t) {
+    const r = licenseRevert;
+    if (!r || (!r.running && !r.result)) return '';
+    if (r.running) return `<p class="h1t-revert" role="status"><i class="h1t-spin"></i><span>${esc(t.revertRunning)}</span></p>`;
+    const res = r.result, lines = [res.restored ? t.revertDone(res.restored) : t.revertNothing];
+    if (res.failed) lines.push(t.revertFailed(res.failed));
+    if (res.restart_required) lines.push(t.revertRestart);
+    return `<div class="h1t-revert${res.failed ? ' warn' : ''}" role="status">${svg('refresh')}<div>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div></div>`;
+  }
   function gateBody(p, t) {
     const actions = (...b) => `<div class="h1t-gate-actions">${b.join('')}</div>`;
     const btn = (action, label, kind = 'ghost', icon = '') => `<button type="button" class="h1t-btn ${kind}" data-acc="${action}" ${busy ? 'disabled' : ''}>${icon ? svg(icon) : ''}<span>${esc(label)}</span></button>`;
@@ -284,7 +298,7 @@
           <ul class="h1t-gate-points"><li>${svg('shield')}${esc(t.f1)}</li><li>${svg('lock')}${esc(t.f2)}</li><li>${svg('pc')}${esc(t.f3)}</li></ul>
           <div class="h1t-gate-orb" aria-hidden="true"></div>
         </aside>
-        <div class="h1t-gate-card">${gateBody(p, t)}${err}<small class="h1t-gate-foot">${svg('lock')}${esc(t.foot)}</small></div>
+        <div class="h1t-gate-card">${revertBanner(t)}${gateBody(p, t)}${err}<small class="h1t-gate-foot">${svg('lock')}${esc(t.foot)}</small></div>
       </div>`;
     const pw = gate.querySelector('#h1t-login-form input[name=password]');
     if (pw && keep) pw.value = keep;
@@ -493,7 +507,7 @@
     try {
       const result = await fn();
       if (result?.ok === false) error = String(result.error || 'error').slice(0, 80);
-      else if (result) profile = result;
+      else if (result) { profile = result; if (result.license_revert) licenseRevert = result.license_revert; }
     } catch { error = 'connection_unavailable'; }
     finally { busy = false; renderAll(); }
   }
@@ -579,6 +593,7 @@
     }
   });
 
+  bridge.onH1tExpiry?.((st) => { licenseRevert = st; renderGate(); });
   renderAll();
   void refresh();
   // Do not erase typed credentials when a periodic check refreshes the dialog.
@@ -598,6 +613,7 @@
       if (!signedIn) return { ok: true, authorized: false, signed_in: false, status: 'signed_out' };
       const base = { ok: true, signed_in: true, checked_at: Date.now(), user, licenses: lic };
       if (m === 'license') return { ...base, authorized: false, status: 'license_required', licenses: [] };
+      if (m === 'expired') return { ...base, authorized: false, status: 'license_required', licenses: [], license_revert: { running: false, reverted_at: Date.now(), result: { restored: 23, failed: /fail/.test(location.hash) ? 2 : 0, restart_required: true } } };
       if (m === 'device') return { ...base, authorized: false, status: 'device_consent_required' };
       if (m === 'error') return { ...base, authorized: false, status: 'connection_timeout' };
       if (!diag.consent) return { ...base, authorized: false, status: 'diagnostics_required', diagnostics: { ...diag, required: true, ready: true, pending: false } };

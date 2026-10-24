@@ -43,6 +43,22 @@ if (relaunched) {
   });
 }
 
+// License expiry: when the license ends, restore every change the tweaker made (same records as "Revert All").
+// Started invisibly by the "H1T.CC License Check" task with --h1t-expiry-check when the app is not open.
+const expiryCheckOnly = process.argv.includes('--h1t-expiry-check');
+const licenseTask = require('./license-task').createLicenseTask({ exe: () => portableExe() });
+const licenseExpiry = require('./license-expiry').createLicenseExpiry(app, {
+  backend: (req) => backend({ ...req, lang: currentLang }),
+  resetColor: async () => { const had = !!displayColor.getState()?.saved; const r = await displayColor.reset(); return had ? r?.ok === true : null; },
+  task: licenseTask,
+  onChange: (st) => sendToUi('tweaker:h1t-expiry', st),
+});
+h1tAccount.onSnapshot((snap) => { licenseExpiry.observe(snap).catch(() => {}); });
+const withLicense = async (pending) => {
+  const snap = await pending;
+  return snap && snap.ok !== false ? { ...snap, license_revert: licenseExpiry.publicState() } : snap;
+};
+
 // FiveM > H1T Mods: Katalog aus dem GitHub-Release "h1t-mods"; Installation über den normalen Mod-Import.
 const h1tMods = require('./h1t-mods').createH1tMods(app, (req) => backend(req));
 h1tMods.onProgress((p) => sendToUi('tweaker:h1tmods-progress', p));
@@ -91,10 +107,11 @@ function createWindow() {
 const trusted = (e) => e.senderFrame && e.senderFrame.url.split('#')[0] === INDEX_URL;
 
 // H1T.CC desktop API: credentials/tokens stay in this privileged process only.
-ipcMain.handle('tweaker:h1t-status', (e) => trusted(e) ? h1tAccount.refresh(true) : {ok:false,error:'untrusted_sender'});
-ipcMain.handle('tweaker:h1t-login', (e,email,password) => trusted(e) ? h1tAccount.login(email,password) : {ok:false,error:'untrusted_sender'});
-ipcMain.handle('tweaker:h1t-bind', (e,licenseId,consent) => trusted(e) ? h1tAccount.bind(licenseId,consent,app.getVersion()) : {ok:false,error:'untrusted_sender'});
-ipcMain.handle('tweaker:h1t-logout', (e) => trusted(e) ? h1tAccount.logout() : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-status', (e) => trusted(e) ? withLicense(h1tAccount.refresh(true)) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-login', (e,email,password) => trusted(e) ? withLicense(h1tAccount.login(email,password)) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-bind', (e,licenseId,consent) => trusted(e) ? withLicense(h1tAccount.bind(licenseId,consent,app.getVersion())) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-logout', (e) => trusted(e) ? withLicense(h1tAccount.logout()) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-expiry-state', (e) => trusted(e) ? licenseExpiry.publicState() : null);
 ipcMain.handle('tweaker:h1t-portal', async (e) => {
   if(!trusted(e))return {ok:false,error:'untrusted_sender'};
   try { await shell.openExternal('https://dev.h1tutility.cc/account'); return {ok:true}; }
@@ -248,7 +265,16 @@ ipcMain.on('window:maximize', (e) => { if (trusted(e) && win) { if (win.isMaximi
 ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 
 if (!relaunched) app.whenReady().then(async () => {
-  await h1tAccount.load(); createWindow(); displayColor.restore();
+  await h1tAccount.load(); await licenseExpiry.load();
+  if (expiryCheckOnly) {
+    // Invisible run from the scheduled task: check the license, restore if it ended, then exit.
+    try { await licenseExpiry.observe(await h1tAccount.refresh(true)); } catch {}
+    app.quit();
+    return;
+  }
+  createWindow(); displayColor.restore();
+  // Signed out or offline at start: the stored end date still counts (no window needed for that).
+  h1tAccount.refresh().then((snap) => licenseExpiry.observe(snap)).catch(() => {});
   // Accepted data-transfer notice: refresh the report on start (at most weekly or after an update).
   h1tAccount.autoReport(app.getVersion()).catch(() => {});
 });

@@ -20,8 +20,10 @@ function relaunchElevated() {
   const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   // Exe-Pfad per Umgebungsvariable statt im Befehl, damit nichts escaped werden muss.
   const res = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-Command',
-    "try { Start-Process -FilePath $env:TWEAKER_EXE -ArgumentList '--elevated' -Verb RunAs; exit 0 } catch { exit 1 }"],
-  { env: { ...process.env, TWEAKER_EXE: process.execPath }, windowsHide: true });
+    "try { Start-Process -FilePath $env:TWEAKER_EXE -ArgumentList ($env:TWEAKER_ARGS -split ' ') -Verb RunAs; exit 0 } catch { exit 1 }"],
+  // The invisible license-expiry run keeps its flag across the UAC restart.
+  { env: { ...process.env, TWEAKER_EXE: process.execPath,
+    TWEAKER_ARGS: process.argv.includes('--h1t-expiry-check') ? '--elevated --h1t-expiry-check' : '--elevated' }, windowsHide: true });
   return res.status === 0;
 }
 

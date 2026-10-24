@@ -138,12 +138,15 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
   // Concurrent unforced checks (startup report, window, several IPC calls) share one network round trip,
   // so the server's rate limit on verify-device is not hit by the app itself.
   let inflight=null;
+  // Main-process observers (license expiry) get every fresh check result and sign-out.
+  const listeners=new Set();
+  const notify=(snap)=>{for(const f of listeners){try{f(snap)}catch{}}return snap;};
   async function refresh(force=false){
     if(bypass)return snapshot();
     if(!token)return snapshot();
     if(!force&&cache&&Date.now()-checkedAt<MAX_AGE)return snapshot();
     if(!force&&inflight)return inflight;
-    const run=check();inflight=run;
+    const run=check().then(notify);inflight=run;
     try{return await run}finally{if(inflight===run)inflight=null}
   }
   async function check(){
@@ -209,7 +212,7 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
   }
   async function logout(){
     if(!bypass&&token)await req('POST',{action:'logout'}).catch(()=>{});
-    forget();await save();return snapshot();
+    forget();await save();return notify(snapshot());
   }
   // Signed out / new session: nothing from the previous account survives, diagnostics opt-in included.
   function forget(){token=null;consent=false;cache=null;checkedAt=0;rev++;avatar={url:null,data:null};deviceId=null;pending=null;diag={...DIAG_OFF};}
@@ -322,6 +325,7 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
   function hasAccess(){return bypass||(cache?.authorized===true&&Date.now()-checkedAt<MAX_AGE)}
   async function checkAccess(){return bypass||(await refresh()).authorized===true}
   return {load,login,bind,refresh,logout,link,hasAccess,checkAccess,
-    previewDiagnostics,acceptDiagnostics,sendDiagnostics,discardDiagnosticsPreview,withdrawDiagnostics,deleteDiagnostics,autoReport};
+    previewDiagnostics,acceptDiagnostics,sendDiagnostics,discardDiagnosticsPreview,withdrawDiagnostics,deleteDiagnostics,autoReport,
+    onSnapshot:(f)=>{listeners.add(f);return ()=>listeners.delete(f);}};
 }
 module.exports={createH1tAccount,ownUrl,sniffImage,cleanProfile};

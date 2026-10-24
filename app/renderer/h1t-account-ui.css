@@ -293,3 +293,12 @@ body.h1t-gated .h1t-acc { visibility: hidden; }
 .h1t-gate-more p { margin: 8px 0 0; line-height: 1.55; }
 .h1t-gate-fine { margin: 10px 0 0; color: var(--acc-mute); font-size: 11.5px; line-height: 1.55; }
 .acc-tag.ghost { margin-left: auto; background: transparent; color: var(--acc-dim); border: 1px solid var(--acc-line2); letter-spacing: .06em; text-transform: none; }
+/* License expired: restore notice in the sign-in window */
+.h1t-revert { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 18px; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid #ffffff38; background: #ffffff0c; color: var(--acc-white); font-size: 12.5px; line-height: 1.55; }
+.h1t-revert > svg { width: 18px; height: 18px; flex: none; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.h1t-revert p { margin: 0; }
+.h1t-revert p + p { margin-top: 6px; color: var(--acc-dim); }
+.h1t-revert.warn { border-color: var(--acc-err-line); background: var(--acc-err-bg); }
+.h1t-revert.warn p + p { color: var(--acc-err); }
+.h1t-revert .h1t-spin { margin-top: 2px; }
