@@ -215,10 +215,11 @@ function renderNav() {
   const activeKey = r.page === 'cat' ? (r.parent || r.cat) : r.page;
   const de = state.lang === 'de', it = state.lang === 'it';
   const labels = {
-    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
-    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
-    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
+    de:{home:'Dashboard',performance:'PC Optimierung',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Netzwerk',services:'Dienste',privacy:'Datenschutz',visuals:'Oberfläche',keyboard:'Tastatur',debloat:'Debloat',safemode:'Safe Mode',backups:'Sicherungen',extra:'Weitere Tools',settings:'Einstellungen',info:'Über H1T.CC',help:'Hilfe',account:'Account & Lizenz',accountSub:'Profil, Lizenzen, Datenschutz',fivem:'FIVEM',games:'SPIELE',system:'SYSTEM',protect:'SICHERHEIT',more:'TOOLS'},
+    en:{home:'Dashboard',performance:'PC Optimization',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Network',services:'Services',privacy:'Privacy',visuals:'Appearance',keyboard:'Keyboard',debloat:'Debloat',safemode:'Safe Mode',backups:'Backups',extra:'More Tools',settings:'Settings',info:'About H1T.CC',help:'Help',account:'Account & license',accountSub:'Profile, licenses, privacy',fivem:'FIVEM',games:'GAMES',system:'SYSTEM',protect:'SECURITY',more:'TOOLS'},
+    it:{home:'Dashboard',performance:'Ottimizzazione PC',profiles:'Configs',gaming:'Gaming Tweaks',h1tmods:'H1T Mods',hitreg:'Hitreg',mods:'FiveM Mod Manager',cleanup:'FiveM Cleaner',network:'Rete',services:'Servizi',privacy:'Privacy',visuals:'Aspetto',keyboard:'Tastiera',debloat:'Debloat',safemode:'Safe Mode',backups:'Backup',extra:'Altri strumenti',settings:'Impostazioni',info:'Informazioni H1T.CC',help:'Aiuto',account:'Account e licenza',accountSub:'Profilo, licenze, privacy',fivem:'FIVEM',games:'GIOCHI',system:'SISTEMA',protect:'SICUREZZA',more:'STRUMENTI'}
   }[state.lang] || {};
+  const helpIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg>';
   const item=(key,attrs)=>`<button class="nav-item${activeKey===key?' active':''}" ${attrs} title="${esc(labels[key]||key)}" ${activeKey===key?'aria-current="page"':''}>${icon(key)}<span class="nav-label">${esc(labels[key]||key)}</span></button>`;
   const section=(id,items)=>{
     const collapsed=state.navClosed.has(id);
@@ -237,9 +238,11 @@ function renderNav() {
     section('protect',[item('safemode','data-go="safemode"'),item('backups','data-go="backups"')]),
     section('more',[item('extra','data-go="extra"')]),
     '<div class="nav-spacer"></div>',
+    // Unten wie im Steam-Konzept: Einstellungen, Hilfe und eine Box (hier: Account).
     '<div class="nav-tail">'+item('settings','data-go="settings"')+
-      '<button class="nav-item" data-go="settings" title="'+esc(labels.info)+'">'+icon('safemode')+
-      '<span class="nav-label">'+esc(labels.info)+'</span></button></div>'
+      '<button class="nav-item" id="side-help" title="'+esc(labels.help)+'">'+helpIcon+
+      '<span class="nav-label">'+esc(labels.help)+'</span></button>'+
+      '<button class="side-box" data-go="account"><span>'+esc(labels.account)+'<small>'+esc(labels.accountSub)+'</small></span>'+icon('extra')+'</button></div>'
   ].join('');
   $('#nav').innerHTML=html;
   $('#app').classList.toggle('collapsed',state.collapsed);
@@ -1343,6 +1346,7 @@ document.addEventListener('click', (e) => {
   else if (el.dataset.bkExport) bkExport(el.dataset.bkExport);
   else if (el.id.startsWith('sm-')) safeAction(el.id.slice(3));
   else if (el.id === 'reload') load();
+  else if (el.id === 'side-help') (bridge.h1tOpenAccountLink ? bridge.h1tOpenAccountLink('support') : Promise.resolve(bridge.openReleasePage?.()));
   else if (el.id === 'restart-later') { state.restartPending = false; render(); }
 });
 
