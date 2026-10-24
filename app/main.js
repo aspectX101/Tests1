@@ -157,11 +157,11 @@ ipcMain.handle('tweaker:call', async (e, request) => {
   if (!await h1tAccount.checkAccess()) return { ok: false, error: 'license_required' };
   // Nur die bekannten Felder weiterreichen; Pfade und Skripte kann die Oberfläche nicht setzen.
   // modPath fehlt bewusst: Mod-Pfade kommen nur aus dem Datei-Dialog (tweaker:mod-import).
-  const { action, id, lang, backupId, confirmPurge, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss } = request;
+  const { action, id, lang, backupId, confirmPurge, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss, layout, extra } = request;
   if (action === 'mods-import') return { ok: false, error: 'invalid_action' };
   if (LANGS.has(lang)) currentLang = lang;
   try {
-    return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss: confirmDataLoss === true });
+    return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss: confirmDataLoss === true, layout, extra });
   } catch (err) {
     return { ok: false, error: err.message };
   }
@@ -287,6 +287,11 @@ app.on('window-all-closed', () => {
 
 
 // Only fixed first-party destinations; the renderer never supplies a URI.
+ipcMain.handle('tweaker:display-settings', async (e) => {
+  if (!trusted(e)) return {ok:false,error:'untrusted_sender'};
+  try {await shell.openExternal('ms-settings:display');return {ok:true};}
+  catch {return {ok:false,error:'display_settings_failed'};}
+});
 ipcMain.handle('tweaker:debloat-target', async (e, id) => {
   if (!trusted(e)) return { ok:false, error:'untrusted_sender' };
   const url = require('./debloat-links').getInstallUrl(id);

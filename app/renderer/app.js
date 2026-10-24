@@ -400,6 +400,7 @@ function catHero(c, parent) {
 }
 
 function renderCategory(c, parent) {
+  if (c === 'display') return catHero(c, parent) + renderDisplays();
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
   // Netzwerk, Dienste, Privatsphäre, Oberfläche: Start/Enable All + Revert All und Status-Kästchen wie im Leistungs-Tab
@@ -812,6 +813,7 @@ function render() {
   else html += renderCategory(r.cat, r.parent);
   const content = $('#content');
   content.innerHTML = html;
+  mountDisplays();
   // Seitenwechsel: Inhalte gestaffelt hereingleiten lassen (nicht bei jedem Neuzeichnen, z. B. Schalter)
   if (state.enter) {
     state.enter = false;

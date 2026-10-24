@@ -1,12 +1,26 @@
 ﻿#requires -Version 5.1
 [CmdletBinding()]
 param([string]$Action, [string]$Id, [string]$Lang='de', [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge,
-    [string]$AppIds, [string]$PreviewToken, [switch]$ConfirmDataLoss, [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed)
+    [string]$LayoutBase64, [string]$Extra, [string]$AppIds, [string]$PreviewToken, [switch]$ConfirmDataLoss, [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 try {
+    if ($Action -in @('display-list','display-max','display-layout','display-extra')) {
+        if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
+        . (Join-Path $PSScriptRoot 'Displays.ps1')
+        $LayoutJson=$null
+        if($Action -eq 'display-layout') {
+            try {
+                if($LayoutBase64.Length -gt 16000) {throw 'invalid'}
+                $LayoutJson=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($LayoutBase64))
+            } catch {throw 'display_layout_invalid'}
+        }
+        Invoke-Displays -Action $Action -LayoutJson $LayoutJson -Extra $Extra -Lang $Lang | ConvertTo-Json -Depth 8 -Compress
+        exit 0
+    }
+
     if ($Action -notin @('debloat-list','debloat-preview','debloat-remove','startup-list','startup-disable','startup-restore','system-check','info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all','mods-list','mods-import','mods-enable','mods-disable','mods-remove','res-get','res-set','res-reset')) { throw 'invalid_action' }
     if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
     Import-Module (Join-Path $PSScriptRoot 'Tweaker.psm1') -Force -WarningAction Stop
@@ -105,7 +119,8 @@ try {
     exit 0
 } catch {
     # Stable error code for localization, technical detail for diagnostics.
-    @{ok=$false;error=$_.Exception.Message} | ConvertTo-Json -Depth 4 -Compress
+    $errorCode=if($Action.StartsWith('display-')){$_.Exception.GetBaseException().Message}else{$_.Exception.Message}
+    @{ok=$false;error=$errorCode} | ConvertTo-Json -Depth 4 -Compress
     exit 1
 }
 

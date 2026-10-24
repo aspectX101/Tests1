@@ -6,7 +6,7 @@ const { createSafeModeMonitor } = require('./safemode-monitor.cjs');
 const tweakIds = new Set(["windows.power.profile", "windows.cpu.unpark", "windows.sync.off", "windows.explorer.startup", "windows.menu.instant", "windows.hibernate.off", "windows.gpu.tdr", "windows.mmcss.games", "windows.mmcss.latency", "windows.foreground", "windows.prefetch.off", "windows.service.sysmain.off", "windows.service.diagtrack.off", "windows.service.wappush.off", "windows.service.wer.off", "windows.service.diagnosticshub.off", "windows.service.xbgm.off", "windows.svchost.group", "windows.ceip.off", "windows.power.extras", "windows.office.telemetry.off", "windows.suggestions.off", "windows.legacy.fps", "windows.io.realtime", "windows.close.faster", "windows.mmcss.on", "windows.assistance.off", "windows.autoplay.off", "windows.tooltip.fast", "windows.activity.off", "windows.storage.off", "windows.explorer.defaults", "windows.spotlight.off", "windows.gamebar.quiet", "windows.clipboard.off", "windows.copilot.off", "windows.ink.off", "windows.capture.off", "windows.gamemode.on", "windows.audio.ducking.off", "windows.power.high", "fivem.priority.high", "keyboard.repeat.fast", "keyboard.filterkeys.off", "keyboard.stickykeys.off", "gaming.gpu.hags", "gaming.gpu.latency", "gaming.gpu.iommu", "gaming.mouse.queue", "gaming.mpo.off", "gaming.hvci.off", "gaming.gamebar.off", "hitreg.nic.latency", "hitreg.timer.global", "hitreg.qos.fivem", "hitreg.input.power", "hitreg.fivem.priority", "keyboard.togglekeys.off", "keyboard.mousekeys.off", "keyboard.mouse.accel.off", "keyboard.mouse.speed.native", "keyboard.buffer.large", "debloat.widgets.hide", "debloat.onedrive.block", "debloat.recall.off", "debloat.suggestions.off", "network.winsock.udp", "network.throttle.off", "network.dns.fast", "network.nagle.off", "network.wifisense.off", "network.nic.powersave.off", "network.tcp.gaming", "network.teredo.off", "network.delivery.off", "network.qos.reserve.off", "network.llmnr.off", "network.lanman.lan"]);
 const appIdsAllowed = new Set(require('../DebloatApps.json').map(a => a.id));
 const actions = new Set(['system-check','debloat-list','debloat-preview','debloat-remove','startup-list','startup-disable','startup-restore','info', 'list', 'status', 'apply', 'revert', 'cache-info', 'cache-clean', 'cache-restore', 'cache-purge', 'safemode-scan', 'safemode-report', 'safemode-enable', 'safemode-disable', 'safemode-enforce', 'backup-list', 'backup-preview', 'backup-export', 'backup-restore', 'backup-restore-all',
-  'mods-list', 'mods-import', 'mods-enable', 'mods-disable', 'mods-remove', 'res-get', 'res-set', 'res-reset']);
+  'display-list', 'display-max', 'display-layout', 'display-extra', 'mods-list', 'mods-import', 'mods-enable', 'mods-disable', 'mods-remove', 'res-get', 'res-set', 'res-reset']);
 const modCategories = new Set(['graphics', 'sound', 'weapons', 'minimap', 'other']);
 
 // Main-process code only. Do not give the renderer access to execFile or arbitrary paths.
@@ -25,6 +25,17 @@ function createBackendClient(app, options = {}) {
     if (!['de', 'en', 'it'].includes(lang)) return Promise.reject(new Error('invalid_language'));
     if (['status', 'apply', 'revert'].includes(action) && !tweakIds.has(id)) return Promise.reject(new Error('invalid_tweak_id'));
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, '-Action', action, '-Lang', lang];
+    if (action === 'display-layout') {
+      const layout = request.layout;
+      if (!Array.isArray(layout) || !layout.length || layout.length > 32 || new Set(layout.map(x => x?.id)).size !== layout.length || layout.some(x => !x || typeof x.id !== 'string' || !/^\\\\\.\\DISPLAY[0-9]+$/.test(x.id) || !Number.isInteger(x.x) || !Number.isInteger(x.y) || Math.abs(x.x) > 32767 || Math.abs(x.y) > 32767)) return Promise.reject(new Error('display_layout_invalid'));
+      // Windows PowerShell -File consumes embedded JSON quotes. Base64 keeps
+      // the argument literal across CreateProcess / PowerShell parsing.
+      args.push('-LayoutBase64', Buffer.from(JSON.stringify(layout.map(({id,x,y}) => ({id,x,y}))), 'utf8').toString('base64'));
+    }
+    if (action === 'display-extra') {
+      if (!['mpo-off', 'mpo-restore', 'hags-on', 'hags-off', 'hags-restore'].includes(request.extra)) return Promise.reject(new Error('display_extra_unsupported'));
+      args.push('-Extra', request.extra);
+    }
     if (['status', 'apply', 'revert'].includes(action)) args.push('-Id', id);
     if (['debloat-preview', 'debloat-remove'].includes(action)) {
       if (!Array.isArray(appIds) || !appIds.length || appIds.length > 24 || new Set(appIds).size !== appIds.length || appIds.some(x => !appIdsAllowed.has(x))) return Promise.reject(new Error('invalid_debloat_selection'));

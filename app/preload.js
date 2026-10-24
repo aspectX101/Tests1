@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('tweaker', {
   // kind: 'file' | 'folder' – öffnet den Windows-Dialog im Hauptprozess
   importMod: (category, kind) => ipcRenderer.invoke('tweaker:mod-import', category, kind),
   openDebloatTarget: (id) => ipcRenderer.invoke('tweaker:debloat-target', id),
+  openDisplaySettings: () => ipcRenderer.invoke('tweaker:display-settings'),
   openModsFolder: () => ipcRenderer.invoke('tweaker:open-mods-folder'),
   lastSafeMode: () => ipcRenderer.invoke('tweaker:safemode-last'),
   onSafeMode: (cb) => ipcRenderer.on('tweaker:safemode', (_e, msg) => cb(msg)),
