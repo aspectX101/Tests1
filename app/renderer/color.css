@@ -1,0 +1,20 @@
+/* Extra > Color: four vertical bars like the reference, white fill on a dark track. */
+.color-page { margin-top: 18px; }
+.color-bars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 8px 0 4px; }
+.color-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.color-val { font-size: 12px; font-weight: 700; color: var(--dim); font-variant-numeric: tabular-nums; min-height: 16px; }
+.color-bar { --v: 0; position: relative; width: 22px; height: 230px; display: flex; justify-content: center; cursor: ns-resize; touch-action: none; outline: none; border-radius: 6px; }
+.color-bar::before { content: ""; position: absolute; top: 0; bottom: 0; width: 8px; border-radius: 4px; background: rgba(255, 255, 255, .08); }
+.color-bar i { position: absolute; bottom: 0; width: 8px; height: calc(var(--v) * 100%); border-radius: 4px; background: #f4f4f5; box-shadow: 0 0 12px rgba(255, 255, 255, .25); transition: height .05s linear; }
+.color-bar:hover::before { background: rgba(255, 255, 255, .12); }
+.color-bar:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.color-col b { font-size: 13px; font-weight: 700; }
+.color-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 22px; }
+.color-actions .pill { min-width: 150px; }
+#color-save { background: #f4f4f5; color: #0a0a0b; border-color: transparent; box-shadow: none; }
+#color-save:hover { background: #fff; }
+.color-state { font-size: 12px; color: var(--dim); }
+.color-state.bad { color: #ff5c6c; }
+.color-note { margin-top: 16px; }
+@media (max-width: 760px) { .color-bar { height: 180px; } }
+@media (prefers-reduced-motion: reduce) { .color-bar i { transition: none; } }

@@ -1,0 +1,126 @@
+﻿#requires -Version 5.1
+[CmdletBinding()]
+param([string]$Action, [string]$Id, [string]$Lang='de', [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge,
+    [string]$LayoutBase64, [string]$Extra, [string]$AppIds, [string]$PreviewToken, [switch]$ConfirmDataLoss, [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed)
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$OutputEncoding = [Console]::OutputEncoding
+try {
+    if ($Action -in @('display-list','display-max','display-layout','display-extra')) {
+        if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
+        . (Join-Path $PSScriptRoot 'Displays.ps1')
+        $LayoutJson=$null
+        if($Action -eq 'display-layout') {
+            try {
+                if($LayoutBase64.Length -gt 16000) {throw 'invalid'}
+                $LayoutJson=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($LayoutBase64))
+            } catch {throw 'display_layout_invalid'}
+        }
+        Invoke-Displays -Action $Action -LayoutJson $LayoutJson -Extra $Extra -Lang $Lang | ConvertTo-Json -Depth 8 -Compress
+        exit 0
+    }
+
+    if ($Action -notin @('debloat-list','debloat-preview','debloat-remove','startup-list','startup-disable','startup-restore','system-check','info','list','status','apply','revert','cache-info','cache-clean','cache-restore','cache-purge','safemode-scan','safemode-report','safemode-enable','safemode-disable','safemode-enforce','backup-list','backup-preview','backup-export','backup-restore','backup-restore-all','mods-list','mods-import','mods-enable','mods-disable','mods-remove','res-get','res-set','res-reset')) { throw 'invalid_action' }
+    if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
+    Import-Module (Join-Path $PSScriptRoot 'Tweaker.psm1') -Force -WarningAction Stop
+    if ($Action.StartsWith('debloat-') -or $Action.StartsWith('startup-')) {
+        $result=if ($Action.StartsWith('debloat-')) {Invoke-TweakerDebloat $Action $AppIds $PreviewToken ([bool]$ConfirmDataLoss)} else {Invoke-TweakerStartup $Action $Id $PreviewToken}
+        $result | ConvertTo-Json -Depth 14 -Compress
+        if ($result.ok) {exit 0} else {exit 1}
+    }
+    if ($Action.StartsWith('mods-') -or $Action.StartsWith('res-')) {
+        $result = Invoke-TweakerMods -Action $Action -ModId $ModId -ModPath $ModPath -Category $Category -Name $Name -FiveMPath $FiveMPath -Width $Width -Height $Height -Windowed $Windowed
+        $messages = @{
+            de='Mods werden aus eigenen Dateien importiert und lassen sich jederzeit deaktivieren; ueberschriebene Originaldateien werden gesichert. Manche Server erlauben keine Client-Mods. Ausfuehrbare Dateien werden nie installiert.'
+            en='Mods are imported from your own files and can be disabled at any time; overwritten original files are backed up. Some servers do not allow client mods. Executable files are never installed.'
+            it='Le mod vengono importate dai propri file e si possono disattivare in qualsiasi momento; i file originali sovrascritti vengono salvati. Alcuni server non consentono mod client. I file eseguibili non vengono mai installati.'
+        }
+        $result | Add-Member -NotePropertyName message -NotePropertyValue $messages[$Lang] -Force
+        $result | ConvertTo-Json -Depth 8 -Compress
+        exit 0
+    }
+    if ($Action.StartsWith('backup-')) {
+        $result=Invoke-TweakerBackup -Action $Action -BackupId $BackupId -FiveMPath $FiveMPath -Confirm:$false
+        $messages=@{
+            de='Wiederherstellung nutzt die Originalwerte des jeweiligen Vorgangs. Konflikte werden gemeldet; Dienstsicherungen bleiben aus Sicherheitsgruenden Nachweise. Bei Teilerfolg Details pruefen.'
+            en='Recovery uses the original values saved for each operation. Conflicts are reported; service snapshots remain evidence for safety. Check item details after partial recovery.'
+            it='Il ripristino usa i valori originali di ogni operazione. I conflitti vengono segnalati; le copie dei servizi restano prove per sicurezza. Controllare i dettagli in caso di risultato parziale.'
+        }
+        $result | Add-Member -NotePropertyName message -NotePropertyValue $messages[$Lang]
+        $result | ConvertTo-Json -Depth 16 -Compress
+        if ($result.ok) { exit 0 } else { exit 1 }
+    }
+    if ($Action.StartsWith('safemode-')) {
+        $result = Invoke-TweakerSafeMode -Action $Action -Confirm:$false
+        $messages = @{
+            de='SafeMode prueft wichtige Dienste. Der App-Monitor prueft alle 30 Sekunden bei geoeffneter Anwendung. Bedarfsdienste duerfen inaktiv sein. Ausschalten beendet den Schutz, laesst reparierte Dienste aber aktiv. Dies ist kein Windows-Werksreset.'
+            en='SafeMode checks important services. The app monitor checks every 30 seconds while the application is open. On-demand services may be inactive. Disabling protection leaves repaired services enabled. This is not a Windows factory reset.'
+            it='SafeMode controlla i servizi importanti ogni 30 secondi mentre il monitor della app e aperto. I servizi su richiesta possono essere inattivi. Disattivare la protezione lascia abilitati i servizi riparati. Non e un ripristino di fabbrica di Windows.'
+        }
+        $result | Add-Member -NotePropertyName message -NotePropertyValue $messages[$Lang]
+        $result | ConvertTo-Json -Depth 12 -Compress
+        exit 0
+    }
+    if ($Action.StartsWith('cache-')) {
+        $result = Invoke-TweakerCache -Action $Action -FiveMPath $FiveMPath -BackupId $BackupId -ConfirmPurge:$ConfirmPurge -Confirm:$false
+        $messages = @{
+            de='Cache-Daten werden beim naechsten Serverbeitritt erneut geladen. Sichern und bereinigen gibt noch keinen Speicher frei; erst das endgueltige Loeschen der Sicherung. Einstellungen, Mods, Keybinds und Spielassets bleiben erhalten.'
+            en='Cache data is downloaded again on the next server join. Quarantine does not free disk space; permanently purge the backup to reclaim space. Settings, mods, keybinds and game assets are preserved.'
+            it='I dati cache vengono scaricati di nuovo al prossimo accesso al server. Lo spostamento nella copia di sicurezza non libera spazio; eliminarla definitivamente per recuperarlo. Impostazioni, mod, comandi e risorse di gioco vengono conservati.'
+        }
+        $result | Add-Member -NotePropertyName message -NotePropertyValue $messages[$Lang]
+        $result | ConvertTo-Json -Depth 12 -Compress
+        exit 0
+    }
+    $catalog = @(Get-TweakerCatalog)
+    if ($Action -in @('status','apply','revert') -and $Id -notin @($catalog.id)) { throw 'invalid_tweak_id' }
+    function Test-Applied([string]$TweakId, $Live) {
+        if ($TweakId -in @((Get-OptimizationCatalog).id)) { return Test-TweakerOptimizationApplied $TweakId }
+        if ($TweakId.StartsWith('keyboard.')) { return Test-TweakerKeyboardApplied $TweakId }
+        if ($TweakId -eq 'windows.power.high') { return $Live.powerScheme -eq '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c' }
+        return @($Live.fiveMProcesses).Count -gt 0 -and @($Live.fiveMProcesses | Where-Object { $_.priority -ne 'High' }).Count -eq 0
+    }
+    $result = switch ($Action) {
+        'info' { Get-TweakerSystemInfo }
+        'system-check' { Get-TweakerSystemCheck }
+        'list' {
+            $live = Get-TweakerStatus
+            $items = @($catalog | ForEach-Object {
+                $stateError=$null; $applied=$null
+                try { $applied=Test-Applied $_.id $live } catch { $stateError=$_.Exception.Message }
+                [pscustomobject]@{id=$_.id;name=$_.name[$Lang];description=$_.description[$Lang]
+                    category=$_.category;risk=$_.risk;bulkSafe=$_.bulkSafe
+                    requiresRestart=$_.restart;reversible=($null -eq $_.PSObject.Properties['unavailable']);requiresAdmin=$_.requiresAdmin
+                    applied=$applied;available=($null -eq $stateError);stateError=$stateError}
+            })
+            @{ok=$true;tweaks=$items}
+        }
+        'status' {
+            $live = if ($Id.StartsWith('keyboard.') -or $Id -in @((Get-OptimizationCatalog).id)) { $null } else { Get-TweakerStatus }
+            @{ok=$true;id=$Id;applied=(Test-Applied $Id $live)}
+        }
+        default {
+            $operation = if ($Action -eq 'revert') {'restore'} else {'apply'}
+            $change = Invoke-TweakerPerformance -Action $operation -Id $Id -ConfirmDataLoss:$ConfirmDataLoss -Confirm:$false
+            $messages = @{
+                applied=@{de='Aenderung angewendet.';en='Change applied.';it='Modifica applicata.'}
+                restored=@{de='Originalzustand wiederhergestellt.';en='Original state restored.';it='Stato originale ripristinato.'}
+                unchanged=@{de='Einstellung bereits aktiv.';en='Setting already active.';it='Impostazione gia attiva.'}
+                no_change=@{de='Kein geeigneter laufender FiveM-Spielprozess gefunden.';en='No eligible running FiveM game process found.';it='Nessun processo di gioco FiveM idoneo attivo.'}
+            }
+            $live = if ($Id.StartsWith('keyboard.') -or $Id -in @((Get-OptimizationCatalog).id)) { $null } else { Get-TweakerStatus }
+            $restart=($change.status -in @('applied','restored') -and ($catalog | Where-Object id -eq $Id).restart)
+            @{ok=$true;id=$Id;applied=(Test-Applied $Id $live);restartRequired=[bool]$restart
+                message=$messages[$change.status][$Lang];status=$change.status}
+        }
+    }
+    $result | ConvertTo-Json -Depth 12 -Compress
+    exit 0
+} catch {
+    # Stable error code for localization, technical detail for diagnostics.
+    $errorCode=if($Action.StartsWith('display-')){$_.Exception.GetBaseException().Message}else{$_.Exception.Message}
+    @{ok=$false;error=$errorCode} | ConvertTo-Json -Depth 4 -Compress
+    exit 1
+}
+

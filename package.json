@@ -1,0 +1,20 @@
+{
+  "name": "tweaker",
+  "productName": "H1T.CC Tweak Utility",
+  "version": "0.9.34",
+  "description": "H1T.CC Tweak Utility",
+  "author": "Tweaker",
+  "private": true,
+  "main": "app/main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:mock": "electron . --mock",
+    "test": "node --test tests/*.test.cjs",
+    "dist": "electron-builder --config electron-builder.config.cjs --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.0",
+    "electron-builder": "25.1.8",
+    "resedit": "3.1.0"
+  }
+}

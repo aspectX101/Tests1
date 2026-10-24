@@ -1,0 +1,94 @@
+/* H1T.CC monochrome layer (loaded last): deep black surfaces, white accents, no green.
+   Red/amber stay reserved for errors, high risk and destructive actions. */
+:root {
+  --accent: #f2f2f3;
+  --accent-hover: #ffffff;
+  --accent-ink: #0b0b0c;
+  --bg: #050505;
+}
+body, .app, .main, .content { background: #050505; }
+.sidebar { background: linear-gradient(180deg, #0b0b0c, #060606); border-right: 1px solid #ffffff10; }
+.titlebar { background: linear-gradient(#0b0b0c, #070707); border-bottom: 1px solid #ffffff12; }
+.card { background: linear-gradient(160deg, #111112, #0a0a0b); border-color: #ffffff12; }
+
+/* ---------- Logo top left (image + wordmark, like the original UND.CC header) ---------- */
+.brand { flex-direction: row; align-items: center; gap: 12px; min-height: 84px; padding: 8px 8px 16px; }
+/* Statue logo (two figures carrying the H1T.CC globe): tall, so height leads. */
+.brand-logo { width: auto; height: 80px; max-width: 52px; object-fit: contain; flex: none; filter: drop-shadow(0 4px 14px rgba(255, 255, 255, .1)); }
+.brand-mark { display: none !important; }
+.brand-name { font: 900 25px/1 Georgia, "Times New Roman", serif; letter-spacing: -.04em; color: #f5f5f5; }
+.brand-name span { color: #b9b9bb; text-shadow: none; }
+.brand-sub { margin: 7px 0 0 1px; letter-spacing: .32em; font-size: 8.5px; color: #8d8d90; }
+.collapsed .brand { justify-content: center; padding: 6px 0 12px; }
+.collapsed .brand-logo { height: 52px; max-width: 34px; }
+.collapsed .brand-text { display: none; }
+
+/* ---------- White accents: primary actions are white with dark text ---------- */
+.pill.light, .opt-v2 .opt-go:not(:disabled), .opt-v2 #opt-start:not(:disabled), .db-v2 #db-start:not(:disabled),
+.tier-go.light:not(:disabled), .pill.light.tier-go:not(:disabled), #color-save {
+  background: linear-gradient(180deg, #ffffff, #e2e2e4) !important; color: var(--accent-ink) !important;
+  border-color: transparent !important; box-shadow: 0 6px 22px rgba(255, 255, 255, .08) !important; text-shadow: none !important;
+}
+.pill.light svg, .opt-go svg, .tier-go.light svg { color: var(--accent-ink) !important; stroke: currentColor; }
+.pill.light:hover:not(:disabled), .opt-v2 .opt-go:hover:not(:disabled) { background: #ffffff !important; }
+.db-v2 #db-start:disabled { background: #1a1a1c !important; color: #cfcfd2 !important; }
+.nav-item.active { background: linear-gradient(100deg, #1f1f21, #161617) !important; border-color: #ffffff2e !important; box-shadow: none !important; }
+.nav-item.active::before { background: #ffffff !important; box-shadow: 0 0 10px rgba(255, 255, 255, .45) !important; }
+.seg button.active { background: #f2f2f3 !important; color: #0b0b0c !important; box-shadow: none !important; }
+.switch input:checked + span { background: #f2f2f3 !important; border-color: #ffffff !important; box-shadow: none !important; }
+.switch input:checked + span::after { background: #0b0b0c !important; }
+.tile2.on { border-color: #ffffff38 !important; }
+.tag.live { background: #f2f2f3; color: #0b0b0c; border-color: transparent; }
+.chart-card .line, .dashboard-home .chart-card .line { stroke: #f2f2f3 !important; filter: drop-shadow(0 0 6px rgba(255, 255, 255, .35)) !important; }
+
+/* ---------- Static on hover: cards keep their place, only the frame lights up ---------- */
+.tile2:hover, .tile:hover, .mod-card:hover, .opt-v2 .row:hover, .qa:hover, .h1t-quick:hover, .h1t-launch button:hover, .h1t-metric:hover, .card:hover, .tier:hover {
+  transform: none !important;
+}
+.tile2:hover, .tile:hover, .mod-card:hover, .opt-v2 .row:hover { border-color: #ffffff2e !important; }
+.nav-item:hover, .nav-item:hover svg { transform: none !important; }
+
+/* ---------- Dashboard header: no logo on the right (the sidebar carries the brand) ---------- */
+.h1t-dash-hero:after { display: none !important; }
+.h1t-dash-hero:before { background: radial-gradient(ellipse at 84% 40%, rgba(255, 255, 255, .06), transparent 55%) !important; }
+.h1t-dash-eyebrow { color: #b9b9bb !important; }
+
+/* ---------- No footer bar; pending restart sits in the title bar ---------- */
+.statusbar { display: none !important; }
+.h1t-restart-pill { height: 33px; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; font-size: 11px; border-radius: 8px; }
+.h1t-restart-pill svg { width: 15px; height: 15px; }
+.h1t-topbar-meta #h1t-restart-slot { display: contents; padding: 0; border: 0; background: none; }
+
+/* Config badges: one calm style for all cards */
+.tier .tier-badge, .cfg-featured .tier-badge, .tier-hardcore .tier-badge, .tier-aggressive .tier-badge, .tier-safe .tier-badge { background: #ffffff0d !important; color: #d6d6d9 !important; border: 1px solid #ffffff1f !important; box-shadow: none !important; }
+/* Pending-restart pill in the title bar: own look, not the topbar badge style */
+.h1t-topbar-meta .h1t-restart-pill { background: #f2f2f3 !important; color: #0b0b0c !important; border: 0 !important; box-shadow: none !important; }
+.h1t-topbar-meta .h1t-restart-pill span { all: unset; font: 700 11px/1 var(--font, inherit); letter-spacing: .02em; color: inherit; }
+.h1t-topbar-meta .h1t-restart-pill svg { stroke: currentColor; }
+
+/* SafeMode status light: the one place with real traffic-light colours (green / yellow / red by severity). */
+.health-dot { position: relative; }
+.health-dot.green { background: #22c55e; box-shadow: 0 0 0 3px #22c55e26, 0 0 14px #22c55eb3; }
+.health-dot.yellow { background: #facc15; box-shadow: 0 0 0 3px #facc1526, 0 0 14px #facc15b3; }
+.health-dot.red { background: #ef4444; box-shadow: 0 0 0 3px #ef444426, 0 0 14px #ef4444cc; }
+.health-dot.green::after, .health-dot.yellow::after, .health-dot.red::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: inherit; animation: health-pulse 2.4s ease-out infinite; }
+.health-dot.red::after { animation-duration: 1.2s; }
+.health-dot.small::after { display: none; }
+@keyframes health-pulse { 0% { transform: scale(1); opacity: .55; } 70%, 100% { transform: scale(2.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .health-dot::after { animation: none !important; display: none; } }
+
+/* Tweak risk as a traffic light (like SafeMode): green safe, yellow medium, red risky. */
+.risk-dot { width: 9px; height: 9px; }
+.risk-low .risk-dot, .risk-dot.l { background: #22c55e !important; box-shadow: 0 0 0 3px #22c55e1f, 0 0 9px #22c55e99 !important; }
+.risk-medium .risk-dot, .risk-dot.m { background: #facc15 !important; box-shadow: 0 0 0 3px #facc151f, 0 0 9px #facc1599 !important; }
+.risk-high .risk-dot, .risk-dot.h { background: #ef4444 !important; box-shadow: 0 0 0 3px #ef44441f, 0 0 10px #ef4444b3 !important; }
+.legend .risk-dot { width: 8px; height: 8px; }
+
+/* Busy switch: the knob stays where it is; a small spinner turns inside it. */
+.switch.busy span::after { animation: none !important; border: 0 !important; background: #747474 !important; }
+.switch.busy input:checked + span::after { background: #0b0b0c !important; }
+.switch.busy span::before { content: ""; position: absolute; z-index: 1; top: 6px; left: 6px; width: 11px; height: 11px; box-sizing: border-box;
+  border-radius: 50%; border: 2px solid rgba(255, 255, 255, .92); border-right-color: transparent; animation: switch-spin .7s linear infinite; }
+.switch.busy input:checked + span::before { left: 27px; }
+@keyframes switch-spin { to { transform: rotate(360deg); } }

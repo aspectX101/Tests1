@@ -1,0 +1,48 @@
+name: Publish app update
+on:
+  push:
+    branches: ['codex/performance-backend']
+    paths: ['package.json', '.github/workflows/publish-update.yml']
+permissions:
+  contents: write
+concurrency:
+  group: undcc-publish-update
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify release version and notes
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid version' }
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
+          if ($lock.version -ne $version -or $lock.packages[''].version -ne $version) { throw 'Lockfile version mismatch' }
+          if (-not (Test-Path "release-notes/v$version.md")) { throw 'Release notes missing' }
+          "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
+      - run: npm ci
+      # Run all cross-platform and Windows integration checks before packaging.
+      - run: npm test
+      # Validate the logo hash in tests before generating multi-size Windows icons.
+      # Full dashboard regression suite validates CSS assets before icon packaging.
+      - name: Prepare H1T.CC branding for Windows
+        shell: pwsh
+        run: ./build/generate-h1t-icon.ps1
+      - run: npm run dist
+      - name: Publish verified updater asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:RELEASE_VERSION
+          $exe = "dist/UNDCC-Tweaker-$version.exe"
+          if (-not (Test-Path $exe) -or (Get-Item $exe).Length -eq 0) { throw 'Portable executable missing' }
+          gh release create "v$version" $exe --draft --target $env:GITHUB_SHA --title "H1T.CC Tweak Utility $version" --notes-file "release-notes/v$version.md"
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
+          gh release edit "v$version" --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }
