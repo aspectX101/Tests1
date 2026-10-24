@@ -365,14 +365,19 @@ function renderExtra() {
   }).join('')}</div>`;
 }
 
+// Erklärung der Ampel (auch in den Tabs mit Start/Revert All).
+const riskLegend = () => `<div class="legend"><span><i class="risk-dot l"></i>${t().risk.low}</span><span><i class="risk-dot m"></i>${t().risk.medium}</span><span><i class="risk-dot h"></i>${t().risk.high}</span></div>`;
+
 function tweakRow(tw, locked = false) {
   const busy = state.busy.has(tw.id);
   const risk = t().risk[tw.risk];
   const off = tw.available === false;
+  // Ampel statt Info-Kästchen: grün sicher, gelb mittel, rot riskant; Neustart-Hinweis im Tooltip.
+  const riskInfo = [risk, tw.requiresRestart ? t().restart : ''].filter(Boolean).join(' · ');
   return `
     <div class="card tile2 risk-${esc(tw.risk)}${tw.applied ? ' on' : ''}${busy ? ' busy' : ''}${off ? ' na' : ''}">
       <div class="tile2-top">
-        <span class="risk-dot" title="${esc(risk || '')}"></span>
+        <span class="risk-dot" role="img" title="${esc(riskInfo)}" aria-label="${esc(riskInfo)}"></span>
         <div class="tile2-name">${esc(tw.name)}</div>
         <label class="switch${busy ? ' busy' : ''}">
           <input type="checkbox" data-toggle="${esc(tw.id)}" ${tw.applied ? 'checked' : ''} ${busy || off || locked ? 'disabled' : ''} aria-label="${esc(tw.name)}">
@@ -380,11 +385,6 @@ function tweakRow(tw, locked = false) {
         </label>
       </div>
       <div class="tile2-desc">${busy ? t().working : esc(tw.description)}${off ? `<br><b>${esc(errorText(tw.stateError))}</b>` : ''}</div>
-      <div class="tile2-tags">
-        ${risk ? `<span class="tag${tw.risk === 'high' ? ' high' : ''}">${risk}</span>` : ''}
-        ${tw.requiresRestart ? `<span class="tag">${t().restart}</span>` : ''}
-        ${tw.applied ? `<span class="tag live">${t().on}</span>` : ''}
-      </div>
     </div>`;
 }
 
@@ -425,7 +425,7 @@ function renderCategory(c, parent) {
     ${all.length ? `
       <div class="toolbar">
         <div class="seg">${chip('all')}${chip('on')}${chip('off')}</div>
-        <div class="legend"><span><i class="risk-dot l"></i>${t().risk.low}</span><span><i class="risk-dot m"></i>${t().risk.medium}</span><span><i class="risk-dot h"></i>${t().risk.high}</span></div>
+        ${riskLegend()}
       </div>
       <p class="hint">${t().hint}</p>
       <div class="tgrid">${list.map(tweakRow).join('') || `<div class="card empty">—</div>`}</div>

@@ -47,7 +47,7 @@ function renderOptimization(cat='performance') {
   const chip=k=>`<button data-filter="${k}" class="${state.filter===k?'active':''}" ${opt.busy?'disabled':''}>${t()[k]}</button>`;
   return `<div class="db-actions"><button class="pill dark opt-go" id="${tab.prefix}-start" ${opt.busy||!optSelection(cat).length?'disabled':''}>${tab.start}</button><button class="pill dark" id="${tab.prefix}-revert" ${opt.busy?'disabled':''}>Revert All</button></div>
     <p class="hint">${esc(opt.busy?t().working:tr.hint)}</p>
-    <div class="toolbar"><div class="seg">${chip('all')}${chip('on')}${chip('off')}</div></div>
+    <div class="toolbar"><div class="seg">${chip('all')}${chip('on')}${chip('off')}</div>${riskLegend()}</div>
     <div class="tgrid opt-tweaks" aria-busy="${opt.busy}">${list.map(x=>tweakRow(x,opt.busy)).join('')||`<div class="card empty">${esc(t().empty)}</div>`}</div>
     ${opt.result&&(opt.result.cat||'performance')===cat?`<div class="card db-result" role="status"><strong>${esc(opt.result.ok?tr.done:tr.partial)}</strong>${opt.result.note?`<p>${esc(opt.result.note)}</p>`:''}${opt.result.results.map(x=>`<p>${esc(x.name)}: ${esc(x.error?errorText(x.error):tr[x.status])}</p>`).join('')}</div>`:''}`;
 }

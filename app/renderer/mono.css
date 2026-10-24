@@ -77,3 +77,18 @@ body, .app, .main, .content { background: #050505; }
 .health-dot.small::after { display: none; }
 @keyframes health-pulse { 0% { transform: scale(1); opacity: .55; } 70%, 100% { transform: scale(2.4); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .health-dot::after { animation: none !important; display: none; } }
+
+/* Tweak risk as a traffic light (like SafeMode): green safe, yellow medium, red risky. */
+.risk-dot { width: 9px; height: 9px; }
+.risk-low .risk-dot, .risk-dot.l { background: #22c55e !important; box-shadow: 0 0 0 3px #22c55e1f, 0 0 9px #22c55e99 !important; }
+.risk-medium .risk-dot, .risk-dot.m { background: #facc15 !important; box-shadow: 0 0 0 3px #facc151f, 0 0 9px #facc1599 !important; }
+.risk-high .risk-dot, .risk-dot.h { background: #ef4444 !important; box-shadow: 0 0 0 3px #ef44441f, 0 0 10px #ef4444b3 !important; }
+.legend .risk-dot { width: 8px; height: 8px; }
+
+/* Busy switch: the knob stays where it is; a small spinner turns inside it. */
+.switch.busy span::after { animation: none !important; border: 0 !important; background: #747474 !important; }
+.switch.busy input:checked + span::after { background: #0b0b0c !important; }
+.switch.busy span::before { content: ""; position: absolute; z-index: 1; top: 6px; left: 6px; width: 11px; height: 11px; box-sizing: border-box;
+  border-radius: 50%; border: 2px solid rgba(255, 255, 255, .92); border-right-color: transparent; animation: switch-spin .7s linear infinite; }
+.switch.busy input:checked + span::before { left: 27px; }
+@keyframes switch-spin { to { transform: rotate(360deg); } }
