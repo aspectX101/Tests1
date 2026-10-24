@@ -98,7 +98,7 @@ test('profile fields are whitelisted, trimmed and links fall back to the custome
   assert.equal('key' in p.licenses[0],false);
   assert.equal(p.licenses[0].max_devices,2);
   assert.equal(p.links.support,'https://dev.h1tutility.cc/support');
-  assert.equal(p.links.customer_area,'https://dev.h1tutility.cc/account');
+  assert.equal(p.links.customer_area,'https://h1tutility.cc/account');
 });
 test('a verified device returns profile, avatar data URI and device details to the renderer',async()=>{
   const {app,dir}=tempApp(),client=createH1tAccount(app);const old=global.fetch;
@@ -124,7 +124,7 @@ test('a verified device returns profile, avatar data URI and device details to t
     assert.match(s.user.avatar,/^data:image\/png;base64,/);
     assert.equal(avatarAuth,'Bearer '+'c'.repeat(64));
     assert.equal(s.device.label,'Gaming PC');
-    assert.equal(client.link('support'),'https://dev.h1tutility.cc/account#support');
+    assert.equal(client.link('support'),'https://h1tutility.cc/account#support');
     assert.equal(client.link('../../etc'),null);
     assert.equal(JSON.stringify(s).includes('c'.repeat(64)),false);
   }finally{global.fetch=old;fs.rmSync(dir,{recursive:true,force:true})}

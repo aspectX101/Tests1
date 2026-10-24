@@ -804,7 +804,7 @@ function renderSettings() {
   const langBtn = (l, label) => `<button data-lang="${l}" class="${state.lang === l ? 'active' : ''}">${label}</button>`;
   return `<div class="set-grid">
     ${card('account', s.account, esc(s.accountDesc), `<div class="set-actions"><button class="pill dark" data-go="account">${esc(s.details)}</button></div>`)}
-    ${card('support', s.support, esc(s.supportDesc), `<div class="set-actions"><button class="pill dark" id="side-help">${esc(s.open)}</button></div>`)}
+    ${card('support', s.support, esc(s.supportDesc), `<div class="set-actions"><button class="pill dark" id="set-support">${esc(s.open)}</button></div>`)}
     ${card('sys', s.sys, '', `${row(s.cpu, info.cpu)}${row(s.gpu, info.gpu)}${row(s.ram, info.ramGB ? `${info.ramGB} GB` : '')}${row(s.os, info.os)}`)}
     ${card('update', t().updates, `${esc(t().version(state.version))} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}${u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-log">${t().upLog}</button>`}</div>`)}
     ${card('halloween', s.halloween, esc(season ? s.halloweenDesc : s.halloweenOff), `<div class="set-row"><span>${esc(hw?.isOn() ? s.on : s.off)}</span><label class="switch"><input type="checkbox" id="set-halloween" ${hw?.isOn() ? 'checked' : ''} ${season ? '' : 'disabled'} aria-label="${esc(s.halloween)}"><span></span></label></div>`)}
@@ -1369,7 +1369,7 @@ document.addEventListener('click', (e) => {
   else if (el.id.startsWith('sm-')) safeAction(el.id.slice(3));
   else if (el.id === 'reload') load();
   else if (el.id === 'set-spotify-open') bridge.openSpotify?.();
-  else if (el.id === 'side-help') (bridge.h1tOpenAccountLink ? bridge.h1tOpenAccountLink('support') : Promise.resolve(bridge.openReleasePage?.()));
+  else if (el.id === 'side-help' || el.id === 'set-support') (bridge.h1tOpenAccountLink ? bridge.h1tOpenAccountLink('support') : Promise.resolve(bridge.openReleasePage?.()));
   else if (el.id === 'restart-later') { state.restartPending = false; render(); }
 });
 

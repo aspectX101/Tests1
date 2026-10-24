@@ -114,7 +114,7 @@ ipcMain.handle('tweaker:h1t-logout', (e) => trusted(e) ? withLicense(h1tAccount.
 ipcMain.handle('tweaker:h1t-expiry-state', (e) => trusted(e) ? licenseExpiry.publicState() : null);
 ipcMain.handle('tweaker:h1t-portal', async (e) => {
   if(!trusted(e))return {ok:false,error:'untrusted_sender'};
-  try { await shell.openExternal('https://dev.h1tutility.cc/account'); return {ok:true}; }
+  try { await shell.openExternal(h1tAccount.link('customer_area') || 'https://h1tutility.cc/account'); return {ok:true}; }
   catch{return {ok:false,error:'portal_open_failed'};}
 });
 // Voluntary diagnostics: collection, token, device_id and device_proof stay in this process.

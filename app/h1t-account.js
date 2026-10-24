@@ -7,7 +7,8 @@ const { execFileSync } = require('node:child_process');
 const { safeStorage } = require('electron');
 const diagnostics = require('./h1t-diagnostics');
 const API = 'https://dev.h1tutility.cc/api/desktop';
-const SITE = 'https://dev.h1tutility.cc';
+// Website links (customer area, licenses, support) go to the live site; the desktop API host is set separately.
+const SITE = 'https://h1tutility.cc';
 const DIAG_API = 'https://dev.h1tutility.cc/api/diagnostics';
 const MAX_AGE = 120000;
 const PREVIEW_MAX_AGE = 10 * 60000;
