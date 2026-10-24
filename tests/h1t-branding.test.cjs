@@ -24,9 +24,13 @@ test('the H1T.CC logo (cut out, transparent) is used for opening animation, side
   const logo = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets/h1t-logo.png'));
   assert.equal(logo.subarray(1, 4).toString(), 'PNG');
   assert.equal(logo[25], 6, 'RGBA PNG with transparency');
-  assert.match(index, /class="splash planet"/);
-  assert.match(index, /class="h1t-splash-emblem planet-logo"/);
-  assert.match(index, /WELCOME BACK TO/);
+  assert.match(index, /class="splash boot"/);
+  assert.match(index, /<img src="assets\/h1t-logo\.png" alt="" class="boot-logo">/);
+  assert.match(index, /WELCOME BACK/);
+  assert.match(index, /href="boot\.css"/);
+  // The specular sweep is masked by the logo itself (CSP: img-src 'self').
+  assert.match(read('app/renderer/boot.css'), /mask: url\(assets\/h1t-logo\.png\)/);
+  assert.match(read('app/renderer/boot.css'), /prefers-reduced-motion: reduce/);
   assert.match(index, /class="brand-logo" src="assets\/h1t-logo\.png"/);
   assert.match(read('app/renderer/mono.css'), /assets\/h1t-logo\.png/);
   const ico = fs.readFileSync(path.join(__dirname, '..', 'build/icon.ico'));
