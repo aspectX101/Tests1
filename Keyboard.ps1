@@ -14,6 +14,14 @@ function Get-KeyboardFields([string]$Id) {
         'keyboard.mousekeys.off' { @('mouseKeysFlags') }
         'keyboard.mouse.accel.off' { @('mouseAccel') }
         'keyboard.mouse.speed.native' { @('mouseSpeed') }
+        # More Tools > Mouse
+        'keyboard.mouse.doubleclick.fast' { @('doubleClick') }
+        'keyboard.mouse.wheel.fast' { @('wheelLines') }
+        'keyboard.mouse.snap.off' { @('snapDefault') }
+        'keyboard.mouse.trails.off' { @('mouseTrails') }
+        'keyboard.mouse.clicklock.off' { @('clickLock') }
+        'keyboard.mouse.vanish.off' { @('mouseVanish') }
+        'keyboard.mouse.buttons.normal' { @('swapButtons') }
         default { throw 'invalid_tweak_id' }
     }
 }
@@ -36,19 +44,29 @@ function Get-KeyboardValue([string]$Field) {
             ($m[0] * 65536) + ($m[1] * 256) + $m[2]
         }
         'mouseSpeed' { [Tweaker.Native.Keyboard]::Read(0x70, 1)[0] }
+        'doubleClick' { [Tweaker.Native.Keyboard]::ReadDoubleClickTime() }
+        # WHEEL_PAGESCROLL (one page per notch) reads as -1 and is stored as 0xFFFFFFFF.
+        'wheelLines' { [long][uint32][Tweaker.Native.Keyboard]::Read(0x68, 1)[0] }
+        'snapDefault' { [int]([Tweaker.Native.Keyboard]::Read(0x5F, 1)[0] -ne 0) }
+        'mouseTrails' { [Tweaker.Native.Keyboard]::Read(0x5E, 1)[0] }
+        'clickLock' { [int]([Tweaker.Native.Keyboard]::Read(0x101E, 1)[0] -ne 0) }
+        'mouseVanish' { [int]([Tweaker.Native.Keyboard]::Read(0x1020, 1)[0] -ne 0) }
+        'swapButtons' { [Tweaker.Native.Keyboard]::ReadSwapButtons() }
         default { throw 'invalid_keyboard_field' }
     }
 }
 
 function Assert-KeyboardValue([string]$Field, $Value) {
     if ($null -eq $Value -or $Value -is [bool] -or $Value.ToString() -notmatch '^\d+$') { throw 'invalid_keyboard_value' }
-    $maximum = switch ($Field) { 'delay' {3} 'speed' {31} 'filterFlags' {127} 'stickyFlags' {511} 'toggleFlags' {63} 'mouseKeysFlags' {255} 'mouseAccel' {16777215} 'mouseSpeed' {20} default {throw 'invalid_keyboard_field'} }
+    $maximum = switch ($Field) { 'delay' {3} 'speed' {31} 'filterFlags' {127} 'stickyFlags' {511} 'toggleFlags' {63} 'mouseKeysFlags' {255} 'mouseAccel' {16777215} 'mouseSpeed' {20}
+        'doubleClick' {5000} 'wheelLines' {4294967295} 'snapDefault' {1} 'mouseTrails' {16} 'clickLock' {1} 'mouseVanish' {1} 'swapButtons' {1} default {throw 'invalid_keyboard_field'} }
     if ([long]$Value -gt $maximum) { throw 'invalid_keyboard_value' }
+    if ($Field -eq 'wheelLines' -and [long]$Value -gt 100 -and [long]$Value -ne 4294967295) { throw 'invalid_keyboard_value' }
     if ($Field -eq 'mouseSpeed' -and [long]$Value -lt 1) { throw 'invalid_keyboard_value' }
     if ($Field -eq 'mouseAccel' -and ([long]$Value -band 255) -gt 2) { throw 'invalid_keyboard_value' }
 }
 
-function Set-KeyboardValue([string]$Field, [int]$Value) {
+function Set-KeyboardValue([string]$Field, [long]$Value) {
     Assert-KeyboardValue $Field $Value
     Initialize-KeyboardNative
     switch ($Field) {
@@ -60,11 +78,19 @@ function Set-KeyboardValue([string]$Field, [int]$Value) {
         'mouseKeysFlags' { [Tweaker.Native.Keyboard]::WriteFlags(0x36, 0x37, 7, $Value) }
         'mouseAccel' { [Tweaker.Native.Keyboard]::WriteMouse(($Value -shr 16) -band 255, ($Value -shr 8) -band 255, $Value -band 255) }
         'mouseSpeed' { [Tweaker.Native.Keyboard]::WritePointerValue(0x71, $Value) }
+        'doubleClick' { [Tweaker.Native.Keyboard]::WriteScalar(0x20, $Value) }
+        'wheelLines' { [Tweaker.Native.Keyboard]::WriteScalar(0x69, [uint32]$Value) }
+        'snapDefault' { [Tweaker.Native.Keyboard]::WriteScalar(0x60, $Value) }
+        'mouseTrails' { [Tweaker.Native.Keyboard]::WriteScalar(0x5D, $Value) }
+        # ClickLock and "hide pointer while typing" take the BOOL itself in pvParam.
+        'clickLock' { [Tweaker.Native.Keyboard]::WritePointerValue(0x101F, $Value) }
+        'mouseVanish' { [Tweaker.Native.Keyboard]::WritePointerValue(0x1021, $Value) }
+        'swapButtons' { [Tweaker.Native.Keyboard]::WriteScalar(0x21, $Value) }
     }
     if ((Get-KeyboardValue $Field) -ne $Value) { throw 'keyboard_verification_failed' }
 }
 
-function Get-KeyboardTarget([string]$Field, [int]$Before) {
+function Get-KeyboardTarget([string]$Field, [long]$Before) {
     switch ($Field) {
         'delay' { 0 }
         'speed' { 31 }
@@ -78,6 +104,15 @@ function Get-KeyboardTarget([string]$Field, [int]$Before) {
         'mouseAccel' { 0 }
         # 10 = 6th notch of 11, the 1:1 pointer speed.
         'mouseSpeed' { 10 }
+        # Never slower or fewer lines than the user already has.
+        'doubleClick' { [Math]::Min($Before, 300) }
+        'wheelLines' { if ($Before -eq 4294967295 -or $Before -ge 5) { $Before } else { 5 } }
+        'snapDefault' { 0 }
+        # 0 and 1 both mean no trails.
+        'mouseTrails' { if ($Before -le 1) { $Before } else { 0 } }
+        'clickLock' { 0 }
+        'mouseVanish' { 0 }
+        'swapButtons' { 0 }
         default { throw 'invalid_keyboard_field' }
     }
 }
@@ -87,6 +122,9 @@ function Get-KeyboardDefault([string]$Field) {
     switch ($Field) {
         'delay' { 1 } 'speed' { 31 } 'filterFlags' { 126 } 'stickyFlags' { 510 } 'toggleFlags' { 62 } 'mouseKeysFlags' { 62 }
         'mouseAccel' { (6 * 65536) + (10 * 256) + 1 } 'mouseSpeed' { 10 }
+        'doubleClick' { 500 } 'wheelLines' { 3 } 'mouseVanish' { 1 }
+        # Windows already ships these as the tweak target; switching off without a backup leaves them unchanged.
+        'snapDefault' { 0 } 'mouseTrails' { 0 } 'clickLock' { 0 } 'swapButtons' { 0 }
         default { throw 'invalid_keyboard_field' }
     }
 }

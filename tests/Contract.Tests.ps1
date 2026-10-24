@@ -42,7 +42,7 @@ foreach ($language in @('de','en','it')) {
         if (-not $tweak.available -and ($null -ne $tweak.applied -or -not $tweak.stateError)) { throw 'Unknown state must not claim false' }
         if ($tweak.risk -notin @('low','medium','high')) {throw 'Invalid risk'}
         if ($tweak.bulkSafe -and $tweak.risk -ne 'low') {throw 'Unsafe bulk metadata'}
-        if ($tweak.id.StartsWith('keyboard.') -and $tweak.category -ne 'keyboard') { throw 'Keyboard category required' }
+        if ($tweak.id.StartsWith('keyboard.') -and $tweak.category -notin @('keyboard','mouse')) { throw 'Keyboard or mouse category required' }
         if ($tweak.id -in @('keyboard.filterkeys.off','keyboard.stickykeys.off') -and $tweak.bulkSafe) { throw 'Accessibility tweaks require individual choice' }
     }
 }

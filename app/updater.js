@@ -1,7 +1,9 @@
 // Eigener Updater für die portable Exe (ab 0.6.0, ohne Installer).
 // 1. fragt die GitHub-API nach dem neuesten Release (aspectX101/Tests1)
-// 2. lädt UNDCC-Tweaker-<version>.exe neben die laufende Exe (…exe.new) und prüft Größe + SHA-256
-// 3. ersetzt beim Neustart (oder Beenden) die alte Exe per PowerShell-Skript (über WMI gestartet) und startet sie neu
+// 2. lädt H1T.CC-Tweaker-<version>.exe (ältere Releases: UNDCC-Tweaker-<version>.exe) neben die laufende Exe (…exe.new)
+//    und prüft Größe + SHA-256
+// 3. ersetzt beim Neustart (oder Beenden) die alte Exe per PowerShell-Skript (über WMI gestartet) und startet sie neu;
+//    eine alte UNDCC-Tweaker*.exe wird dabei zu H1T.CC-Tweaker.exe, Verknüpfungen zeigen danach auf die neue Datei
 // Sucht beim Start, beim Öffnen der Einstellungen und alle 2 Stunden. Protokoll: %APPDATA%\<App>\logs\updater.log
 const { app, shell, net } = require('electron');
 const { spawn, spawnSync } = require('child_process');
@@ -13,7 +15,9 @@ const path = require('path');
 const REPO = 'aspectX101/Tests1';
 const API_LATEST = `https://api.github.com/repos/${REPO}/releases/latest`;
 const RELEASES_URL = `https://github.com/${REPO}/releases/latest`;
-const ASSET_RE = /^UNDCC-Tweaker-(\d+\.\d+\.\d+)\.exe$/;
+// Neuer Name zuerst; der alte bleibt im Release, damit Versionen bis 0.9.29 weiter Updates finden.
+const ASSET_RE = /^(H1T\.CC|UNDCC)-Tweaker-(\d+\.\d+\.\d+)\.exe$/;
+const NEW_NAME = 'H1T.CC-Tweaker.exe';
 const CHECK_EVERY = 2 * 60 * 60 * 1000;
 const LOG_MAX = 512 * 1024;
 
@@ -48,11 +52,19 @@ function newer(a, b) {
 
 // Passende Exe im Release finden; Version kommt aus dem Dateinamen, nicht aus dem Tag.
 function pickAsset(release) {
-  for (const a of release?.assets || []) {
-    const m = ASSET_RE.exec(a.name);
-    if (m) return { url: a.browser_download_url, name: a.name, size: a.size, version: m[1], sha256: /^sha256:([0-9a-f]{64})$/.exec(a.digest || '')?.[1] || null };
-  }
-  return null;
+  const found = (release?.assets || []).map((a) => ({ a, m: ASSET_RE.exec(a.name) })).filter((x) => x.m);
+  const hit = found.find((x) => x.m[1] === 'H1T.CC') || found[0];
+  if (!hit) return null;
+  const { a, m } = hit;
+  return { url: a.browser_download_url, name: a.name, size: a.size, version: m[2], sha256: /^sha256:([0-9a-f]{64})$/.exec(a.digest || '')?.[1] || null };
+}
+
+// Ziel des Austauschs: eine alte UNDCC-Tweaker*.exe heißt danach H1T.CC-Tweaker.exe (gleicher Ordner).
+// Liegt dort schon eine andere Datei mit dem Namen, bleibt der alte Name - nichts wird überschrieben.
+function swapTarget(file) {
+  if (!/^UNDCC-Tweaker.*\.exe$/i.test(path.basename(file))) return file;
+  const renamed = path.join(path.dirname(file), NEW_NAME);
+  return fs.existsSync(renamed) ? file : renamed;
 }
 
 function start(onChange) {
@@ -80,7 +92,7 @@ async function check() {
   set({ status: 'checking', error: null });
   try {
     log('info', `GET ${API_LATEST}`);
-    const res = await net.fetch(API_LATEST, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'UNDCC-Tweaker' }, cache: 'no-store' });
+    const res = await net.fetch(API_LATEST, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'H1T.CC-Tweaker' }, cache: 'no-store' });
     if (!res.ok) throw new Error(rateLimitText(res) || `GitHub antwortet mit ${res.status}`);
     const release = await res.json();
     const asset = pickAsset(release);
@@ -123,7 +135,7 @@ function rateLimitText(res) {
 // (release-assets.githubusercontent.com) reproduzierbar HTTP 500, curl und Node dagegen 200.
 function httpsGet(url, redirects = 5) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'UNDCC-Tweaker', Accept: 'application/octet-stream' } }, (res) => {
+    https.get(url, { headers: { 'User-Agent': 'H1T.CC-Tweaker', Accept: 'application/octet-stream' } }, (res) => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirects > 0) {
         res.resume();
         resolve(httpsGet(new URL(res.headers.location, url).toString(), redirects - 1));
@@ -166,9 +178,10 @@ async function download(asset, target) {
 // Ersetzt die Exe, sobald sie frei ist (der portable Starter beendet sich mit der App), und startet sie neu.
 // Tausch-Skript: wartet auf das Ende der App, ersetzt die Exe (sobald der portable Starter sie freigibt) und startet
 // neu. Klappt der Tausch nicht, wird wenigstens die alte Exe wieder gestartet. Jeder Schritt: logs\updater-swap.log
-const SWAP_SCRIPT = `param([string]$Src, [string]$Dst, [string]$Log, [int]$Relaunch, [int]$WaitPid)
+const SWAP_SCRIPT = `param([string]$Src, [string]$Dst, [string]$Log, [int]$Relaunch, [int]$WaitPid, [string]$Old = '')
 function L($m) { try { Add-Content -LiteralPath $Log -Value ('{0} {1}' -f (Get-Date -Format o), $m) } catch {} }
-L "swap start pid=$PID src=$Src dst=$Dst relaunch=$Relaunch waitPid=$WaitPid"
+if (-not $Old) { $Old = $Dst }
+L "swap start pid=$PID src=$Src dst=$Dst old=$Old relaunch=$Relaunch waitPid=$WaitPid"
 try { Wait-Process -Id $WaitPid -Timeout 60 -ErrorAction Stop; L 'app exited' } catch { L "wait: $($_.Exception.Message)" }
 $ok = $false
 for ($i = 1; $i -le 180; $i++) {
@@ -176,8 +189,30 @@ for ($i = 1; $i -le 180; $i++) {
   catch { if ($i -eq 1 -or $i % 20 -eq 0) { L "try $($i): $($_.Exception.Message)" }; Start-Sleep -Milliseconds 500 }
 }
 if (-not $ok) { L 'FAILED: exe not replaced, starting old version' }
+if ($ok -and $Old -ne $Dst) {
+  # Renamed (UNDCC-Tweaker -> H1T.CC-Tweaker): repoint shortcuts, then remove the old exe once it is free.
+  $shell = New-Object -ComObject WScript.Shell
+  $dirs = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('CommonDesktopDirectory'),
+    [Environment]::GetFolderPath('StartMenu'), [Environment]::GetFolderPath('CommonStartMenu'),
+    (Join-Path $env:APPDATA 'Microsoft\\Internet Explorer\\Quick Launch\\User Pinned\\TaskBar')) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
+  foreach ($lnk in @(Get-ChildItem -LiteralPath $dirs -Filter *.lnk -Recurse -ErrorAction SilentlyContinue)) {
+    try {
+      $s = $shell.CreateShortcut($lnk.FullName)
+      if ($s.TargetPath -ieq $Old) {
+        $s.TargetPath = $Dst
+        if ($s.IconLocation -like ($Old + '*')) { $s.IconLocation = $Dst + ',0' }
+        $s.Save(); L "shortcut updated: $($lnk.FullName)"
+      }
+    } catch { L "shortcut $($lnk.FullName): $($_.Exception.Message)" }
+  }
+  for ($i = 1; $i -le 180; $i++) {
+    try { Remove-Item -LiteralPath $Old -Force -ErrorAction Stop; L "old exe removed after $($i) tries"; break }
+    catch { if ($i -eq 180) { L "old exe kept: $($_.Exception.Message)" }; Start-Sleep -Milliseconds 500 }
+  }
+}
+$run = if ($ok) { $Dst } else { $Old }
 if ($Relaunch -eq 1 -or -not $ok) {
-  try { Start-Process -FilePath $Dst; L 'relaunched' } catch { L "relaunch failed: $($_.Exception.Message)" }
+  try { Start-Process -FilePath $run; L "relaunched $run" } catch { L "relaunch failed: $($_.Exception.Message)" }
 }
 L 'swap done'
 `;
@@ -197,8 +232,9 @@ function apply(relaunch) {
     applying = false;
     return;
   }
+  const dst = swapTarget(exePath);
   const cmd = `"${ps}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"` +
-    ` -Src "${pending.file}" -Dst "${exePath}" -Log "${swapLog}" -Relaunch ${relaunch ? 1 : 0} -WaitPid ${process.pid}`;
+    ` -Src "${pending.file}" -Dst "${dst}" -Log "${swapLog}" -Relaunch ${relaunch ? 1 : 0} -WaitPid ${process.pid} -Old "${exePath}"`;
   log('info', `apply ${pending.version} relaunch=${relaunch} cmd=${cmd}`);
   const launcher = "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $env:UNDCC_CMD }; [Console]::Out.Write(\"$($r.ReturnValue) $($r.ProcessId)\")";
   const res = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(launcher, 'utf16le').toString('base64')],
@@ -208,7 +244,7 @@ function apply(relaunch) {
   if (code !== '0') {
     log('warn', 'wmi failed, falling back to detached spawn');
     spawn(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script,
-      '-Src', pending.file, '-Dst', exePath, '-Log', swapLog, '-Relaunch', relaunch ? '1' : '0', '-WaitPid', String(process.pid)],
+      '-Src', pending.file, '-Dst', dst, '-Log', swapLog, '-Relaunch', relaunch ? '1' : '0', '-WaitPid', String(process.pid), '-Old', exePath],
     { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(exePath) }).unref();
   }
 }
@@ -224,4 +260,4 @@ const openLog = () => logFile && shell.openPath(path.dirname(logFile));
 const openReleases = () => shell.openExternal(RELEASES_URL);
 
 module.exports = { start, check, install, openLog, openReleases, getState: () => state,
-  _test: { newer, pickAsset, download, rateLimitText, SWAP_SCRIPT, useExe(file) { exePath = file; }, pending: () => pending } };
+  _test: { newer, pickAsset, swapTarget, download, rateLimitText, SWAP_SCRIPT, useExe(file) { exePath = file; }, pending: () => pending } };

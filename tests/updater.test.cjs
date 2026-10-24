@@ -56,3 +56,56 @@ test('a failed re-check keeps the downloaded update installable; rate limit is e
   assert.equal(ctx.updater._test.rateLimitText({ status: 404, headers: { get: () => null } }), null);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('the H1T.CC-Tweaker asset is preferred; old UNDCC-only releases still work', () => {
+  const { updater } = load({ release: () => ({}), bytes: () => Buffer.alloc(0) });
+  const b = Buffer.from('x');
+  const both = { assets: [asset('0.9.30', b), { ...asset('0.9.30', b), name: 'H1T.CC-Tweaker-0.9.30.exe', browser_download_url: 'https://example.invalid/h1t' }] };
+  assert.equal(updater._test.pickAsset(both).name, 'H1T.CC-Tweaker-0.9.30.exe');
+  assert.equal(updater._test.pickAsset(both).version, '0.9.30');
+  assert.equal(updater._test.pickAsset({ assets: [asset('0.9.28', b)] }).name, 'UNDCC-Tweaker-0.9.28.exe');
+  assert.equal(updater._test.pickAsset({ assets: [{ name: 'notes.txt' }] }), null);
+});
+
+test('an old UNDCC-Tweaker exe is renamed to H1T.CC-Tweaker.exe on update, never over another file', () => {
+  const { updater } = load({ release: () => ({}), bytes: () => Buffer.alloc(0) });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'upd-'));
+  try {
+    assert.equal(updater._test.swapTarget(path.join(dir, 'UNDCC-Tweaker-0.9.10.exe')), path.join(dir, 'H1T.CC-Tweaker.exe'));
+    assert.equal(updater._test.swapTarget(path.join(dir, 'H1T.CC-Tweaker.exe')), path.join(dir, 'H1T.CC-Tweaker.exe'));
+    assert.equal(updater._test.swapTarget(path.join(dir, 'MyTweaker.exe')), path.join(dir, 'MyTweaker.exe'));
+    fs.writeFileSync(path.join(dir, 'H1T.CC-Tweaker.exe'), 'someone else');
+    assert.equal(updater._test.swapTarget(path.join(dir, 'UNDCC-Tweaker-0.9.10.exe')), path.join(dir, 'UNDCC-Tweaker-0.9.10.exe'));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('Windows: swap renames the exe, repoints a desktop shortcut and removes the old file', { skip: process.platform !== 'win32' }, () => {
+  const { spawnSync } = require('node:child_process');
+  const { updater } = load({ release: () => ({}), bytes: () => Buffer.alloc(0) });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'upd-swap-'));
+  const old = path.join(dir, 'UNDCC-Tweaker-0.9.10.exe'), src = old + '.new', dst = updater._test.swapTarget(old);
+  const script = path.join(dir, 'swap.ps1'), log = path.join(dir, 'swap.log');
+  const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  const desktop = spawnSync(ps, ['-NoProfile', '-Command', "[Environment]::GetFolderPath('Desktop')"], { encoding: 'utf8' }).stdout.trim();
+  const lnk = path.join(desktop, `H1T updater test ${process.pid}.lnk`);
+  fs.writeFileSync(old, 'old build'); fs.writeFileSync(src, 'new build');
+  fs.writeFileSync(script, '\ufeff' + updater._test.SWAP_SCRIPT, 'utf8');
+  try {
+    fs.mkdirSync(desktop, { recursive: true });
+    const mk = spawnSync(ps, ['-NoProfile', '-Command', `$s=(New-Object -ComObject WScript.Shell).CreateShortcut($env:LNK);$s.TargetPath=$env:OLD;$s.Save()`],
+      { env: { ...process.env, LNK: lnk, OLD: old }, encoding: 'utf8' });
+    assert.equal(mk.status, 0, mk.stderr);
+    const r = spawnSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-Src', src, '-Dst', dst, '-Log', log, '-Relaunch', '0', '-WaitPid', '999999', '-Old', old],
+      { encoding: 'utf8', timeout: 120000 });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(fs.readFileSync(dst, 'utf8'), 'new build');
+    assert.equal(fs.existsSync(old), false);
+    assert.equal(fs.existsSync(src), false);
+    const target = spawnSync(ps, ['-NoProfile', '-Command', '(New-Object -ComObject WScript.Shell).CreateShortcut($env:LNK).TargetPath'],
+      { env: { ...process.env, LNK: lnk }, encoding: 'utf8' }).stdout.trim();
+    assert.equal(target.toLowerCase(), dst.toLowerCase(), fs.readFileSync(log, 'utf8'));
+  } finally {
+    fs.rmSync(lnk, { force: true });
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

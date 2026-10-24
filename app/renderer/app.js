@@ -78,7 +78,7 @@ const ICONS = {
 const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.other}</svg>`;
 
 const MAIN_CATS = ['performance', 'debloat', 'network', 'privacy', 'keyboard', 'services', 'visuals', 'hitreg', 'gaming'];
-const EXTRA_CATS = ['mouse', 'controller', 'power', 'display'];
+const EXTRA_CATS = ['mouse', 'power', 'display'];
 
 // ---------- State ----------
 const store = {
@@ -181,7 +181,13 @@ const profileCandidates = (tier) => {
 const bulkOk = (tw) => tw.available !== false && tw.risk === 'low' && tw.bulkSafe === true;
 const catName = (c) => t().cats[c]?.[0] || c;
 const catDesc = (c) => t().cats[c]?.[1] || '';
-const tweaksIn = (c) => state.tweaks.filter((tw) => catOf(tw) === c);
+// Weitere Tools > Maus: feste Reihenfolge; die Einträge aus Tastatur/Oberfläche/Gaming bleiben auch dort.
+const MOUSE_IDS = ['keyboard.mouse.accel.off', 'windows.tooltip.fast', 'keyboard.mouse.doubleclick.fast', 'keyboard.mouse.wheel.fast',
+  'keyboard.mouse.snap.off', 'keyboard.mouse.trails.off', 'keyboard.mouse.clicklock.off', 'keyboard.mouse.vanish.off',
+  'keyboard.mousekeys.off', 'keyboard.mouse.buttons.normal', 'gaming.mouse.queue'];
+const tweaksIn = (c) => c === 'mouse'
+  ? MOUSE_IDS.map((id) => state.tweaks.find((tw) => tw.id === id)).filter(Boolean)
+  : state.tweaks.filter((tw) => catOf(tw) === c);
 const extraCats = () => {
   const unknown = [...new Set(state.tweaks.map(catOf))].filter((c) => !MAIN_CATS.includes(c) && !EXTRA_CATS.includes(c));
   return [...EXTRA_CATS, ...unknown];

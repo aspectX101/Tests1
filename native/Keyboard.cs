@@ -9,6 +9,17 @@ namespace Tweaker.Native {
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool SystemParametersInfo(uint action, uint parameter, IntPtr data, uint flags);
 
+        [DllImport("user32.dll")]
+        private static extern uint GetDoubleClickTime();
+
+        [DllImport("user32.dll")]
+        private static extern int GetSystemMetrics(int index);
+
+        public static int ReadDoubleClickTime() { return (int)GetDoubleClickTime(); }
+
+        // SM_SWAPBUTTON: 1 when the left and right buttons are swapped.
+        public static int ReadSwapButtons() { return GetSystemMetrics(23) != 0 ? 1 : 0; }
+
         public static int[] Read(uint action, int words) {
             // 1: scalar, 2: STICKYKEYS/TOGGLEKEYS, 6: FILTERKEYS, 7: MOUSEKEYS (all with cbSize first).
             if (words != 1 && words != 2 && words != 6 && words != 7) throw new ArgumentOutOfRangeException("words");

@@ -13,5 +13,5 @@ test('Windows PowerShell: network adapters read real cards and round-trip a per-
   const output=ps('NetworkLive.Tests.ps1',110000);console.log(output);assert.match(output,/PASS restore nagleNoDelay/);assert.match(output,/PASS round trip qosFiveM/);
 });
 test('Windows PowerShell: keyboard tab reads real settings and round-trips the live ones', {skip:process.platform!=='win32',timeout:120000}, () => {
-  const output=ps('KeyboardLive.Tests.ps1',110000);console.log(output);assert.match(output,/PASS round trip mouseSpeed/);
+  const output=ps('KeyboardLive.Tests.ps1',110000);console.log(output);assert.match(output,/PASS round trip mouseSpeed/);for(const f of ['doubleClick','wheelLines','snapDefault','mouseTrails','clickLock','mouseVanish','swapButtons'])assert.match(output,new RegExp('PASS round trip '+f+':'));
 });

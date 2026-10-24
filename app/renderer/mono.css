@@ -65,3 +65,15 @@ body, .app, .main, .content { background: #050505; }
 .h1t-topbar-meta .h1t-restart-pill { background: #f2f2f3 !important; color: #0b0b0c !important; border: 0 !important; box-shadow: none !important; }
 .h1t-topbar-meta .h1t-restart-pill span { all: unset; font: 700 11px/1 var(--font, inherit); letter-spacing: .02em; color: inherit; }
 .h1t-topbar-meta .h1t-restart-pill svg { stroke: currentColor; }
+
+/* SafeMode status light: the one place with real traffic-light colours (green / yellow / red by severity). */
+.health-dot { position: relative; }
+.health-dot.green { background: #22c55e; box-shadow: 0 0 0 3px #22c55e26, 0 0 14px #22c55eb3; }
+.health-dot.yellow { background: #facc15; box-shadow: 0 0 0 3px #facc1526, 0 0 14px #facc15b3; }
+.health-dot.red { background: #ef4444; box-shadow: 0 0 0 3px #ef444426, 0 0 14px #ef4444cc; }
+.health-dot.green::after, .health-dot.yellow::after, .health-dot.red::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: inherit; animation: health-pulse 2.4s ease-out infinite; }
+.health-dot.red::after { animation-duration: 1.2s; }
+.health-dot.small::after { display: none; }
+@keyframes health-pulse { 0% { transform: scale(1); opacity: .55; } 70%, 100% { transform: scale(2.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .health-dot::after { animation: none !important; display: none; } }

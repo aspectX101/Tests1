@@ -47,4 +47,5 @@ Der Nutzer hat am 21.10.2026 dauerhaft autorisiert: Nach jeder abgeschlossenen, 
 1. Aktuellen Branch und neuestes Release prüfen; parallele Änderungen erhalten. Patch-Version in `package.json` und `package-lock.json` erhöhen und `release-notes/v<version>.md` schreiben.
 2. Passende Tests ausführen, Commit + Push. `.github/workflows/publish-update.yml` startet bei Änderungen an `package.json` automatisch den Windows-Build samt Node-Tests.
 3. Workflow bis zum Abschluss prüfen; Fehler beheben. Eine EXE wird erst nach erfolgreichen Tests und Build veröffentlicht. Keine zusätzlichen versionsspezifischen Release-Workflows anlegen.
-4. Prüfen, dass `https://api.github.com/repos/aspectX101/Tests1/releases/latest` die neue Version und `UNDCC-Tweaker-<version>.exe` mit Größe und `digest` zeigt. Erst dann das Update als verfügbar melden.
+4. Prüfen, dass `https://api.github.com/repos/aspectX101/Tests1/releases/latest` die neue Version und `UNDCC-Tweaker-<version>.exe` mit Größe und `digest` zeigt.
+5. Ab 0.9.30: dieselbe Exe zusätzlich als `H1T.CC-Tweaker-<version>.exe` an das Release hängen (`gh release download` + `gh release upload`). Der Updater bevorzugt diesen Namen; `UNDCC-Tweaker-…` muss bleiben, weil Versionen ≤ 0.9.29 nur ihn finden und der Workflow (ohne `workflow`-Scope nicht änderbar) nur ihn hochlädt. Erst dann das Update als verfügbar melden.

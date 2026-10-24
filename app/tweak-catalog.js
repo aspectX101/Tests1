@@ -1392,6 +1392,153 @@
   },
   {
     "description": {
+      "en": "Shortens the double-click window to 300 ms (Windows default 500 ms) so double-clicks register quicker. If it is already shorter, it stays. Takes effect immediately.",
+      "it": "Riduce la finestra del doppio clic a 300 ms (predefinito Windows 500 ms) per riconoscere prima i doppi clic. Se \u00e8 gi\u00e0 pi\u00f9 breve, resta cos\u00ec. Effetto immediato.",
+      "de": "Verk\u00fcrzt das Doppelklick-Fenster auf 300 ms (Windows-Standard 500 ms), damit Doppelklicks schneller erkannt werden. Ist es schon k\u00fcrzer, bleibt es so. Sofort aktiv."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.doubleclick.fast",
+    "risk": "low",
+    "category": "mouse",
+    "requiresAdmin": true,
+    "name": {
+      "en": "Faster double-click",
+      "it": "Doppio clic pi\u00f9 rapido",
+      "de": "Schnellerer Doppelklick"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "en": "Scrolls 5 instead of 3 lines per notch. Higher custom values and \"one page per notch\" stay unchanged. Takes effect immediately.",
+      "it": "Scorre 5 righe invece di 3 per scatto. Valori personalizzati pi\u00f9 alti e \"una pagina per scatto\" restano invariati. Effetto immediato.",
+      "de": "Scrollt 5 statt 3 Zeilen pro Rasterstufe. H\u00f6here eigene Werte und \u201eeine Seite pro Rasterstufe\u201c bleiben unver\u00e4ndert. Sofort aktiv."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.wheel.fast",
+    "risk": "low",
+    "category": "mouse",
+    "requiresAdmin": true,
+    "name": {
+      "en": "Faster mouse wheel",
+      "it": "Rotellina pi\u00f9 veloce",
+      "de": "Schnelleres Mausrad"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "en": "Stops the pointer jumping to OK / Yes in dialogs. This is the Windows default; the switch makes sure it stays that way. Takes effect immediately.",
+      "it": "Impedisce al puntatore di saltare su OK / S\u00ec nelle finestre di dialogo. \u00c8 l'impostazione predefinita di Windows; l'interruttore la garantisce. Effetto immediato.",
+      "de": "Verhindert, dass der Zeiger in Dialogen automatisch auf OK oder Ja springt. Windows-Standard; der Schalter stellt es sicher. Sofort aktiv."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.snap.off",
+    "risk": "low",
+    "category": "mouse",
+    "requiresAdmin": true,
+    "name": {
+      "en": "Don't snap to default button",
+      "it": "Non saltare al pulsante predefinito",
+      "de": "Nicht zur Standard-Schaltfl\u00e4che springen"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "en": "Turns off pointer trails that draw after-images and make the pointer feel laggy. Takes effect immediately.",
+      "it": "Disattiva la scia del puntatore che disegna immagini residue e lo fa sembrare lento. Effetto immediato.",
+      "de": "Schaltet die Zeigerspur ab, die beim Bewegen Nachbilder zeichnet und den Zeiger tr\u00e4ge wirken l\u00e4sst. Sofort aktiv."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.trails.off",
+    "risk": "low",
+    "category": "mouse",
+    "requiresAdmin": true,
+    "name": {
+      "en": "Disable mouse trails",
+      "it": "Disattiva scia del mouse",
+      "de": "Mausspur aus"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "en": "Turns off ClickLock so a long press does not latch the mouse button down (for example while spraying in game). Takes effect immediately.",
+      "it": "Disattiva ClickLock, cos\u00ec una pressione lunga non blocca il tasto del mouse (ad esempio durante lo spray in gioco). Effetto immediato.",
+      "de": "Schaltet ClickLock ab, damit langes Dr\u00fccken die Maustaste nicht festh\u00e4lt (z. B. beim Spray im Spiel). Sofort aktiv."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.clicklock.off",
+    "risk": "low",
+    "category": "mouse",
+    "requiresAdmin": true,
+    "name": {
+      "en": "Disable ClickLock",
+      "it": "Disattiva ClickLock",
+      "de": "ClickLock aus"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "en": "Stops Windows hiding the cursor while you type, for example in in-game chat or menus. Takes effect immediately.",
+      "it": "Windows non nasconde pi\u00f9 il cursore mentre scrivi, ad esempio nella chat di gioco o nei menu. Effetto immediato.",
+      "de": "Windows blendet den Mauszeiger beim Tippen nicht mehr aus, z. B. im Ingame-Chat oder in Men\u00fcs. Sofort aktiv."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.vanish.off",
+    "risk": "low",
+    "category": "mouse",
+    "requiresAdmin": true,
+    "name": {
+      "en": "Keep pointer while typing",
+      "it": "Mantieni il puntatore mentre scrivi",
+      "de": "Zeiger beim Tippen behalten"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
+      "en": "Left click is primary, right click opens the context menu. Undoes a left-handed button swap; if none is set, nothing changes. Takes effect immediately.",
+      "it": "Clic sinistro primario, clic destro per il menu contestuale. Annulla lo scambio per mancini; se non \u00e8 attivo, non cambia nulla. Effetto immediato.",
+      "de": "Linke Taste = Prim\u00e4rklick, rechte Taste = Kontextmen\u00fc. Hebt vertauschte Tasten f\u00fcr Linksh\u00e4nder auf; ist sie nicht aktiv, \u00e4ndert sich nichts. Sofort aktiv."
+    },
+    "bulkSafe": false,
+    "id": "keyboard.mouse.buttons.normal",
+    "risk": "medium",
+    "category": "mouse",
+    "requiresAdmin": true,
+    "name": {
+      "en": "Normal mouse buttons",
+      "it": "Tasti del mouse normali",
+      "de": "Normale Maustasten"
+    },
+    "requiresRestart": false,
+    "reversible": true,
+    "available": true,
+    "stateError": null
+  },
+  {
+    "description": {
       "de": "Schaltet bei Ethernet- und WLAN-Karten Interrupt-Moderation, Flusskontrolle, Energy Efficient Ethernet und Large Send Offload ab und Receive Side Scaling an \u2013 sofern der Treiber diese Optionen anbietet. Pakete werden sofort statt gesammelt verarbeitet und auf mehrere Kerne verteilt: gleichm\u00e4\u00dfigere Treffer-R\u00fcckmeldung, etwas mehr CPU-Last. Neustart erforderlich.",
       "en": "Turns off interrupt moderation, flow control, Energy Efficient Ethernet and Large Send Offload and turns on Receive Side Scaling on Ethernet and Wi-Fi cards \u2013 where the driver offers them. Packets are handled immediately instead of batched and spread across cores: steadier hit feedback, slightly more CPU load. Restart required.",
       "it": "Disattiva moderazione degli interrupt, controllo di flusso, Energy Efficient Ethernet e Large Send Offload e attiva Receive Side Scaling sulle schede Ethernet e Wi-Fi, se il driver li offre. I pacchetti vengono gestiti subito e distribuiti sui core: riscontro dei colpi pi\u00f9 costante, un po\u2019 pi\u00f9 di carico CPU. Riavvio necessario."
