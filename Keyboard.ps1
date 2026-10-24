@@ -48,7 +48,8 @@ function Get-KeyboardValue([string]$Field) {
         # WHEEL_PAGESCROLL (one page per notch) reads as -1 and is stored as 0xFFFFFFFF.
         'wheelLines' { [long][uint32][Tweaker.Native.Keyboard]::Read(0x68, 1)[0] }
         'snapDefault' { [int]([Tweaker.Native.Keyboard]::Read(0x5F, 1)[0] -ne 0) }
-        'mouseTrails' { [Tweaker.Native.Keyboard]::Read(0x5E, 1)[0] }
+        # 0 and 1 both mean no trails; Windows may report either, so both read as 0.
+        'mouseTrails' { $t = [Tweaker.Native.Keyboard]::Read(0x5E, 1)[0]; if ($t -le 1) { 0 } else { $t } }
         'clickLock' { [int]([Tweaker.Native.Keyboard]::Read(0x101E, 1)[0] -ne 0) }
         'mouseVanish' { [int]([Tweaker.Native.Keyboard]::Read(0x1020, 1)[0] -ne 0) }
         'swapButtons' { [Tweaker.Native.Keyboard]::ReadSwapButtons() }
@@ -108,8 +109,7 @@ function Get-KeyboardTarget([string]$Field, [long]$Before) {
         'doubleClick' { [Math]::Min($Before, 300) }
         'wheelLines' { if ($Before -eq 4294967295 -or $Before -ge 5) { $Before } else { 5 } }
         'snapDefault' { 0 }
-        # 0 and 1 both mean no trails.
-        'mouseTrails' { if ($Before -le 1) { $Before } else { 0 } }
+        'mouseTrails' { 0 }
         'clickLock' { 0 }
         'mouseVanish' { 0 }
         'swapButtons' { 0 }

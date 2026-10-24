@@ -232,9 +232,12 @@ function apply(relaunch) {
     applying = false;
     return;
   }
-  const dst = swapTarget(exePath);
+  // Long path form: shortcuts store C:\Users\Name\..., the environment may hand over C:\Users\NAME~1\...
+  let old = exePath;
+  try { old = fs.realpathSync.native(exePath); } catch { /* keep as is */ }
+  const dst = swapTarget(old);
   const cmd = `"${ps}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"` +
-    ` -Src "${pending.file}" -Dst "${dst}" -Log "${swapLog}" -Relaunch ${relaunch ? 1 : 0} -WaitPid ${process.pid} -Old "${exePath}"`;
+    ` -Src "${pending.file}" -Dst "${dst}" -Log "${swapLog}" -Relaunch ${relaunch ? 1 : 0} -WaitPid ${process.pid} -Old "${old}"`;
   log('info', `apply ${pending.version} relaunch=${relaunch} cmd=${cmd}`);
   const launcher = "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $env:UNDCC_CMD }; [Console]::Out.Write(\"$($r.ReturnValue) $($r.ProcessId)\")";
   const res = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(launcher, 'utf16le').toString('base64')],
@@ -244,7 +247,7 @@ function apply(relaunch) {
   if (code !== '0') {
     log('warn', 'wmi failed, falling back to detached spawn');
     spawn(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script,
-      '-Src', pending.file, '-Dst', dst, '-Log', swapLog, '-Relaunch', relaunch ? '1' : '0', '-WaitPid', String(process.pid), '-Old', exePath],
+      '-Src', pending.file, '-Dst', dst, '-Log', swapLog, '-Relaunch', relaunch ? '1' : '0', '-WaitPid', String(process.pid), '-Old', old],
     { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(exePath) }).unref();
   }
 }

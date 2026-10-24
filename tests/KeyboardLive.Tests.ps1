@@ -20,7 +20,7 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
         $before=Get-KeyboardValue $field
         $target=Get-KeyboardTarget $field $before
         # Fields already at the tweak target (e.g. Windows defaults) are written to another valid value and back.
-        if ($target -eq $before) { $target = switch ($field) { 'doubleClick' {[Math]::Max(200,$before-50)} 'wheelLines' {if ($before -eq 7) {6} else {7}} 'mouseTrails' {if ($before -eq 0) {1} else {0}} default {if ($field -in @('snapDefault','clickLock','mouseVanish','swapButtons')) {1-$before} else {$before}} } }
+        if ($target -eq $before) { $target = switch ($field) { 'doubleClick' {[Math]::Max(200,$before-50)} 'wheelLines' {if ($before -eq 7) {6} else {7}} 'mouseTrails' {if ($before -eq 0) {2} else {0}} default {if ($field -in @('snapDefault','clickLock','mouseVanish','swapButtons')) {1-$before} else {$before}} } }
         try {
             Set-KeyboardValue $field $target
             Assert ((Get-KeyboardValue $field) -eq $target) ('target written '+$field)

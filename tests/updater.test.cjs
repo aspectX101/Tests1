@@ -82,7 +82,8 @@ test('an old UNDCC-Tweaker exe is renamed to H1T.CC-Tweaker.exe on update, never
 test('Windows: swap renames the exe, repoints a desktop shortcut and removes the old file', { skip: process.platform !== 'win32' }, () => {
   const { spawnSync } = require('node:child_process');
   const { updater } = load({ release: () => ({}), bytes: () => Buffer.alloc(0) });
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'upd-swap-'));
+  // Same long-path form the updater passes (fs.realpathSync.native), not the 8.3 temp path.
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'upd-swap-')));
   const old = path.join(dir, 'UNDCC-Tweaker-0.9.10.exe'), src = old + '.new', dst = updater._test.swapTarget(old);
   const script = path.join(dir, 'swap.ps1'), log = path.join(dir, 'swap.log');
   const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
