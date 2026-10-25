@@ -1474,7 +1474,7 @@ bridge.version().then((v) => {
 });
 
 // Start-Animation (boot.css): einmal ganz durchlaufen lassen; Klick überspringt; spätestens nach 7 s weg.
-// Halloween season: halloween-boot-head.js sets a longer boot (the four-scene animation).
+// halloween-boot-head.js picks a canvas boot animation (Halloween or the gunshot reveal) and sets its length.
 let SPLASH_MIN = window.H1T_BOOT_MS || (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 4300);
 const splashStart = performance.now();
 let splashDone = false;
