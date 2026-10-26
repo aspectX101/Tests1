@@ -293,7 +293,7 @@
         <div class="h1t-gate-win"><button type="button" data-acc="win-min" aria-label="Minimize">${svg('min')}</button><button type="button" data-acc="win-close" class="x" aria-label="Close">${svg('close')}</button></div></div>
       <div class="h1t-gate-shell">
         <aside class="h1t-gate-aside">
-          <div class="h1t-gate-brand"><img src="assets/h1t-logo.png" alt="" width="44" height="44"><div><b>H1T<span>.CC</span></b><small>TWEAK UTILITY</small></div></div>
+          <div class="h1t-gate-brand"><img src="assets/h1t-logo-main.webp" alt="" width="44" height="44"><div><b>H1T<span>.CC</span></b><small>TWEAK UTILITY</small></div></div>
           <div class="h1t-gate-hero"><span class="h1t-kicker">${esc(t.kicker)}</span><h1>${esc(t.welcome)}</h1><p>${esc(t.tagline)}</p></div>
           <ul class="h1t-gate-points"><li>${svg('shield')}${esc(t.f1)}</li><li>${svg('lock')}${esc(t.f2)}</li><li>${svg('pc')}${esc(t.f3)}</li></ul>
           <div class="h1t-gate-orb" aria-hidden="true"></div>

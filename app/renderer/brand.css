@@ -1,0 +1,18 @@
+/* Sidebar logo: the H1T artwork as a banner at the top of the sidebar. The standard logo in the dark design,
+   the Halloween edition while Halloween mode is on (body.halloween). The artwork already carries the name,
+   so only the "TWEAK UTILITY vX" line stays below it. Collapsed sidebar: a square tile. */
+html body .brand { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 8px; min-height: 0; padding: 4px 6px 14px; flex-shrink: 0; }
+html body .brand > .brand-mark, html body .brand .brand-name { display: none !important; }
+html body .brand > .brand-logo, html body .brand > .brand-halloween-logo {
+  display: block; width: 100%; height: auto; max-width: none; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 50%;
+  border-radius: 14px; border: 1px solid rgba(255, 255, 255, .16); filter: none; flex: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55), 0 0 24px rgba(255, 255, 255, .06);
+}
+html body .brand > .brand-halloween-logo { display: none; }
+html body .brand > .brand-text { display: block; text-align: center; }
+html body .brand .brand-sub { justify-content: center; }
+body.halloween .brand > .brand-logo { display: none; }
+body.halloween .brand > .brand-halloween-logo { display: block; border-color: rgba(255, 122, 24, .45); box-shadow: 0 10px 30px rgba(0, 0, 0, .6), 0 0 26px rgba(255, 122, 24, .28); }
+html body .collapsed .brand { align-items: center; padding: 6px 0 12px; }
+html body .collapsed .brand > .brand-logo, html body .collapsed .brand > .brand-halloween-logo { width: 46px; height: 46px; aspect-ratio: 1; border-radius: 12px; object-position: 54% 50%; }
+html body .collapsed .brand > .brand-text { display: none; }

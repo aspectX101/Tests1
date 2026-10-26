@@ -154,7 +154,7 @@
     logoSoft = sprite(w, h, (g) => { g.filter = 'blur(16px) brightness(1.4)'; g.drawImage(logo, 0, 0); });
     warm([logo, logoSoft]);
   };
-  logoImg.src = 'assets/halloween-logo.webp';
+  logoImg.src = 'assets/h1t-logo-halloween.webp';
   const purpleSmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'sepia(1) saturate(3) hue-rotate(225deg) brightness(.9)'; g.drawImage(c, 0, 0); }));
 
   // ---------- particles (state-free: position is a function of time) ----------
