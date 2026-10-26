@@ -12,7 +12,7 @@
   const splash = document.getElementById('splash');
   if (!splash) return;
   const W = 1280, H = 720, DUR = 8.0;
-  const T_FIRE1 = 1.3, T_SIDE = 1.5, T_TRIG = 2.02, T_SHOT = 2.12, T_FAST = 3.5, T_CUT = 4.55, T_HIT = 5.35, T_SHATTER = 5.95, T_LOGO = 6.25;
+  const T_FIRE1 = 1.45, T_SIDE = 1.65, T_TRIG = 2.12, T_SHOT = 2.22, T_FAST = 3.1, T_CUT = 3.85, T_HIT = 4.6, T_SHATTER = 5.2, T_LOGO = 5.45;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canvas = document.createElement('canvas');
   canvas.className = 'gun-boot-canvas';
@@ -52,6 +52,10 @@
     grd.addColorStop(0, 'rgba(255,248,225,1)'); grd.addColorStop(.25, 'rgba(255,196,110,.9)'); grd.addColorStop(1, 'rgba(255,120,30,0)');
     g.fillStyle = grd; g.fillRect(0, 0, 32, 32);
   });
+  const bokehDisc = sprite(96, 96, (g) => {
+    const grd = g.createRadialGradient(48, 48, 30, 48, 48, 46); grd.addColorStop(0, 'rgba(255,255,255,.35)'); grd.addColorStop(.85, 'rgba(255,255,255,.6)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd; g.beginPath(); g.arc(48, 48, 46, 0, TAU); g.fill();
+  });
   const vignette = sprite(W, H, (g) => {
     const grd = g.createRadialGradient(W / 2, H / 2, 220, W / 2, H / 2, 820);
     grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.85)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
@@ -72,6 +76,8 @@
     // trigger guard opening
     p.moveTo(78, 41); p.lineTo(111, 41); p.lineTo(111.5, 54); p.quadraticCurveTo(111.5, 60.5, 105, 60.5); p.lineTo(90, 60.5); p.quadraticCurveTo(80, 60.5, 77, 52); p.closePath();
     g.fillStyle = vgrad(g, 27, 132, [[0, '#4a4a4a'], [.08, '#2e2e2e'], [.3, '#222'], [1, '#121212']]); g.fill(p, 'evenodd');
+    // contact shadow right under the slide
+    g.save(); g.clip(p, 'evenodd'); g.fillStyle = vgrad(g, 27, 32, [[0, 'rgba(0,0,0,.65)'], [1, 'rgba(0,0,0,0)']]); g.fillRect(-40, 27, 230, 5); g.restore();
     // soft key light from the upper left across the polymer
     const kl = g.createRadialGradient(40, 40, 4, 40, 60, 110); kl.addColorStop(0, 'rgba(255,255,255,.1)'); kl.addColorStop(1, 'rgba(255,255,255,0)');
     g.save(); g.clip(p, 'evenodd'); g.fillStyle = kl; g.fillRect(-40, 20, 230, 120); g.restore();
@@ -108,6 +114,15 @@
     p.quadraticCurveTo(0, 27, 0, 25.5); p.lineTo(0, 1.5); p.quadraticCurveTo(0, 0, 1.5, 0); p.closePath();
     g.fillStyle = vgrad(g, 0, 27, [[0, '#2a2a2a'], [.1, '#9c9c9c'], [.18, '#e9e9e9'], [.28, '#6c6c6c'], [.55, '#262626'], [.88, '#121212'], [1, '#3a3a3a']]);
     g.fill(p);
+    // brushed finish: fine lengthwise streaks, and the lower bevel catching a second reflection
+    g.save(); g.clip(p);
+    for (let i = 0; i < 1400; i++) {
+      const y = rnd() * 27, x = rnd() * 186, l = 4 + rnd() * 34;
+      g.strokeStyle = rnd() < .5 ? `rgba(255,255,255,${.025 + rnd() * .05})` : `rgba(0,0,0,${.05 + rnd() * .08})`; g.lineWidth = .12 + rnd() * .2;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + l, y + (rnd() - .5) * .2); g.stroke();
+    }
+    g.fillStyle = vgrad(g, 19, 23.5, [[0, 'rgba(255,255,255,0)'], [.5, 'rgba(255,255,255,.1)'], [1, 'rgba(255,255,255,0)']]); g.fillRect(0, 19, 186, 4.5);
+    g.restore();
     // sights: front sight with white dot, rear sight with notch
     g.fillStyle = '#121212'; g.beginPath(); g.moveTo(176, 0); g.lineTo(177, -4); g.lineTo(181.5, -4); g.lineTo(182, 0); g.fill();
     g.beginPath(); g.moveTo(5, 0); g.lineTo(5.5, -5); g.lineTo(10, -5); g.lineTo(10, -3); g.lineTo(11.5, -3); g.lineTo(11.5, -5); g.lineTo(16, -5); g.lineTo(16.5, 0); g.fill();
@@ -149,45 +164,6 @@
     g.fillStyle = 'rgba(30,20,4,.9)'; g.beginPath(); g.ellipse(19, 0, .9, 4.6, 0, 0, TAU); g.fill();
   });
 
-  // ---------- the pistol, front view down the barrel (mm, origin = bore centre) at 30 px per mm ----------
-  const FPX = 30, FW = 32, FH = 64, FCX = 16, FCY = 20;
-  const front = sprite(FW * FPX, FH * FPX, (g) => {
-    g.scale(FPX, FPX); g.translate(FCX, FCY);
-    // frame below: dust cover, then the front of the trigger guard
-    g.fillStyle = vgrad(g, 13, 40, [[0, '#1d1d1d'], [1, '#090909']]);
-    g.beginPath(); g.roundRect(-11, 12, 22, 12, 2.5); g.fill(); g.beginPath(); g.roundRect(-6.5, 22, 13, 20, 2); g.fill();
-    g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = .25; g.beginPath(); g.roundRect(-11, 12, 22, 12, 2.5); g.stroke();
-    // slide face with chamfered lower corners
-    const face = new Path2D(); face.moveTo(-8.5, -13.5); face.lineTo(8.5, -13.5); face.quadraticCurveTo(12.75, -13.5, 12.75, -9); face.lineTo(12.75, 9); face.lineTo(10, 14);
-    face.lineTo(-10, 14); face.lineTo(-12.75, 9); face.lineTo(-12.75, -9); face.quadraticCurveTo(-12.75, -13.5, -8.5, -13.5); face.closePath();
-    let grd = g.createRadialGradient(-5, -8, .5, 0, 0, 20); grd.addColorStop(0, '#5c5c5c'); grd.addColorStop(.45, '#232323'); grd.addColorStop(1, '#0b0b0b');
-    // the top of the slide receding away from the camera
-    g.fillStyle = vgrad(g, -15.2, -13.4, [[0, '#0e0e0e'], [1, '#5a5a5a']]);
-    g.beginPath(); g.moveTo(-7.5, -15.2); g.lineTo(7.5, -15.2); g.lineTo(8.5, -13.5); g.lineTo(-8.5, -13.5); g.closePath(); g.fill();
-    g.fillStyle = grd; g.fill(face);
-    // bevelled edge: lit from the upper left, in shadow at the lower right
-    g.save(); g.clip(face);
-    const bev = g.createLinearGradient(-12, -13, 12, 14); bev.addColorStop(0, 'rgba(255,255,255,.55)'); bev.addColorStop(.5, 'rgba(255,255,255,.08)'); bev.addColorStop(1, 'rgba(0,0,0,.6)');
-    g.strokeStyle = bev; g.lineWidth = 1.6; g.stroke(face);
-    g.restore();
-    g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = .2; g.stroke(face);
-    // front sight post with its white dot
-    g.fillStyle = '#141414'; g.beginPath(); g.roundRect(-1.8, -18, 3.6, 4.8, .6); g.fill();
-    g.fillStyle = '#f2f2f2'; g.beginPath(); g.arc(0, -15.8, .85, 0, TAU); g.fill();
-    // recoil spring guide rod below the barrel
-    g.fillStyle = '#040404'; g.beginPath(); g.arc(0, 9.4, 2.7, 0, TAU); g.fill();
-    g.fillStyle = vgrad(g, 7.6, 11.2, [[0, '#4a4a4a'], [1, '#141414']]); g.beginPath(); g.arc(0, 9.4, 1.8, 0, TAU); g.fill();
-    // barrel: opening in the slide, muzzle crown, polygonal bore
-    g.fillStyle = '#050505'; g.beginPath(); g.arc(0, 0, 7.3, 0, TAU); g.fill();
-    grd = g.createLinearGradient(-6, -6, 6, 6); grd.addColorStop(0, '#d8d8d8'); grd.addColorStop(.35, '#6e6e6e'); grd.addColorStop(.6, '#2c2c2c'); grd.addColorStop(1, '#8a8a8a');
-    g.fillStyle = grd; g.beginPath(); g.arc(0, 0, 6.6, 0, TAU); g.arc(0, 0, 4.6, 0, TAU, true); g.fill();
-    // crown: a thin bright chamfer on the inner edge
-    g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = .25; g.beginPath(); g.arc(0, 0, 4.75, Math.PI * .9, Math.PI * 1.7); g.stroke();
-    g.fillStyle = '#000'; g.beginPath(); g.arc(0, 0, 4.6, 0, TAU); g.fill();
-    g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = .16;
-    for (const r of [4.3, 3.0]) { g.beginPath(); for (let k = 0; k <= 6; k++) { const a = k / 6 * TAU + r * .4; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.stroke(); }
-  });
-
   // ---------- logo ----------
   const logoImg = new Image();
   let logo = null, logoSoft = null;
@@ -203,7 +179,8 @@
   const shine = document.createElement('canvas');
 
   // ---------- glass: a jittered polar web around the impact point; edges are the cracks, cells become shards ----------
-  const GX = W / 2, GY = H / 2, RINGS = [0, 30, 85, 170, 290, 460, 690, 1000], SECT = 15;
+  // the bullet hits the top bar of the H1T logo (logo: 640 px wide, centred at y 320; the bar sits near its top)
+  const LOGO_W = 640, LOGO_CY = 320, GX = 718, GY = 207, RINGS = [0, 30, 85, 170, 290, 460, 690, 1000], SECT = 15;
   const gv = RINGS.map((r, i) => Array.from({ length: SECT }, (_, j) => {
     if (i === 0) return [GX, GY];
     const a = (j + (rnd() - .5) * .35) / SECT * TAU + (rnd() - .5) * .06 * i, rr = r * (1 + (rnd() - .5) * .3);
@@ -228,40 +205,102 @@
   const motes = Array.from({ length: 70 }, () => ({ x: rnd() * W, y: rnd() * H, v: 4 + rnd() * 12, d: (rnd() - .5) * 16, s: .15 + rnd() * .4, p: rnd() * TAU }));
   const flashSparks = Array.from({ length: 70 }, () => ({ a: (rnd() - .5) * 1.9, v: 50 + rnd() * 160, s: .25 + rnd() * .6, life: .5 + rnd() * .9 }));
   const streaks = Array.from({ length: 60 }, () => ({ y: rnd() * H, x: rnd() * W, l: 80 + rnd() * 260, w: .5 + rnd() * 1.4, v: .6 + rnd() * .8 }));
+  const impactSparks = Array.from({ length: 70 }, () => { const a = -Math.PI / 2 + (rnd() - .5) * 3.4; return { a, v: 260 + rnd() * 700, s: .3 + rnd() * .7, life: .35 + rnd() * .7 }; });
+  const bokeh = Array.from({ length: 16 }, () => ({ x: rnd() * W, y: rnd() * H, r: 10 + rnd() * 34, v: .5 + rnd(), a: .08 + rnd() * .16 }));
   const tunnel = Array.from({ length: 80 }, () => ({ a: rnd() * TAU, r: rnd(), l: .08 + rnd() * .2, w: .6 + rnd() * 1.6 }));
 
   // ---------- shot 1: down the barrel ----------
+  // A small 3D model in mm (muzzle face at z = 0, the slide runs away from the camera to z = 186; x right, y down,
+  // origin = bore centre). The camera starts above and to the right and swings round until it stares into the bore.
+  function barrelCam(t) {
+    const k = ss(0, T_FIRE1 - .08, t);
+    return { yaw: mix(.7, 0, k), pitch: mix(.36, .05, k), dist: mix(135, 62, ss(0, T_FIRE1 + .1, t)), f: 900, cx: W / 2, cy: H / 2 + 6 };
+  }
+  function proj(c, x, y, z) {
+    const cyw = Math.cos(c.yaw), syw = Math.sin(c.yaw), cp = Math.cos(c.pitch), sp = Math.sin(c.pitch);
+    const x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw, y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp, k = c.f / Math.max(z2 + c.dist, 1);
+    return [c.cx + x1 * k, c.cy + y2 * k];
+  }
+  const quad = (c, pts) => { const p = new Path2D(); pts.forEach(([x, y, z], i) => { const [sx, sy] = proj(c, x, y, z); i ? p.lineTo(sx, sy) : p.moveTo(sx, sy); }); p.closePath(); return p; };
+  const ring = (c, r, z, cy = 0, n = 40) => quad(c, Array.from({ length: n }, (_, i) => [Math.cos(i / n * TAU) * r, cy + Math.sin(i / n * TAU) * r, z]));
+  const along = (c, a, b, stops) => { const [x0, y0] = proj(c, ...a), [x1, y1] = proj(c, ...b), g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([k, col]) => g.addColorStop(k, col)); return g; };
+  const FACE = [[-8.5, -13.5], [8.5, -13.5], [12.75, -9.5], [12.75, 9], [10, 14], [-10, 14], [-12.75, 9], [-12.75, -9.5]];
   function drawBarrelView(t) {
-    const s = 8.6 + 7 * easeOut(lin(.1, T_FIRE1 + .2, t)), rot = -.05 + .04 * lin(0, T_FIRE1, t);
-    ctx.save(); ctx.translate(W / 2, H / 2 + 20); ctx.rotate(rot);
-    ctx.drawImage(front, -FCX * s, -FCY * s, FW * s, FH * s);
-    // a glint travelling along the top edge of the slide
-    const gl = lin(.45, 1.15, t);
-    if (gl > 0 && gl < 1) {
-      ctx.globalCompositeOperation = 'lighter';
-      const x = mix(-9, 11, gl) * s, y = -13.5 * s, a = Math.sin(gl * Math.PI), grd = ctx.createRadialGradient(x, y, 0, x, y, 1.6 * s);
-      grd.addColorStop(0, `rgba(255,255,255,${a})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = grd; ctx.fillRect(x - 1.6 * s, y - 1.6 * s, 3.2 * s, 3.2 * s);
-      for (const [w, h] of [[7, .12], [.12, 3]]) { const g2 = ctx.createRadialGradient(x, y, 0, x, y, Math.max(w, h) * s); g2.addColorStop(0, `rgba(255,255,255,${.8 * a})`); g2.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g2; ctx.fillRect(x - w * s, y - h * s, 2 * w * s, 2 * h * s); }
-      ctx.globalCompositeOperation = 'source-over';
+    const c = barrelCam(t), L = 186;
+    // frame below the slide (polymer): dust cover and the front of the trigger guard
+    ctx.fillStyle = along(c, [11, 19, 4], [11, 19, 170], [[0, '#1c1c1c'], [1, '#050505']]); ctx.fill(quad(c, [[11, 14, 4], [11, 14, 170], [11, 24, 170], [11, 24, 4]]));
+    ctx.fillStyle = '#191919'; ctx.fill(quad(c, [[-11, 14, 4], [11, 14, 4], [11, 24, 4], [-11, 24, 4]]));
+    ctx.fillStyle = along(c, [6.5, 30, 60], [6.5, 30, 90], [[0, '#161616'], [1, '#070707']]); ctx.fill(quad(c, [[6.5, 24, 62], [6.5, 24, 88], [6.5, 42, 88], [6.5, 42, 66]]));
+    ctx.fillStyle = '#121212'; ctx.fill(quad(c, [[-6.5, 24, 62], [6.5, 24, 62], [6.5, 42, 66], [-6.5, 42, 66]]));
+    // slide: right side, bevels, top
+    ctx.fillStyle = along(c, [12.75, 0, 0], [12.75, 0, L], [[0, '#4a4a4a'], [.35, '#1e1e1e'], [1, '#080808']]);
+    ctx.fill(quad(c, [[12.75, -9.5, 0], [12.75, -9.5, L], [12.75, 9, L], [12.75, 9, 0]]));
+    ctx.fillStyle = along(c, [12, -11, 0], [12, -11, L], [[0, '#d0d0d0'], [.25, '#5a5a5a'], [1, '#121212']]);
+    ctx.fill(quad(c, [[8.5, -13.5, 0], [8.5, -13.5, L], [12.75, -9.5, L], [12.75, -9.5, 0]]));
+    ctx.fillStyle = along(c, [11, 11, 0], [11, 11, L], [[0, '#2a2a2a'], [1, '#050505']]);
+    ctx.fill(quad(c, [[12.75, 9, 0], [12.75, 9, L], [10, 14, L], [10, 14, 0]]));
+    ctx.fillStyle = along(c, [0, -13.5, 0], [0, -13.5, L], [[0, '#7a7a7a'], [.3, '#2c2c2c'], [1, '#0c0c0c']]);
+    ctx.fill(quad(c, [[-8.5, -13.5, 0], [8.5, -13.5, 0], [8.5, -13.5, L], [-8.5, -13.5, L]]));
+    // ejection port (dark cut on top and side), rear serrations, the engraving on the side
+    ctx.fillStyle = '#030303'; ctx.fill(quad(c, [[1, -13.5, 72], [8.5, -13.5, 72], [8.5, -13.5, 112], [1, -13.5, 112]]));
+    ctx.fill(quad(c, [[8.5, -13.5, 72], [12.75, -9.5, 72], [12.75, -3, 72], [12.75, -3, 112], [12.75, -9.5, 112], [8.5, -13.5, 112]]));
+    ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.lineWidth = 1;
+    for (let z = 150; z < 182; z += 3.2) { const [ax, ay] = proj(c, 12.75, -8, z), [bx, by] = proj(c, 12.75, 8, z - 1.2); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); }
+    {
+      const [ox, oy] = proj(c, 12.75, 6, 36), [ux, uy] = proj(c, 12.75, 6, 62), [vx, vy] = proj(c, 12.75, 0, 36);
+      ctx.save(); ctx.setTransform(ctx.getTransform().multiply(new DOMMatrix([(ux - ox) / 26, (uy - oy) / 26, (vx - ox) / -6, (vy - oy) / -6, ox, oy])));
+      ctx.font = '700 6px "Segoe UI", Arial, sans-serif'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fillText('H1T.CC', 0, 0); ctx.restore();
     }
-    // the bore lights up from inside
-    const glow = ss(.8, T_FIRE1, t);
+    // front sight post with its white dot
+    ctx.fillStyle = '#0d0d0d'; ctx.fill(quad(c, [[1.8, -17.5, 2], [1.8, -17.5, 7], [1.8, -13.5, 7], [1.8, -13.5, 2]]));
+    ctx.fillStyle = '#262626'; ctx.fill(quad(c, [[-1.8, -17.5, 2], [1.8, -17.5, 2], [1.8, -17.5, 7], [-1.8, -17.5, 7]]));
+    ctx.fillStyle = '#161616'; ctx.fill(quad(c, [[-1.8, -17.5, 2], [1.8, -17.5, 2], [1.8, -13.5, 2], [-1.8, -13.5, 2]]));
+    ctx.fillStyle = '#f2f2f2'; ctx.fill(ring(c, .8, 1.9, -15.6, 16));
+    // muzzle face: chrome, bevelled edge
+    const face = quad(c, FACE.map(([x, y]) => [x, y, 0])), [fx, fy] = proj(c, -5, -8, 0), [qx, qy] = proj(c, 0, 0, 0), [ex] = proj(c, 13, 0, 0);
+    let grd = ctx.createRadialGradient(fx, fy, 2, qx, qy, Math.abs(ex - qx) * 1.6); grd.addColorStop(0, '#606060'); grd.addColorStop(.45, '#242424'); grd.addColorStop(1, '#0b0b0b');
+    ctx.fillStyle = grd; ctx.fill(face);
+    ctx.save(); ctx.clip(face); ctx.strokeStyle = along(c, [-12, -13, 0], [12, 14, 0], [[0, 'rgba(255,255,255,.55)'], [.5, 'rgba(255,255,255,.06)'], [1, 'rgba(0,0,0,.6)']]);
+    ctx.lineWidth = Math.abs(ex - qx) * .1; ctx.stroke(face); ctx.restore();
+    // recoil spring guide rod, barrel opening, crown, bore with its polygonal rifling running into the dark
+    ctx.fillStyle = '#040404'; ctx.fill(ring(c, 2.7, 0, 9.4));
+    ctx.fillStyle = '#2a2a2a'; ctx.fill(ring(c, 1.8, .3, 9.4));
+    ctx.fillStyle = '#050505'; ctx.fill(ring(c, 7.3, 0));
+    const crown = new Path2D(); crown.addPath(ring(c, 6.6, .6)); crown.addPath(ring(c, 4.6, .6));
+    ctx.fillStyle = along(c, [-6, -6, 0], [6, 6, 0], [[0, '#dadada'], [.35, '#6e6e6e'], [.6, '#2c2c2c'], [1, '#8a8a8a']]); ctx.fill(crown, 'evenodd');
+    const bore = ring(c, 4.6, .6);
+    ctx.fillStyle = '#000'; ctx.fill(bore);
+    ctx.save(); ctx.clip(bore); ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = 1;
+    for (const z of [4, 10, 18, 30]) ctx.stroke(quad(c, Array.from({ length: 7 }, (_, i) => [Math.cos(i / 6 * TAU + z * .05) * 4.4, Math.sin(i / 6 * TAU + z * .05) * 4.4, z])));
+    // the bore lights up from deep inside
+    const glow = ss(.85, T_FIRE1, t);
     if (glow > 0) {
-      ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 4.6 * s, 0, TAU); ctx.clip();
-      const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, 4.6 * s);
-      grd.addColorStop(0, `rgba(255,250,235,${glow})`); grd.addColorStop(.5, `rgba(255,190,100,${glow * .9})`); grd.addColorStop(1, `rgba(255,110,30,${glow * .6})`);
-      ctx.fillStyle = grd; ctx.fillRect(-5 * s, -5 * s, 10 * s, 10 * s); ctx.restore();
-      ctx.globalCompositeOperation = 'lighter';
-      const halo = ctx.createRadialGradient(0, 0, 4 * s, 0, 0, 14 * s); halo.addColorStop(0, `rgba(255,170,80,${.35 * glow})`); halo.addColorStop(1, 'rgba(255,120,40,0)');
-      ctx.fillStyle = halo; ctx.fillRect(-14 * s, -14 * s, 28 * s, 28 * s);
+      const [dx, dy] = proj(c, 0, 0, 40), [rx] = proj(c, 4.6, 0, .6), r = Math.abs(rx - qx) * 1.4;
+      grd = ctx.createRadialGradient(dx, dy, 0, qx, qy, r);
+      grd.addColorStop(0, `rgba(255,250,235,${glow})`); grd.addColorStop(.45, `rgba(255,190,100,${glow * .9})`); grd.addColorStop(1, `rgba(255,110,30,${glow * .5})`);
+      ctx.fillStyle = grd; ctx.fillRect(qx - r, qy - r, r * 2, r * 2);
     }
     ctx.restore();
+    if (glow > 0) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const halo = ctx.createRadialGradient(qx, qy, 4, qx, qy, Math.abs(ex - qx) * 1.3); halo.addColorStop(0, `rgba(255,170,80,${.35 * glow})`); halo.addColorStop(1, 'rgba(255,120,40,0)');
+      ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H); ctx.restore();
+    }
+    // a glint running along the top bevel while the camera swings round
+    const gl = lin(.35, 1.15, t);
+    if (gl > 0 && gl < 1) {
+      const [gx, gy] = proj(c, 10.6, -11.5, mix(150, 2, gl)), a = Math.sin(gl * Math.PI), sz = 26;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      grd = ctx.createRadialGradient(gx, gy, 0, gx, gy, sz); grd.addColorStop(0, `rgba(255,255,255,${a})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grd; ctx.fillRect(gx - sz, gy - sz, sz * 2, sz * 2);
+      for (const [w, h] of [[70, 1.2], [1.2, 30]]) { const g2 = ctx.createRadialGradient(gx, gy, 0, gx, gy, Math.max(w, h)); g2.addColorStop(0, `rgba(255,255,255,${.8 * a})`); g2.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g2; ctx.fillRect(gx - w, gy - h, 2 * w, 2 * h); }
+      ctx.restore();
+    }
     // the shot: a fireball out of the bore fills the screen
     const f = lin(T_FIRE1, T_FIRE1 + .2, t);
     if (f > 0) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const r = 4.6 * s + 1500 * easeIn(f) + 60 * f, grd = ctx.createRadialGradient(W / 2, H / 2 + 20, 0, W / 2, H / 2 + 20, r);
+      const r = 40 + 1500 * easeIn(f) + 60 * f; grd = ctx.createRadialGradient(qx, qy, 0, qx, qy, r);
       grd.addColorStop(0, 'rgba(255,255,250,1)'); grd.addColorStop(.35, 'rgba(255,224,170,1)'); grd.addColorStop(.75, `rgba(255,150,60,${.9 * f})`); grd.addColorStop(1, 'rgba(255,90,20,0)');
       ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.restore();
     }
@@ -271,8 +310,8 @@
   const travel = (t) => Math.max(0, t - T_SHOT) * 48 + 900 * easeIn(lin(T_FAST, T_CUT, t));
   function camera(t) {
     // zoom (px per mm) and the point in mm that sits in the middle of the screen
-    const b = MUZZLE[0] + travel(t), follow = ss(2.45, 3.25, t);
-    const s = mix(mix(2.75, 3.6, ss(T_SIDE, T_TRIG, t)), 6.2, ss(2.3, 3.5, t)) + 1.2 * ss(T_FAST, T_CUT, t);
+    const b = MUZZLE[0] + travel(t), follow = ss(T_SHOT + .3, T_SHOT + .95, t);
+    const s = mix(mix(2.75, 3.6, ss(T_SIDE, T_TRIG, t)), 6.2, ss(T_SHOT + .1, T_FAST + .1, t)) + 1.2 * ss(T_FAST, T_CUT, t);
     const fx = mix(mix(72, 132, ss(T_SIDE, T_SHOT, t)), b + 4, follow), fy = mix(mix(58, 30, ss(T_SIDE, T_SHOT, t)), MUZZLE[1], follow);
     return { s, ox: W / 2 - fx * s, oy: H / 2 - fy * s };
   }
@@ -291,6 +330,13 @@
         const g2 = ctx.createLinearGradient(x, 0, x + s.l * (1 + speed * 2), 0); g2.addColorStop(0, `rgba(255,255,255,${.35 * speed})`); g2.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.strokeStyle = g2; ctx.lineWidth = s.w; ctx.beginPath(); ctx.moveTo(x, s.y); ctx.lineTo(x + s.l * (1 + speed * 2), s.y); ctx.stroke();
       }
+      ctx.restore();
+    }
+    // out-of-focus lights drifting past while the camera tracks the bullet
+    const bk = ss(T_SHOT + .5, T_SHOT + 1.1, t) * (1 - ss(T_CUT - .15, T_CUT, t));
+    if (bk > 0) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const b of bokeh) { const x = ((b.x - t * (120 + 2200 * speed) * b.v) % (W + 200) + W + 200) % (W + 200) - 100; ctx.globalAlpha = b.a * bk; ctx.drawImage(bokehDisc, x - b.r, b.y - b.r, b.r * 2, b.r * 2); }
       ctx.restore();
     }
     // the gun: frame, barrel and slide (the slide recoils back and returns), trigger
@@ -387,33 +433,59 @@
 
   // ---------- shot 3: head-on bullet and the impact ----------
   function drawHeadOn(t) {
-    const u = lin(T_CUT, T_HIT, t), r = 14 * Math.pow(18, u * u) + 4;
+    const u = lin(T_CUT, T_HIT, t), at = (q) => [mix(W / 2, GX, easeIn(q)), mix(H / 2, GY, easeIn(q))], rad = (q) => 14 * Math.pow(18, q * q) + 4;
+    const [bx, by] = at(u), r = rad(u);
     ctx.fillStyle = '#050505'; ctx.fillRect(-40, -40, W + 80, H + 80);
-    // tunnel streaks rushing past
+    // tunnel streaks rushing past the bullet
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
     for (const s of tunnel) {
       const k = ((s.r + t * 1.6) % 1), r0 = 80 + k * k * 900, r1 = r0 + s.l * 900 * (.3 + k);
       ctx.strokeStyle = `rgba(255,255,255,${.4 * k})`; ctx.lineWidth = s.w * (.5 + k);
-      ctx.beginPath(); ctx.moveTo(GX + Math.cos(s.a) * r0, GY + Math.sin(s.a) * r0); ctx.lineTo(GX + Math.cos(s.a) * r1, GY + Math.sin(s.a) * r1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx + Math.cos(s.a) * r0, by + Math.sin(s.a) * r0); ctx.lineTo(bx + Math.cos(s.a) * r1, by + Math.sin(s.a) * r1); ctx.stroke();
     }
-    // shock rings
+    // shock rings and heat shimmer around the nose
     for (let i = 0; i < 4; i++) {
       const k = ((t * 3 + i / 4) % 1); ctx.strokeStyle = `rgba(255,255,255,${.22 * (1 - k)})`; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.arc(GX, GY, r * (1.2 + k * 1.6), 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx, by, r * (1.2 + k * 1.6), 0, TAU); ctx.stroke();
     }
     ctx.restore();
-    // the bullet seen from the front: copper jacket with rifling marks, spinning
-    ctx.save(); ctx.translate(GX, GY);
+    // motion blur: fading copies a moment behind
+    for (const lag of [.06, .03]) { const q = Math.max(0, u - lag); const [px, py] = at(q); bulletFace(px, py, rad(q), t, .22); }
+    bulletFace(bx, by, r, t, 1);
+  }
+  // the bullet seen from the front: copper jacket, rifling marks spinning, fixed key light
+  function bulletFace(x, y, r, t, alpha) {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y);
     let grd = ctx.createRadialGradient(-r * .3, -r * .34, r * .02, -r * .05, -r * .05, r);
     grd.addColorStop(0, '#fff6ea'); grd.addColorStop(.1, '#f6c08e'); grd.addColorStop(.42, '#c9783e'); grd.addColorStop(.82, '#6e3311'); grd.addColorStop(1, '#241004');
     ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
-    // where the round nose meets the cylindrical jacket
     ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = Math.max(1, r * .04); ctx.beginPath(); ctx.arc(0, 0, r * .74, 0, TAU); ctx.stroke();
-    // rim light on the right edge
     grd = ctx.createRadialGradient(r * .5, r * .2, r * .6, 0, 0, r * 1.02); grd.addColorStop(0, 'rgba(255,220,180,0)'); grd.addColorStop(1, 'rgba(255,220,180,.35)');
     ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+    // sharp specular spot
+    grd = ctx.createRadialGradient(-r * .32, -r * .36, 0, -r * .32, -r * .36, r * .16); grd.addColorStop(0, 'rgba(255,255,255,.95)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grd; ctx.fillRect(-r * .5, -r * .54, r * .36, r * .36);
     ctx.rotate(t * 9); ctx.strokeStyle = 'rgba(40,16,4,.5)'; ctx.lineWidth = Math.max(1, r * .03);
     for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; ctx.beginPath(); ctx.moveTo(Math.cos(a) * r * .82, Math.sin(a) * r * .82); ctx.lineTo(Math.cos(a + .12) * r * .99, Math.sin(a + .12) * r * .99); ctx.stroke(); }
+    ctx.restore();
+  }
+  // metal sparks and a white-hot dent where the bullet strikes the logo
+  function drawImpact(t) {
+    const u = t - T_HIT; if (u < 0 || u > 1.2) return;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const dent = 1 - lin(0, .7, u);
+    if (dent > 0) {
+      const grd = ctx.createRadialGradient(GX, GY, 0, GX, GY, 60); grd.addColorStop(0, `rgba(255,250,235,${dent})`); grd.addColorStop(.3, `rgba(255,190,110,${.7 * dent})`); grd.addColorStop(1, 'rgba(255,120,30,0)');
+      ctx.fillStyle = grd; ctx.fillRect(GX - 60, GY - 60, 120, 120);
+    }
+    ctx.lineCap = 'round';
+    for (const p of impactSparks) {
+      if (u > p.life) continue;
+      const pos = (q) => { const k = (1 - Math.exp(-q * 3)) / 3; return [GX + Math.cos(p.a) * p.v * k, GY + Math.sin(p.a) * p.v * k + 420 * q * q]; };
+      const [x, y] = pos(u), [x0, y0] = pos(Math.max(0, u - .03)), a = 1 - u / p.life;
+      ctx.globalAlpha = a; ctx.strokeStyle = '#ffd59a'; ctx.lineWidth = 1.6 * p.s + .4; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x, y); ctx.stroke();
+      const sz = 22 * p.s; ctx.drawImage(spark, x - sz / 2, y - sz / 2, sz, sz);
+    }
     ctx.restore();
   }
   function drawGlass(t) {
@@ -433,6 +505,7 @@
         }
       }
       for (const [a, r0, r1] of micro) { path.moveTo(GX + Math.cos(a) * r0, GY + Math.sin(a) * r0); path.lineTo(GX + Math.cos(a + .2) * r1, GY + Math.sin(a + .2) * r1); }
+      ctx.fillStyle = `rgba(255,255,255,${.035 * ss(0, .3, u)})`; ctx.fillRect(0, 0, W, H);
       const pulse = .75 + .25 * Math.sin(t * 30);
       ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 5; ctx.stroke(path);
       ctx.strokeStyle = `rgba(255,255,255,${.85 * pulse})`; ctx.lineWidth = 1.3; ctx.stroke(path);
@@ -461,22 +534,25 @@
   function drawShard(sh, dx, dy, sc, rot, a) {
     ctx.save(); ctx.globalAlpha = a;
     ctx.translate(sh.cx + dx, sh.cy + dy); ctx.rotate(rot); ctx.scale(sc, sc); ctx.translate(-sh.cx, -sh.cy);
-    ctx.fillStyle = `rgba(255,255,255,${sh.tint})`; ctx.fill(sh.path);
-    ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1.2 / sc; ctx.stroke(sh.path);
+    const glint = Math.pow(Math.abs(Math.sin(rot * 2.2 + sh.cx * .013 + sh.cy * .007)), 6);
+    ctx.fillStyle = `rgba(255,255,255,${sh.tint + .22 * glint})`; ctx.fill(sh.path);
+    ctx.strokeStyle = `rgba(255,255,255,${.45 + .45 * glint})`; ctx.lineWidth = (1 + glint) / sc; ctx.stroke(sh.path);
     ctx.restore();
   }
 
   // ---------- shot 4: logo ----------
   function drawLogo(t) {
     if (!logo) return;
-    const a = ss(T_SHATTER - .25, T_LOGO + .3, t); if (a <= 0) return;
-    const sharp = ss(T_SHATTER, T_LOGO + .45, t), sc = 1.12 - .12 * easeOut(lin(T_SHATTER, T_LOGO + 1.6, t));
-    const lw = 640 * sc, lh = lw * logo.height / logo.width, x0 = W / 2 - lw / 2, y0 = 320 - lh / 2;
+    const a = ss(T_HIT - .02, T_HIT + .12, t); if (a <= 0) return;
+    const sharp = ss(T_HIT, T_HIT + .3, t), hit = Math.pow(1 - lin(T_HIT, T_HIT + .5, t), 2), jx = Math.sin(t * 83) * 9 * hit, jy = Math.cos(t * 67) * 6 * hit;
+    const sc = 1 + .02 * ss(T_SHATTER, DUR, t), lw = LOGO_W * sc, lh = lw * logo.height / logo.width, x0 = W / 2 - lw / 2 + jx, y0 = LOGO_CY - lh / 2 + jy;
     ctx.save();
-    let grd = ctx.createRadialGradient(W / 2, 330, 30, W / 2, 330, 520); grd.addColorStop(0, `rgba(255,255,255,${.12 * a})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    let grd = ctx.createRadialGradient(W / 2, LOGO_CY + 10, 30, W / 2, LOGO_CY + 10, 520); grd.addColorStop(0, `rgba(255,255,255,${.12 * a})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = a * (1 - sharp * .75); const f = lw / logo.width; ctx.drawImage(logoSoft, x0 - SOFT_PAD * f, y0 - SOFT_PAD * f, logoSoft.width * f, logoSoft.height * f);
     ctx.globalAlpha = sharp; ctx.drawImage(logo, x0, y0, lw, lh);
+    // lit up by the impact flash
+    if (hit > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .55 * hit; ctx.drawImage(logo, x0, y0, lw, lh); }
     ctx.restore();
     // a light sweep across the chrome, masked to the logo
     const sw = lin(T_LOGO + .7, T_LOGO + 1.35, t);
@@ -494,8 +570,8 @@
     const tx = ss(T_LOGO + .55, T_LOGO + 1.1, t);
     if (tx > 0) {
       ctx.save(); ctx.globalAlpha = tx; ctx.fillStyle = '#e9e9ec'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = '700 13px "Segoe UI", system-ui, sans-serif';
-      const text = 'WELCOME BACK', sp = 8.5, widths = [...text].map((ch) => ctx.measureText(ch).width), total = widths.reduce((s, w) => s + w + sp, -sp);
+      ctx.font = '700 15px "Segoe UI", system-ui, sans-serif';
+      const text = greeting(), sp = 8.5, widths = [...text].map((ch) => ctx.measureText(ch).width), total = widths.reduce((s, w) => s + w + sp, -sp);
       let x = W / 2 - total / 2;
       [...text].forEach((ch, i) => { ctx.fillText(ch, x + widths[i] / 2, 560 + (1 - tx) * 8); x += widths[i] + sp; });
       const half = 110 * easeOut(tx);
@@ -504,6 +580,10 @@
       ctx.restore();
     }
   }
+  // "WELCOME BACK, NAME": the name of the signed-in account (cached from the last start, updated by the account UI)
+  let bootName = '';
+  try { bootName = localStorage.getItem('h1tBootName') || ''; } catch { /* no storage */ }
+  const greeting = () => { const n = bootName.replace(/[^\p{L}\p{N} ._-]/gu, '').trim().slice(0, 18).toUpperCase(); return n ? `WELCOME BACK, ${n}` : 'WELCOME BACK'; };
   function drawMotes(t, a) {
     if (a <= 0) return;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -515,6 +595,71 @@
     }
     ctx.restore();
   }
+
+  // ---------- sound (synthesized, no audio files): shots, slide, casing, bullet, glass, the bass hit on the logo ----------
+  // Off with the "Startsound" switch in the settings (localStorage h1tBootSound = '0') and with reduced motion.
+  let audio = null;
+  function startSound(startMs) {
+    try { if (reduced || localStorage.getItem('h1tBootSound') === '0') return; } catch { /* no storage: play */ }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const ac = new AC(), out = buildSound(ac, ac.currentTime - (performance.now() - startMs) / 1000 + .03);
+    if (ac.state === 'suspended') ac.resume().catch(() => {});
+    audio = { ac, out };
+  }
+  // builds the whole soundtrack on an audio context; `base` is the context time that equals animation time 0
+  function buildSound(ac, base) {
+    const out = ac.createGain(), limiter = ac.createDynamicsCompressor(), verb = ac.createConvolver(), wet = ac.createGain();
+    limiter.threshold.value = -6; limiter.knee.value = 4; limiter.ratio.value = 12; limiter.attack.value = .002; limiter.release.value = .2;
+    out.gain.value = .5; out.connect(limiter).connect(ac.destination); wet.gain.value = .35; verb.connect(wet).connect(out);
+    // short dark room reverb from decaying noise
+    const ir = ac.createBuffer(2, ac.sampleRate * 1.6, ac.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3); }
+    verb.buffer = ir;
+    const noise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate); { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    // animation time -> audio clock
+    const at = (t) => Math.max(ac.currentTime, base + t);
+    const env = (g, t0, peak, dur, attack = .004) => { g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(peak, t0 + attack); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur); };
+    const send = (node, amount) => { node.connect(out); if (amount) { const s2 = ac.createGain(); s2.gain.value = amount; node.connect(s2).connect(verb); } };
+    const boom = (t, f0, f1, dur, peak, rv = .4) => {
+      const o = ac.createOscillator(), g = ac.createGain(), t0 = at(t); o.type = 'sine';
+      o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur); env(g, t0, peak, dur); o.connect(g); send(g, rv); o.start(t0); o.stop(t0 + dur + .05);
+    };
+    const hiss = (t, dur, type, f0, f1, q, peak, rv = .3, attack = .004) => {
+      const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t0 = at(t);
+      src.buffer = noise; src.loop = true; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t0); f.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+      env(g, t0, peak, dur, attack); src.connect(f).connect(g); send(g, rv); src.start(t0, Math.random()); src.stop(t0 + dur + .05);
+    };
+    const ping = (t, freq, dur, peak, rv = .5) => {
+      const o = ac.createOscillator(), g = ac.createGain(), t0 = at(t); o.type = 'sine'; o.frequency.value = freq;
+      env(g, t0, peak, dur, .002); o.connect(g); send(g, rv); o.start(t0); o.stop(t0 + dur + .05);
+    };
+    // shot 1, straight at the camera
+    hiss(T_FIRE1, .09, 'highpass', 1800, 1200, .7, .9, .5); boom(T_FIRE1, 120, 36, .6, 1); hiss(T_FIRE1 + .01, .5, 'lowpass', 1400, 200, .7, .55, .6);
+    // slow-motion shot: everything pitched down and stretched
+    boom(T_SHOT, 64, 22, 1.7, 1, .6); hiss(T_SHOT, 1.8, 'lowpass', 700, 90, .8, .6, .7, .02);
+    // slide going back and forward, casing clinks
+    for (const [dt, f] of [[.26, 1700], [.52, 1300]]) { hiss(T_SHOT + dt, .05, 'highpass', 2500, 1800, 1, .35, .2); ping(T_SHOT + dt, f, .12, .12, .2); }
+    [[1.0, .22], [1.17, .14], [1.29, .08]].forEach(([dt, v]) => { for (const f of [3150, 4720, 6900]) ping(T_SHOT + dt, f * (1 + (Math.random() - .5) * .04), .3, v * (f === 3150 ? 1 : .6), .4); });
+    // the bullet speeding up, then rushing at the camera
+    hiss(T_FAST - .35, T_CUT - T_FAST + .35, 'bandpass', 260, 2600, 1.2, .5, .2, .6);
+    hiss(T_CUT, T_HIT - T_CUT, 'bandpass', 700, 5200, 1.5, .55, .2, .5);
+    // impact on the logo: metal clang, glass cracking, tinkles
+    boom(T_HIT, 190, 55, .45, 1, .6); hiss(T_HIT, .18, 'highpass', 3200, 2400, .8, .8, .5);
+    for (const f of [1180, 2350, 3710]) ping(T_HIT, f, .7, .16, .7);
+    for (let i = 0; i < 18; i++) ping(T_HIT + .05 + Math.random() * .55, 3000 + Math.random() * 5000, .12 + Math.random() * .2, .05 + Math.random() * .06, .5);
+    // the glass shatters, then the deep hit as the logo stands clear
+    hiss(T_SHATTER, .7, 'highpass', 4200, 2200, .7, .7, .6);
+    for (let i = 0; i < 34; i++) ping(T_SHATTER + Math.random() * 1.1, 2600 + Math.random() * 6200, .1 + Math.random() * .25, .03 + Math.random() * .07, .6);
+    boom(T_SHATTER + .04, 58, 32, 1.6, 1, .7);
+    for (const f of [880, 1320, 1760]) { const o = ac.createOscillator(), g = ac.createGain(), t0 = at(T_LOGO + .7); o.frequency.value = f; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.025, t0 + .4); g.gain.exponentialRampToValueAtTime(.0001, t0 + 2); o.connect(g); send(g, .8); o.start(t0); o.stop(t0 + 2.1); }
+    return out;
+  }
+  function stopSound() {
+    if (!audio) return;
+    const { ac, out } = audio; audio = null;
+    try { out.gain.setTargetAtTime(0, ac.currentTime, .06); setTimeout(() => ac.close().catch(() => {}), 400); } catch { /* already closed */ }
+  }
+  splash.addEventListener('pointerdown', stopSound);
 
   // ---------- frame ----------
   // hq: bloom on and HiDPI pixels. If the machine cannot hold 60 fps it drops to a lighter mode once.
@@ -543,7 +688,7 @@
       if (t < T_HIT) drawHeadOn(t);
       else { ctx.fillStyle = '#050505'; ctx.fillRect(-40, -40, W + 80, H + 80); }
     } else { ctx.fillStyle = '#050505'; ctx.fillRect(-40, -40, W + 80, H + 80); }
-    if (t >= T_HIT) { drawMotes(t, ss(T_SHATTER, T_LOGO + .8, t) * .6); drawLogo(t); drawGlass(t); }
+    if (t >= T_HIT) { drawMotes(t, ss(T_SHATTER, T_LOGO + .8, t) * .6); drawLogo(t); drawImpact(t); drawGlass(t); }
     // white-outs: out of shot 1 into the side view, and the cut to the head-on bullet
     const wo = Math.max(1 - lin(T_SIDE, T_SIDE + .3, t), 0) * (t >= T_SIDE ? 1 : 0) + Math.max(0, 1 - Math.abs(t - T_CUT) / .07) * .9;
     if (wo > 0) { ctx.save(); ctx.globalAlpha = clamp(wo, 0, 1); ctx.fillStyle = '#fff6ea'; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.restore(); }
@@ -571,14 +716,15 @@
   }
 
   resize();
-  warm([...smoke, mote, spark, vignette, gunFrame, barrel, slide, bulletSide, casing, front]);
+  warm([...smoke, mote, spark, bokehDisc, vignette, gunFrame, barrel, slide, bulletSide, casing]);
   // Render one frame of every shot up front (the screen is still black) so first-use costs never stall a scene.
-  for (const t of [1.0, 1.4, 1.8, 2.3, 3.8, 4.9, 5.5, 6.2]) frame(t);
+  for (const t of [1.0, 1.55, 1.9, 2.4, 3.4, 4.2, 4.8, 5.3, 5.6]) frame(t);
   window.addEventListener('resize', resize);
   const start = performance.now(), STEP = 1000 / 60;
+  startSound(start);
   let raf = 0, last = -1e9, due = 0, slow = 0, frames = 0;
   function tick(now) {
-    if (!canvas.isConnected) return;
+    if (!canvas.isConnected) { stopSound(); return; }
     raf = requestAnimationFrame(tick);
     // steady 60 fps: on 120/144 Hz screens the extra vsyncs are skipped, keeping an average of exactly 60 renders a second
     if (now < due - 3) return;
@@ -588,9 +734,11 @@
     frame(t);
     // more than a third of the last 30 frames late: switch to the lighter mode once
     if (hq && t > .5) { frames++; if (gap > 24) slow++; if (frames >= 30) { if (slow > 10) { hq = false; resize(); } frames = slow = 0; } }
-    if (t >= DUR) cancelAnimationFrame(raf);
+    if (t >= DUR) { cancelAnimationFrame(raf); setTimeout(stopSound, 1600); }
   }
   raf = requestAnimationFrame(tick);
   // Test/preview hook: render any moment (used by the frame captures).
-  window.H1tGunBoot = { renderAt: (t) => { cancelAnimationFrame(raf); frame(t); }, duration: DUR, ready: () => !!logo };
+  window.H1tGunBoot = { renderAt: (t) => { cancelAnimationFrame(raf); frame(t); }, duration: DUR, ready: () => !!logo, setName: (n) => { bootName = String(n || ''); },
+    // test hook: render the soundtrack offline (for listening checks)
+    renderSound: async () => { const oc = new OfflineAudioContext(2, 44100 * 9, 44100); buildSound(oc, 0); return oc.startRendering(); } };
 })();

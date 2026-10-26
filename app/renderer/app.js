@@ -771,14 +771,17 @@ const SET_TEXT = {
   de: { account: 'H1T.CC Account', accountDesc: 'Lizenz, verknüpfter PC, Profil und Datenschutz.', details: 'Details', support: 'Support', supportDesc: 'Hilfe, Tickets und Customer Area.', open: 'Öffnen',
     sys: 'Systeminfo', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Halloween-Modus', halloweenDesc: 'Gruseliger Look mit Effekten – vom 15.10. bis 1.11. automatisch an. Auch über den Kürbis oben schaltbar.', halloweenOff: 'Nur in der Halloween-Zeit (15.10.–1.11.) verfügbar.',
     spotify: 'Spotify', spotifyDesc: 'Zeigt den laufenden Song aus der Spotify-Desktop-App im Dashboard und steuert ihn (Windows-Medienwiedergabe, kein Login nötig).', spotifyShow: 'Im Dashboard anzeigen', spotifyOpen: 'Spotify öffnen',
+    boot: 'Startanimation', bootDesc: 'Schuss, Glas und Bass beim Start des dunklen Designs – komplett im Tweaker erzeugt.', bootSound: 'Sound',
     reloadTitle: 'Daten neu laden', on: 'An', off: 'Aus' },
   en: { account: 'H1T.CC account', accountDesc: 'License, linked PC, profile and privacy.', details: 'Details', support: 'Support', supportDesc: 'Help, tickets and Customer Area.', open: 'Open',
     sys: 'System info', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Halloween mode', halloweenDesc: 'Spooky look with effects – on automatically from 15 Oct to 1 Nov. Also switchable with the pumpkin at the top.', halloweenOff: 'Only available during Halloween (15 Oct – 1 Nov).',
     spotify: 'Spotify', spotifyDesc: 'Shows and controls the song playing in the Spotify desktop app on the dashboard (Windows media session, no login needed).', spotifyShow: 'Show on dashboard', spotifyOpen: 'Open Spotify',
+    boot: 'Startup animation', bootDesc: 'Gunshot, glass and bass when the dark design starts – generated entirely inside the tweaker.', bootSound: 'Sound',
     reloadTitle: 'Reload data', on: 'On', off: 'Off' },
   it: { account: 'Account H1T.CC', accountDesc: 'Licenza, PC collegato, profilo e privacy.', details: 'Dettagli', support: 'Supporto', supportDesc: 'Aiuto, ticket e Customer Area.', open: 'Apri',
     sys: 'Info di sistema', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Modalità Halloween', halloweenDesc: 'Look spettrale con effetti – attivo automaticamente dal 15/10 al 1/11. Attivabile anche con la zucca in alto.', halloweenOff: 'Disponibile solo nel periodo di Halloween (15/10 – 1/11).',
     spotify: 'Spotify', spotifyDesc: 'Mostra e controlla nel dashboard il brano dell’app desktop di Spotify (sessione multimediale di Windows, nessun login).', spotifyShow: 'Mostra nel dashboard', spotifyOpen: 'Apri Spotify',
+    boot: 'Animazione di avvio', bootDesc: 'Sparo, vetro e bassi all’avvio del design scuro – generati interamente nel tweaker.', bootSound: 'Audio',
     reloadTitle: 'Ricarica dati', on: 'On', off: 'Off' },
 };
 const SET_ICONS = {
@@ -788,6 +791,7 @@ const SET_ICONS = {
   update: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',
   halloween: '<path d="M12 7.5c-.3-2.2.6-3.8 2.6-4.6"/><path d="M12 7.2c-2.6-1.6-6.7-.6-8.1 2.9-1.4 3.5.3 8.4 3.7 9.6 1.6.6 3.2.2 4.4-.6 1.2.8 2.8 1.2 4.4.6 3.4-1.2 5.1-6.1 3.7-9.6-1.4-3.5-5.5-4.5-8.1-2.9Z"/><path d="m8 12.3 1.4-1.3 1.3 1.3M13.3 12.3l1.3-1.3 1.4 1.3M8.3 15.4c1.2.6 2.3.3 3.7-.4 1.4.7 2.5 1 3.7.4"/>',
   spotify: '<circle cx="12" cy="12" r="10"/><path d="M7 9.5c3.5-1.2 7.4-.9 10.4.9M7.6 12.6c2.9-.9 6-.6 8.6.8M8.3 15.5c2.3-.6 4.6-.4 6.6.6"/>',
+  boot: '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12"/>',
   lang: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
   file: '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v5h5"/>',
   reload: '<path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"/>',
@@ -800,7 +804,7 @@ function renderSettings() {
   const upBtn = u.status === 'ready' ? `<button class="pill light" id="up-install">${t().upInstall}</button>`
     : u.status === 'unsupported' ? '' : `<button class="pill light" id="up-check" ${u.status === 'checking' || u.status === 'downloading' ? 'disabled' : ''}>${t().upCheck}</button>`;
   const hw = window.H1tHalloween, season = !!hw?.inSeason();
-  const spotifyOn = store.get('spotifyCard', '1') === '1';
+  const spotifyOn = store.get('spotifyCard', '1') === '1', bootSound = store.get('h1tBootSound', '1') === '1';
   const langBtn = (l, label) => `<button data-lang="${l}" class="${state.lang === l ? 'active' : ''}">${label}</button>`;
   return `<div class="set-grid">
     ${card('account', s.account, esc(s.accountDesc), `<div class="set-actions"><button class="pill dark" data-go="account">${esc(s.details)}</button></div>`)}
@@ -809,6 +813,7 @@ function renderSettings() {
     ${card('update', t().updates, `${esc(t().version(state.version))} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}${u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-log">${t().upLog}</button>`}</div>`)}
     ${card('halloween', s.halloween, esc(season ? s.halloweenDesc : s.halloweenOff), `<div class="set-row"><span>${esc(hw?.isOn() ? s.on : s.off)}</span><label class="switch"><input type="checkbox" id="set-halloween" ${hw?.isOn() ? 'checked' : ''} ${season ? '' : 'disabled'} aria-label="${esc(s.halloween)}"><span></span></label></div>`)}
     ${card('spotify', s.spotify, esc(s.spotifyDesc), `<div class="set-row"><span>${esc(s.spotifyShow)}</span><label class="switch"><input type="checkbox" id="set-spotify" ${spotifyOn ? 'checked' : ''} aria-label="${esc(s.spotifyShow)}"><span></span></label></div><div class="set-actions"><button class="pill dark" id="set-spotify-open">${esc(s.spotifyOpen)}</button></div>`)}
+    ${card('boot', s.boot, esc(s.bootDesc), `<div class="set-row"><span>${esc(s.bootSound)}</span><label class="switch"><input type="checkbox" id="set-bootsound" ${bootSound ? 'checked' : ''} aria-label="${esc(s.bootSound)}"><span></span></label></div>`)}
     ${card('lang', t().language, esc(t().languageDesc), `<div class="seg">${langBtn('de', 'Deutsch')}${langBtn('en', 'English')}${langBtn('it', 'Italiano')}</div>`)}
     ${state.exe ? card('file', t().appLocTitle, esc(t().appLocDesc), `<div class="mono" title="${esc(state.exe)}">${esc(state.exe)}</div><div class="set-actions"><button class="pill dark" id="app-show">${t().appShow}</button><button class="pill dark" id="app-lnk-desktop">${t().appLnkDesktop}</button></div>`) : ''}
     ${card('reload', s.reloadTitle, `${esc(t().backend)}: <b>${esc(t().modes[state.mode] || state.mode || '…')}</b>`, `<div class="set-actions"><button class="pill dark" id="reload">${t().reload}</button></div>`)}
@@ -1411,6 +1416,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', async (e) => {
   if (e.target.id === 'set-halloween') { window.H1tHalloween?.set(e.target.checked); render(); return; }
   if (e.target.id === 'set-spotify') { store.set('spotifyCard', e.target.checked ? '1' : '0'); render(); return; }
+  if (e.target.id === 'set-bootsound') { store.set('h1tBootSound', e.target.checked ? '1' : '0'); render(); return; }
   if (e.target.dataset?.modToggle) { modToggle(e.target.dataset.modToggle, e.target.checked); return; }
   const id = e.target.dataset?.toggle;
   if (!id) return;

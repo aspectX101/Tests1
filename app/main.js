@@ -93,6 +93,8 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // the boot animation plays its own synthesized sound before the user has clicked anything
+      autoplayPolicy: 'no-user-gesture-required',
     },
   });
   win.once('ready-to-show', () => win.show());

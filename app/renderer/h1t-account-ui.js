@@ -315,6 +315,9 @@
   function renderButton() {
     const t = tx(), p = profile || {};
     const signedIn = p.signed_in || p.status === 'development';
+    // the boot animation greets the signed-in account by name next time ("WELCOME BACK, NAME")
+    try { if (p.user) localStorage.setItem('h1tBootName', displayName(p)); else if (p.signed_in === false) localStorage.removeItem('h1tBootName'); } catch { /* no storage */ }
+    if (p.user) window.H1tGunBoot?.setName?.(displayName(p));
     accBtn.innerHTML = signedIn
       ? `${avatar(p, 'sm')}<span class="h1t-acc-name">${esc(displayName(p))}</span><i class="h1t-acc-dot ${statusTone(p)}" aria-hidden="true"></i>${svg('chev')}`
       : `<span class="h1t-avatar h1t-avatar-sm ghost">${svg('user')}</span><span class="h1t-acc-name">${esc(t.signIn)}</span>`;
