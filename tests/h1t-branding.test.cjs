@@ -31,16 +31,16 @@ test('the H1T logos are used for the opening animations, sidebar, dashboard and 
   // The specular sweep is masked by the logo itself (CSP: img-src 'self').
   assert.match(read('app/renderer/boot.css'), /mask: url\(assets\/h1t-logo\.png\)/);
   assert.match(read('app/renderer/boot.css'), /prefers-reduced-motion: reduce/);
-  // sidebar: the standard H1T artwork, and the Halloween edition while Halloween mode is on (brand.css)
-  assert.match(index, /class="brand-logo" src="assets\/h1t-logo-main\.webp"/);
-  assert.match(index, /class="brand-halloween-logo" src="assets\/h1t-logo-halloween\.webp"/);
+  // sidebar: the H1T mark cut out of its artwork, the Halloween edition while Halloween mode is on (brand.css)
+  assert.match(index, /class="brand-logo" src="assets\/h1t-logo-main\.png"/);
+  assert.match(index, /class="brand-halloween-logo" src="assets\/h1t-logo-halloween\.png"/);
   assert.match(index, /href="brand\.css"/);
-  for (const f of ['h1t-logo-main.webp', 'h1t-logo-halloween.webp']) {
+  for (const f of ['h1t-logo-main.png', 'h1t-logo-halloween.png']) {
     const img = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets', f));
-    assert.equal(img.subarray(0, 4).toString() + img.subarray(8, 12).toString(), 'RIFFWEBP', `${f} is a WebP image`);
+    assert.equal(img.subarray(1, 4).toString(), 'PNG'); assert.equal(img[25], 6, `${f} is an RGBA PNG with a transparent background`);
   }
-  assert.match(read('app/renderer/glock-boot.js'), /assets\/h1t-logo-main\.webp/);
-  assert.match(read('app/renderer/halloween-boot.js'), /assets\/h1t-logo-halloween\.webp/);
+  assert.match(read('app/renderer/glock-boot.js'), /assets\/h1t-logo-main\.png/);
+  assert.match(read('app/renderer/halloween-boot.js'), /assets\/h1t-logo-halloween\.png/);
   assert.match(read('app/renderer/mono.css'), /\.h1t-dash-hero:after \{ display: none !important; \}/);
   const ico = fs.readFileSync(path.join(__dirname, '..', 'build/icon.ico'));
   assert.equal(ico.readUInt16LE(2), 1); assert.equal(ico.readUInt16LE(4), 7, 'icon has 7 sizes (16-256 px)');

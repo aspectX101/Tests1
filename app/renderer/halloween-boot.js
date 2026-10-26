@@ -4,7 +4,7 @@
 //   2 Sheet      – the sheet is blown off, flutters towards the camera and wipes away to the next scene
 //   3 Pumpkin    – a carved jack-o'-lantern lights up in the dark, the camera rushes into its grin
 //   4 Burst      – a white flash bursts into smoke and dust, a glowing skeleton runs through the fog
-//   5 Logo       – the Halloween H1T.CC artwork condenses out of purple fog, its glowing cracks breathe
+//   5 Logo       – the Halloween H1T mark condenses out of purple fog, its glowing edges breathe
 // Everything is drawn in code (no video); heavy parts are pre-rendered into sprites once and each frame only
 // composes them. A cheap two-step bloom gives the glow. Active only when <html> has .hw-boot.
 (() => {
@@ -139,22 +139,17 @@
     g.fillStyle = grd; g.fillRect(-PCX, -PCY, PW, PH);
   });
 
-  // ---------- logo: the Halloween artwork, its edges feathered into the purple fog ----------
+  // ---------- logo: the Halloween edition of the H1T mark, cut out on transparency (build/cut-logos.cjs) ----------
   const logoImg = new Image();
   let logo = null, logoSoft = null;
+  const SOFT_PAD = 60;
   logoImg.onload = () => {
-    const w = logoImg.width, h = logoImg.height;
-    logo = sprite(w, h, (g) => {
-      g.drawImage(logoImg, 0, 0);
-      g.globalCompositeOperation = 'destination-in';
-      g.translate(w / 2, h / 2); g.scale(1, h / w);
-      const grd = g.createRadialGradient(0, 0, w * .34, 0, 0, w * .52); grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = grd; g.fillRect(-w, -w, w * 2, w * 2);
-    });
-    logoSoft = sprite(w, h, (g) => { g.filter = 'blur(16px) brightness(1.4)'; g.drawImage(logo, 0, 0); });
+    logo = logoImg;
+    // the glow copy gets a margin so the blur is not clipped into a visible rectangle
+    logoSoft = sprite(logoImg.width + SOFT_PAD * 2, logoImg.height + SOFT_PAD * 2, (g) => { g.filter = 'blur(16px) brightness(1.4)'; g.drawImage(logoImg, SOFT_PAD, SOFT_PAD); });
     warm([logo, logoSoft]);
   };
-  logoImg.src = 'assets/h1t-logo-halloween.webp';
+  logoImg.src = 'assets/h1t-logo-halloween.png';
   const purpleSmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'sepia(1) saturate(3) hue-rotate(225deg) brightness(.9)'; g.drawImage(c, 0, 0); }));
 
   // ---------- particles (state-free: position is a function of time) ----------
@@ -464,12 +459,12 @@
     if (!logo) return;
     const a = ss(T_LOGO, T_LOGO + .8, t); if (a <= 0) return;
     const sharp = ss(T_LOGO + .35, T_LOGO + 1.1, t), sc = 1.08 - .08 * easeOut(lin(T_LOGO, T_LOGO + 1.75, t));
-    const lh = 700 * sc, lw = lh * logo.width / logo.height, x0 = W / 2 - lw / 2, y0 = H / 2 - lh / 2;
+    const lw = 760 * sc, lh = lw * logo.height / logo.width, x0 = W / 2 - lw / 2, y0 = H / 2 - lh / 2 + 10;
     ctx.save();
     const grd = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 700); grd.addColorStop(0, `rgba(120,60,190,${.3 * a})`); grd.addColorStop(1, 'rgba(60,20,110,0)');
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
     // it condenses out of the smoke: a blurred copy first, then the sharp artwork
-    ctx.globalAlpha = a * (1 - sharp * .7); ctx.drawImage(logoSoft, x0 - 12, y0 - 12, lw + 24, lh + 24);
+    ctx.globalAlpha = a * (1 - sharp * .7); const f = lw / logo.width; ctx.drawImage(logoSoft, x0 - SOFT_PAD * f, y0 - SOFT_PAD * f, logoSoft.width * f, logoSoft.height * f);
     ctx.globalAlpha = sharp; ctx.drawImage(logo, x0, y0, lw, lh);
     // the glowing cracks and pumpkins breathe
     const pulse = ss(T_LOGO + 1, T_LOGO + 1.5, t) * (.12 + .08 * Math.sin(t * 5) + .04 * Math.sin(t * 13));

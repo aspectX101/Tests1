@@ -191,19 +191,15 @@
   // ---------- logo ----------
   const logoImg = new Image();
   let logo = null, logoSoft = null;
-  // the standard H1T artwork, its square edges feathered into the black
+  const SOFT_PAD = 60;
+  // the standard H1T mark, cut out on transparency (build/cut-logos.cjs)
   logoImg.onload = () => {
-    const w = logoImg.width, h = logoImg.height;
-    logo = sprite(w, h, (g) => {
-      g.drawImage(logoImg, 0, 0);
-      g.globalCompositeOperation = 'destination-in';
-      const grd = g.createRadialGradient(w / 2, h / 2, w * .3, w / 2, h / 2, w * .5); grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = grd; g.fillRect(0, 0, w, h);
-    });
-    logoSoft = sprite(w, h, (g) => { g.filter = 'blur(18px) brightness(1.5)'; g.drawImage(logo, 0, 0); });
+    logo = logoImg;
+    // the glow copy gets a margin so the blur is not clipped into a visible rectangle
+    logoSoft = sprite(logoImg.width + SOFT_PAD * 2, logoImg.height + SOFT_PAD * 2, (g) => { g.filter = 'blur(18px) brightness(1.5)'; g.drawImage(logoImg, SOFT_PAD, SOFT_PAD); });
     warm([logo, logoSoft]);
   };
-  logoImg.src = 'assets/h1t-logo-main.webp';
+  logoImg.src = 'assets/h1t-logo-main.png';
   const shine = document.createElement('canvas');
 
   // ---------- glass: a jittered polar web around the impact point; edges are the cracks, cells become shards ----------
@@ -475,11 +471,11 @@
     if (!logo) return;
     const a = ss(T_SHATTER - .25, T_LOGO + .3, t); if (a <= 0) return;
     const sharp = ss(T_SHATTER, T_LOGO + .45, t), sc = 1.12 - .12 * easeOut(lin(T_SHATTER, T_LOGO + 1.6, t));
-    const lw = 540 * sc, lh = lw * logo.height / logo.width, x0 = W / 2 - lw / 2, y0 = 300 - lh / 2;
+    const lw = 640 * sc, lh = lw * logo.height / logo.width, x0 = W / 2 - lw / 2, y0 = 320 - lh / 2;
     ctx.save();
     let grd = ctx.createRadialGradient(W / 2, 330, 30, W / 2, 330, 520); grd.addColorStop(0, `rgba(255,255,255,${.12 * a})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = a * (1 - sharp * .75); ctx.drawImage(logoSoft, x0 - 14, y0 - 14, lw + 28, lh + 28);
+    ctx.globalAlpha = a * (1 - sharp * .75); const f = lw / logo.width; ctx.drawImage(logoSoft, x0 - SOFT_PAD * f, y0 - SOFT_PAD * f, logoSoft.width * f, logoSoft.height * f);
     ctx.globalAlpha = sharp; ctx.drawImage(logo, x0, y0, lw, lh);
     ctx.restore();
     // a light sweep across the chrome, masked to the logo
@@ -492,7 +488,7 @@
       band.addColorStop(0, 'rgba(255,255,255,0)'); band.addColorStop(.5, 'rgba(255,255,255,.9)'); band.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = band; g.fillRect(0, 0, c.width, c.height);
       g.globalCompositeOperation = 'destination-in'; g.drawImage(logo, 0, 0);
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .4; ctx.drawImage(c, x0, y0, lw, lh); ctx.restore();
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .7; ctx.drawImage(c, x0, y0, lw, lh); ctx.restore();
     }
     // WELCOME BACK with a hairline that draws itself
     const tx = ss(T_LOGO + .55, T_LOGO + 1.1, t);
@@ -501,10 +497,10 @@
       ctx.font = '700 13px "Segoe UI", system-ui, sans-serif';
       const text = 'WELCOME BACK', sp = 8.5, widths = [...text].map((ch) => ctx.measureText(ch).width), total = widths.reduce((s, w) => s + w + sp, -sp);
       let x = W / 2 - total / 2;
-      [...text].forEach((ch, i) => { ctx.fillText(ch, x + widths[i] / 2, 612 + (1 - tx) * 8); x += widths[i] + sp; });
+      [...text].forEach((ch, i) => { ctx.fillText(ch, x + widths[i] / 2, 560 + (1 - tx) * 8); x += widths[i] + sp; });
       const half = 110 * easeOut(tx);
       const lg = ctx.createLinearGradient(W / 2 - half, 0, W / 2 + half, 0); lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.7)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = lg; ctx.fillRect(W / 2 - half, 634, half * 2, 1);
+      ctx.fillStyle = lg; ctx.fillRect(W / 2 - half, 582, half * 2, 1);
       ctx.restore();
     }
   }

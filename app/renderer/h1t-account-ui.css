@@ -83,7 +83,7 @@
   gap: 56px; align-items: center; width: min(1080px, 100%); margin: 0 auto; padding: 24px 48px 48px; }
 .h1t-gate-aside { position: relative; display: flex; flex-direction: column; gap: 42px; min-height: 440px; justify-content: center; }
 .h1t-gate-brand { display: flex; align-items: center; gap: 14px; }
-.h1t-gate-brand img { width: 44px; height: 44px; object-fit: cover; object-position: 54% 50%; border-radius: 11px; border: 1px solid rgba(255, 255, 255, .22); }
+.h1t-gate-brand img { width: auto; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .6)); }
 .h1t-gate-brand b { display: block; font: 800 22px/1 var(--acc-font); letter-spacing: .02em; color: var(--acc-white); }
 .h1t-gate-brand b span { color: var(--acc-mute); }
 .h1t-gate-brand small { display: block; margin-top: 6px; font: 700 9px/1 var(--acc-font); letter-spacing: .3em; color: var(--acc-mute); }
