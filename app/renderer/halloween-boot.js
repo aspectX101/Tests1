@@ -3,8 +3,9 @@
 //   1 Ghost      – a glowing sheet ghost rises into a spotlight between cobwebs, floats and blinks
 //   2 Sheet      – the sheet is blown off, flutters towards the camera and wipes away to the next scene
 //   3 Pumpkin    – a carved jack-o'-lantern lights up in the dark, the camera rushes into its grin
-//   4 Burst      – a white flash bursts into smoke and dust, a glowing skeleton runs through the fog
-//   5 Logo       – the Halloween H1T mark condenses out of purple fog, its glowing edges breathe
+//   4 Witch      – a white flash bursts into smoke, a witch on her broom crosses the full moon with a swarm of bats
+//   5 Logo       – the Halloween H1T mark condenses out of purple fog: bats burst out, the drips run, lightning strikes,
+//                  "HAPPY HALLOWEEN, NAME"
 // Everything is drawn in code (no video); heavy parts are pre-rendered into sprites once and each frame only
 // composes them. A cheap two-step bloom gives the glow. Active only when <html> has .hw-boot.
 (() => {
@@ -12,7 +13,7 @@
   const splash = document.getElementById('splash');
   if (!splash) return;
   const W = 1280, H = 720, DUR = 8.0;
-  const T_BLOW = 2.2, T_CUT = 2.5, T_COVER = 3.0, T_PUMPKIN = 3.12, T_RUSH = 4.25, T_FLASH = 4.62, T_SKEL = 5.05, T_LOGO = 6.1;
+  const T_BLOW = 2.2, T_CUT = 2.5, T_COVER = 3.0, T_PUMPKIN = 3.12, T_RUSH = 4.25, T_FLASH = 4.62, T_WITCH = 4.95, T_LOGO = 6.15, T_BOLT = 7.0;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canvas = document.createElement('canvas');
   canvas.className = 'hw-boot-canvas';
@@ -55,6 +56,34 @@
   const vignette = sprite(W, H, (g) => {
     const grd = g.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 820);
     grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.8)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  });
+  const BAT_PATH = new Path2D('M32 11c-1.6-3.6-5-5.4-5-5.4s.9 3.4-.7 5.4c-2.8-2.6-8.3-3.6-12-1.8 2.8 1 4.6 2.9 4.6 5.6-3.7-1.8-8.3-.9-12 1.8 5.5 0 8.3 1.8 10.1 4.6 2.8-1.8 6.4-2.7 9.2-1.8 1.8.9 3.7 2.7 5.8 5.4 2.1-2.7 4-4.5 5.8-5.4 2.8-.9 6.4 0 9.2 1.8 1.8-2.8 4.6-4.6 10.1-4.6-3.7-2.7-8.3-3.6-12-1.8 0-2.7 1.8-4.6 4.6-5.6-3.7-1.8-9.2-.8-12 1.8-1.6-2-.7-5.4-.7-5.4S33.6 7.4 32 11Z');
+  // eight wing positions (one flap as a vertical squash), black with a faint violet rim and glowing eyes
+  const bats = [1, .9, .72, .5, .34, .5, .72, .9].map((k) => sprite(140, 70, (g) => {
+    g.translate(70, 35); g.scale(2, 2 * k); g.translate(-32, -15);
+    g.shadowColor = 'rgba(170,120,255,.7)'; g.shadowBlur = 5; g.fillStyle = '#040206'; g.fill(BAT_PATH);
+    g.shadowBlur = 0; g.fillStyle = '#ff8a2a'; g.beginPath(); g.arc(30.4, 12.4, .9, 0, TAU); g.arc(33.6, 12.4, .9, 0, TAU); g.fill();
+  }));
+  // a full moon with craters and a halo
+  const MOON_R = 175;
+  const moon = sprite(MOON_R * 4, MOON_R * 4, (g) => {
+    const c = MOON_R * 2;
+    let grd = g.createRadialGradient(c, c, MOON_R * .9, c, c, MOON_R * 2); grd.addColorStop(0, 'rgba(255,214,160,.32)'); grd.addColorStop(1, 'rgba(180,120,255,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, c * 2, c * 2);
+    grd = g.createRadialGradient(c - MOON_R * .3, c - MOON_R * .35, MOON_R * .1, c, c, MOON_R); grd.addColorStop(0, '#fff6dc'); grd.addColorStop(.6, '#f1d9a2'); grd.addColorStop(1, '#c79a5c');
+    g.fillStyle = grd; g.beginPath(); g.arc(c, c, MOON_R, 0, TAU); g.fill();
+    g.save(); g.clip(); g.fillStyle = 'rgba(150,105,60,.25)';
+    for (let i = 0; i < 22; i++) { const a = rnd() * TAU, d = Math.sqrt(rnd()) * MOON_R * .9, r = 6 + rnd() * 30; g.beginPath(); g.arc(c + Math.cos(a) * d, c + Math.sin(a) * d, r, 0, TAU); g.fill(); }
+    g.restore();
+  });
+  // lightning bolt with forks, pre-rendered with its glow
+  const bolt = sprite(W, H, (g) => {
+    const jag = (x, y, x2, y2, n, sp) => { const pts = [[x, y]]; for (let i = 1; i < n; i++) { const k = i / n; pts.push([x + (x2 - x) * k + (rnd() - .5) * sp, y + (y2 - y) * k + (rnd() - .5) * sp * .3]); } pts.push([x2, y2]); return pts; };
+    const main = jag(820, -10, 700, 330, 18, 60), forks = [jag(...main[7], 900, 200, 7, 30), jag(...main[11], 610, 250, 6, 26)];
+    const line = (pts, w) => { g.lineWidth = w; g.beginPath(); g.moveTo(...pts[0]); for (const q of pts.slice(1)) g.lineTo(...q); g.stroke(); };
+    g.lineJoin = g.lineCap = 'round';
+    g.shadowColor = 'rgba(190,150,255,1)'; g.shadowBlur = 30; g.strokeStyle = 'rgba(200,170,255,.6)'; line(main, 10); forks.forEach((f) => line(f, 5));
+    g.shadowBlur = 8; g.strokeStyle = '#fbf7ff'; line(main, 2.8); forks.forEach((f) => line(f, 1.4));
   });
   // A cobweb anchored in the top-left corner; the other corners use mirrored copies.
   const web = sprite(340, 340, (g) => {
@@ -143,8 +172,17 @@
   const logoImg = new Image();
   let logo = null, logoSoft = null;
   const SOFT_PAD = 60;
+  // the drips hang below this row of the cut-out (letters end there); their tips drop droplets
+  const DRIP_Y = 326;
+  let dripTips = [];
   logoImg.onload = () => {
     logo = logoImg;
+    try {
+      const g = sprite(logoImg.width, logoImg.height, (gg) => gg.drawImage(logoImg, 0, 0)).getContext('2d'), d = g.getImageData(0, 0, logoImg.width, logoImg.height).data;
+      const low = Array.from({ length: logoImg.width }, (_, x) => { for (let y = logoImg.height - 1; y > DRIP_Y; y--) if (d[(y * logoImg.width + x) * 4 + 3] > 140) return y; return 0; });
+      for (let x = 3; x < low.length - 3; x++) if (low[x] > DRIP_Y + 40 && low[x] >= Math.max(...low.slice(x - 3, x + 4))) { if (!dripTips.length || x - dripTips[dripTips.length - 1][0] > 12) dripTips.push([x, low[x]]); }
+      dripTips = dripTips.sort((p, q) => q[1] - p[1]).slice(0, 6);
+    } catch { dripTips = []; }
     // the glow copy gets a margin so the blur is not clipped into a visible rectangle
     logoSoft = sprite(logoImg.width + SOFT_PAD * 2, logoImg.height + SOFT_PAD * 2, (g) => { g.filter = 'blur(16px) brightness(1.4)'; g.drawImage(logoImg, SOFT_PAD, SOFT_PAD); });
     warm([logo, logoSoft]);
@@ -181,9 +219,9 @@
     if (a <= 0) return;
     const R = 62, path = ghostPath(R, t * 3.2, flare);
     ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
-    ctx.shadowColor = 'rgba(255,255,255,.5)'; ctx.shadowBlur = 36;
+    ctx.shadowColor = 'rgba(215,195,255,.55)'; ctx.shadowBlur = 36;
     let grd = ctx.createRadialGradient(-R * .35, -R * .45, 4, 0, 90, 420);
-    grd.addColorStop(0, '#ffffff'); grd.addColorStop(.4, '#e8e8e8'); grd.addColorStop(1, '#9c9c9c');
+    grd.addColorStop(0, '#ffffff'); grd.addColorStop(.4, '#ebe8f2'); grd.addColorStop(1, '#9b93b4');
     ctx.fillStyle = grd; ctx.fill(path); ctx.shadowBlur = 0;
     ctx.clip(path);
     // soft folds hanging from the head and shading towards the sides
@@ -196,7 +234,7 @@
       }
     }
     grd = ctx.createLinearGradient(-R * 1.6, 0, R * 1.6, 0);
-    grd.addColorStop(0, 'rgba(0,0,0,.32)'); grd.addColorStop(.3, 'rgba(0,0,0,0)'); grd.addColorStop(.7, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.36)');
+    grd.addColorStop(0, 'rgba(30,10,60,.34)'); grd.addColorStop(.3, 'rgba(30,10,60,0)'); grd.addColorStop(.7, 'rgba(30,10,60,0)'); grd.addColorStop(1, 'rgba(30,10,60,.38)');
     ctx.fillStyle = grd; ctx.fillRect(-R * 4, -R * 2, R * 8, 460);
     // the hem catches light from below
     grd = ctx.createLinearGradient(0, 200, 0, 290); grd.addColorStop(0, 'rgba(255,255,255,0)'); grd.addColorStop(1, 'rgba(255,255,255,.4)');
@@ -258,7 +296,7 @@
       const k0 = q.j * (NU + 1) + q.i, k1 = k0 + NU + 1;
       const cl = ((shade[k0] + shade[k1]) / 2) | 0, cr = ((shade[k0 + 1] + shade[k1 + 1]) / 2) | 0;
       const g = cc.createLinearGradient((p00[0] + p01[0]) / 2, (p00[1] + p01[1]) / 2, (p10[0] + p11[0]) / 2, (p10[1] + p11[1]) / 2);
-      g.addColorStop(0, `rgb(${cl},${cl},${cl})`); g.addColorStop(1, `rgb(${cr},${cr},${cr})`);
+      g.addColorStop(0, `rgb(${cl * .95 | 0},${cl * .93 | 0},${cl})`); g.addColorStop(1, `rgb(${cr * .95 | 0},${cr * .93 | 0},${cr})`);
       cc.fillStyle = cc.strokeStyle = g;
       cc.beginPath(); cc.moveTo(p00[0], p00[1]); cc.lineTo(p10[0], p10[1]); cc.lineTo(p11[0], p11[1]); cc.lineTo(p01[0], p01[1]); cc.closePath();
       cc.fill(); cc.stroke();
@@ -293,7 +331,7 @@
     ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(0,0,0,.18)';
     for (const w of [110, 70, 36]) { ctx.lineWidth = w; ctx.stroke(rim); }
     let grd = ctx.createLinearGradient(edge, 0, edge + 900, H);
-    grd.addColorStop(0, '#ededed'); grd.addColorStop(.25, '#bcbcbc'); grd.addColorStop(.5, '#dedede'); grd.addColorStop(.8, '#a5a5a5'); grd.addColorStop(1, '#d2d2d2');
+    grd.addColorStop(0, '#eeebf5'); grd.addColorStop(.25, '#bbb5cc'); grd.addColorStop(.5, '#dedaea'); grd.addColorStop(.8, '#a49cba'); grd.addColorStop(1, '#d2cde0');
     ctx.fillStyle = grd; ctx.fill(path);
     // long diagonal folds moving with the cloth
     ctx.clip(path);
@@ -324,14 +362,43 @@
       ctx.save(); ctx.translate(cx, cy + 118 * z); ctx.scale(1, .18); ctx.translate(-cx, -(cy + 118 * z)); ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H * 6); ctx.restore();
     }
     ctx.drawImage(pumpkinBody, x0, y0, w, h);
-    const light = ss(T_PUMPKIN + .12, T_PUMPKIN + .55, t) * (.82 + .1 * Math.sin(t * 23) + .08 * Math.sin(t * 9.7)) + .3 * rush;
+    const light = ss(T_PUMPKIN + .5, T_PUMPKIN + .78, t) * (.82 + .1 * Math.sin(t * 23) + .08 * Math.sin(t * 9.7)) + .3 * rush;
+    // the face is carved first: glowing knife lines trace every cut, then the candle catches
+    const carve = lin(T_PUMPKIN + .14, T_PUMPKIN + .56, t), carveA = carve > 0 ? 1 - ss(T_PUMPKIN + .55, T_PUMPKIN + .8, t) : 0;
+    if (carveA > 0) {
+      ctx.save(); ctx.translate(x0 + PCX * z, y0 + PCY * z); ctx.scale(z, z); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.setLineDash([carve * 760, 760]);
+      ctx.globalAlpha = carveA * .35; ctx.strokeStyle = '#ff8a2a'; ctx.lineWidth = 9; ctx.stroke(facePath);
+      ctx.globalAlpha = carveA; ctx.strokeStyle = '#ffe2a8'; ctx.lineWidth = 2.6; ctx.stroke(facePath);
+      ctx.restore();
+    }
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = clamp(light * .3, 0, 1); ctx.drawImage(pumpkinSpill, x0, y0, w, h);
     ctx.globalAlpha = clamp(light * .92, 0, 1); ctx.drawImage(pumpkinFace, x0, y0, w, h);
     if (ru > 0) for (const lag of [.06, .12]) { const [bx, by, bw, bh] = place(zoom(ru - lag)); ctx.globalAlpha = .35 * ru; ctx.drawImage(pumpkinFace, bx, by, bw, bh); }
+    // the candle flame inside, seen through the cut-outs
+    if (light > .05 && ru < .5) {
+      ctx.save(); ctx.translate(x0 + PCX * z, y0 + PCY * z); ctx.scale(z, z); ctx.clip(facePath);
+      const fl = 1 + .18 * Math.sin(t * 31) + .1 * Math.sin(t * 17 + 1), sway = Math.sin(t * 9) * 4;
+      ctx.translate(sway * .4, 92); ctx.scale(1, fl);
+      const fg = ctx.createRadialGradient(0, -22, 2, 0, -18, 46); fg.addColorStop(0, 'rgba(255,255,235,1)'); fg.addColorStop(.35, 'rgba(255,214,120,.9)'); fg.addColorStop(1, 'rgba(255,120,20,0)');
+      ctx.globalAlpha = clamp(light, 0, 1); ctx.fillStyle = fg;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-16, -14, -12, -40, sway, -62); ctx.bezierCurveTo(12, -40, 16, -14, 0, 0); ctx.fill();
+      ctx.restore();
+    }
     grd = ctx.createRadialGradient(cx, cy + 40 * z, 10, cx, cy + 40 * z, 260 * z); grd.addColorStop(0, `rgba(255,130,30,${.1 * light})`); grd.addColorStop(1, 'rgba(255,90,10,0)');
     ctx.globalAlpha = 1; ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
     ctx.restore();
+    // smoke curling up from the lid, lit orange from below
+    const sm = ss(T_PUMPKIN + .6, T_PUMPKIN + 1, t) * (1 - rush);
+    if (sm > 0) {
+      ctx.save(); ctx.globalCompositeOperation = 'screen';
+      for (let i = 0; i < 5; i++) {
+        const k = ((t - T_PUMPKIN) * .55 + i / 5) % 1, sz = (50 + 140 * k) * z;
+        ctx.globalAlpha = sm * .32 * Math.sin(k * Math.PI); ctx.drawImage(warmSmoke[i % 3], cx + (Math.sin(k * 5 + i) * 26 - 10) * z - sz / 2, y0 + (PCY - 150 - 190 * k) * z - sz / 2, sz, sz);
+      }
+      ctx.restore();
+    }
     // warm fog drifting along the ground
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     for (const f of fog) {
@@ -353,11 +420,12 @@
 
   // ---------- scene 4: burst and skeleton ----------
   function drawFogBackdrop(t, a) {
-    ctx.fillStyle = '#0d0d0d'; ctx.fillRect(-40, -40, W + 80, H + 80);
+    const grd = ctx.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#120a20'); grd.addColorStop(1, '#06030b');
+    ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80);
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     for (const c of clouds) {
       const s = 320 * c.s, x = ((c.x + t * c.v + W + 600) % (W + 600)) - 300, y = c.y + Math.sin(t * .5 + c.p) * 14;
-      ctx.globalAlpha = c.a * a; ctx.drawImage(smoke[c.k], x - s / 2, y - s / 2, s, s * .7);
+      ctx.globalAlpha = c.a * a; ctx.drawImage(purpleSmoke[c.k], x - s / 2, y - s / 2, s, s * .7);
     }
     ctx.restore();
   }
@@ -390,68 +458,60 @@
     }
     ctx.restore();
   }
-  // Side view of a running skeleton facing left. Angles are measured from straight down; positive swings forward.
-  const skelCanvas = document.createElement('canvas'), sk = skelCanvas.getContext('2d');
-  function drawSkeleton(t) {
-    const u = lin(T_SKEL, T_SKEL + 1.35, t); if (u <= 0 || u >= 1) return;
-    const hipX = 1460 - 1720 * u, p = (t - T_SKEL) * TAU * 2.1, S = 1.22;
-    const hipY = 470 - Math.abs(Math.sin(p)) * 14 * S, lean = .5;
-    const at = (x, y, ang, len) => [x - Math.sin(ang) * len * S, y + Math.cos(ang) * len * S];
-    const knob = (pt, r) => { sk.beginPath(); sk.arc(pt[0], pt[1], r * S, 0, TAU); sk.fill(); };
-    // a long bone: slim shaft with knobbly ends
-    const bone = (a, b, w) => {
-      sk.lineWidth = w * .7 * S; sk.beginPath(); sk.moveTo(...a); sk.lineTo(...b); sk.stroke();
-      const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l * w * .42 * S, ny = dx / l * w * .42 * S;
-      for (const [px, py, k] of [[a[0], a[1], .14], [b[0], b[1], .86]]) {
-        const ex = a[0] + dx * k, ey = a[1] + dy * k;
-        sk.beginPath(); sk.arc(ex + nx, ey + ny, w * .44 * S, 0, TAU); sk.arc(ex - nx, ey - ny, w * .44 * S, 0, TAU); sk.fill();
-      }
-    };
-    const shoulder = at(hipX, hipY, Math.PI - lean, 150), neck = at(hipX, hipY, Math.PI - lean, 178);
-    const limb = (root, a1, l1, a2, l2, w) => { const j = at(...root, a1, l1), e = at(...j, a2, l2); bone(root, j, w); bone(j, e, w * .85); knob(j, w * .62); return [j, e]; };
-    const leg = (ph) => { const th = Math.sin(ph) * .85, kn = .25 + .95 * Math.max(0, Math.sin(ph + 1.9)); return [th, th - kn]; };
-    const arm = (ph) => { const sh = -Math.sin(ph) * .95 + .35; return [sh, sh + 1.1 + .35 * Math.sin(ph + .6)]; };
-    const foot = (ankle, ang) => { const toe = at(...ankle, ang + Math.PI / 2 + .2, 30); sk.lineWidth = 7 * S; sk.beginPath(); sk.moveTo(...ankle); sk.lineTo(...toe); sk.stroke(); knob(ankle, 4.5); };
-    // drawn into its own layer first, so the glow is one blur for the whole skeleton instead of one per bone
-    if (skelCanvas.width !== canvas.width || skelCanvas.height !== canvas.height) { skelCanvas.width = canvas.width; skelCanvas.height = canvas.height; }
-    sk.setTransform(1, 0, 0, 1, 0, 0); sk.clearRect(0, 0, skelCanvas.width, skelCanvas.height);
-    sk.setTransform(fitS, 0, 0, fitS, fitX, fitY);
-    sk.save(); sk.lineCap = 'round'; sk.lineJoin = 'round';
-    // far leg and arm, dimmer
-    sk.globalAlpha = .55; sk.strokeStyle = sk.fillStyle = '#bdbdbd';
-    const [bth, bsh] = leg(p + Math.PI), [, bAnkle] = limb([hipX, hipY], bth, 118, bsh, 112, 9); foot(bAnkle, bsh);
-    const [ba1, ba2] = arm(p + Math.PI), [, bWrist] = limb(shoulder, ba1, 78, ba2, 74, 7); bone(bWrist, at(...bWrist, ba2, 22), 5);
-    sk.globalAlpha = 1; sk.strokeStyle = sk.fillStyle = '#f4f4f4';
-    // spine with vertebrae, ribcage, pelvis
-    sk.lineWidth = 6 * S; sk.beginPath(); sk.moveTo(hipX, hipY);
-    const spineMid = at(hipX, hipY, Math.PI - lean + .12, 90); sk.quadraticCurveTo(...spineMid, ...neck); sk.stroke();
-    for (let k = 0; k <= 9; k++) knob(at(hipX, hipY, Math.PI - lean + .06 * Math.sin(k / 9 * Math.PI), 18 * k), 4.2);
-    sk.save(); sk.translate(...at(hipX, hipY, Math.PI - lean, 92)); sk.rotate(-lean); sk.lineWidth = 4 * S;
-    for (let k = 0; k < 6; k++) { const y = -k * 13 * S; sk.beginPath(); sk.moveTo(0, y); sk.bezierCurveTo(-30 * S, y - 8 * S, -58 * S, y + 6 * S, -50 * S + k * 3 * S, y + 26 * S); sk.stroke(); }
-    sk.restore();
-    // pelvis: a wing-shaped bone with a dark opening
-    sk.save(); sk.translate(hipX + 4, hipY - 6); sk.rotate(-lean);
-    sk.beginPath(); sk.moveTo(-26 * S, -14 * S); sk.quadraticCurveTo(0, -26 * S, 24 * S, -12 * S); sk.quadraticCurveTo(20 * S, 14 * S, 0, 18 * S); sk.quadraticCurveTo(-22 * S, 12 * S, -26 * S, -14 * S); sk.fill();
-    sk.fillStyle = 'rgba(20,20,20,.75)'; sk.beginPath(); sk.ellipse(-2 * S, 4 * S, 7 * S, 6 * S, 0, 0, TAU); sk.fill();
-    sk.restore();
-    // skull looking ahead, slightly up
-    sk.save(); sk.translate(...at(...neck, Math.PI - lean * .4, 26)); sk.rotate(-.2);
-    let grd = sk.createRadialGradient(-6 * S, -10 * S, 2, 0, 0, 34 * S); grd.addColorStop(0, '#ffffff'); grd.addColorStop(1, '#a8a8a8'); sk.fillStyle = grd;
-    sk.beginPath(); sk.ellipse(0, 0, 30 * S, 27 * S, 0, 0, TAU); sk.fill();
-    sk.beginPath(); sk.moveTo(-26 * S, 8 * S); sk.lineTo(-24 * S, 24 * S); sk.lineTo(-4 * S, 30 * S); sk.lineTo(6 * S, 16 * S); sk.closePath(); sk.fill();
-    sk.fillStyle = '#151515';
-    sk.beginPath(); sk.ellipse(-15 * S, -1 * S, 8 * S, 9 * S, 0, 0, TAU); sk.fill();
-    sk.beginPath(); sk.moveTo(-27 * S, 10 * S); sk.lineTo(-22 * S, 12 * S); sk.lineTo(-25 * S, 16 * S); sk.fill();
-    sk.restore();
-    sk.strokeStyle = sk.fillStyle = '#f4f4f4';
-    // front leg and arm
-    const [th, sh] = leg(p), [, ankle] = limb([hipX, hipY], th, 118, sh, 112, 9.5); foot(ankle, sh);
-    const [a1, a2] = arm(p), [, wrist] = limb(shoulder, a1, 78, a2, 74, 7.5);
-    for (const d of [-.3, 0, .3]) bone(wrist, at(...wrist, a2 + d, 22), 3.5);
-    sk.restore();
+  // ---------- act 4: a witch on her broom crosses the full moon, a swarm of bats behind her ----------
+  const MOON_X = 880, MOON_Y = 300;
+  const witchCanvas = document.createElement('canvas'), wg = witchCanvas.getContext('2d');
+  const bristles = Array.from({ length: 16 }, (_, i) => [118 + rnd() * 14, (i - 7.5) * 3.1 + (rnd() - .5) * 2]);
+  const swarm = Array.from({ length: 22 }, () => ({ d: .04 + rnd() * .3, ox: (rnd() - .5) * 220, oy: (rnd() - .5) * 170, z: .35 + rnd() * .6, f: rnd() * 8 }));
+  const witchPos = (u) => [1480 - 1800 * u, 392 - 118 * Math.sin(u * Math.PI) + 14 * Math.sin(u * 13)];
+  function drawMoon(t) {
+    const a = ss(T_FLASH + .25, T_WITCH + .35, t) * (1 - ss(T_LOGO - .2, T_LOGO + .5, t)); if (a <= 0) return;
+    const rise = 30 * (1 - easeOut(lin(T_FLASH + .25, T_WITCH + .6, t)));
+    ctx.save(); ctx.globalAlpha = a; ctx.drawImage(moon, MOON_X - MOON_R * 2, MOON_Y - MOON_R * 2 + rise); ctx.restore();
+  }
+  function witchShape(g, t) {
+    // local coordinates: facing left, broom along x
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.strokeStyle = g.fillStyle = '#050208';
+    g.lineWidth = 4.5; g.beginPath(); g.moveTo(-104, 4); g.lineTo(64, 13); g.stroke();
+    g.lineWidth = 1.7; for (const [bx, by] of bristles) { g.beginPath(); g.moveTo(60, 13); g.quadraticCurveTo(90, 13 + by * .5, bx, 13 + by + Math.sin(t * 20 + by) * 1.5); g.stroke(); }
+    g.lineWidth = 6; g.beginPath(); g.moveTo(58, 9); g.lineTo(64, 17); g.stroke();
+    // flowing cape
+    const w1 = Math.sin(t * 9), w2 = Math.sin(t * 8 + 1.7), w3 = Math.sin(t * 11 + .6);
+    g.beginPath(); g.moveTo(-6, -34); g.bezierCurveTo(26, -44 + w1 * 4, 62, -36 + w2 * 7, 98 + w3 * 6, -16 + w1 * 8);
+    g.bezierCurveTo(80, -8 + w2 * 5, 58, 2 + w3 * 4, 30, 2); g.lineTo(6, 2); g.closePath(); g.fill();
+    // body, leg and pointed boot, arm on the broom
+    g.beginPath(); g.moveTo(-4, 4); g.lineTo(24, 4); g.lineTo(14, -34); g.lineTo(-10, -30); g.closePath(); g.fill();
+    g.lineWidth = 7; g.beginPath(); g.moveTo(10, 4); g.lineTo(-16, 12); g.lineTo(-22, 28); g.stroke();
+    g.beginPath(); g.moveTo(-18, 24); g.lineTo(-30, 30); g.lineTo(-40, 26); g.lineTo(-24, 32); g.closePath(); g.lineWidth = 2; g.stroke(); g.fill();
+    g.lineWidth = 5; g.beginPath(); g.moveTo(-4, -26); g.lineTo(-36, 3); g.stroke();
+    // head with a long crooked nose and chin, hair streaming back
+    g.beginPath(); g.arc(-10, -42, 9, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(-16, -46); g.lineTo(-31, -38); g.lineTo(-17, -40); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(-14, -36); g.lineTo(-20, -30); g.lineTo(-10, -34); g.closePath(); g.fill();
+    g.lineWidth = 1.6; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(-4, -46 + i * 2.5); g.quadraticCurveTo(16, -48 + i * 3 + w1 * 3, 34 + i * 3, -40 + i * 4 + w2 * 4); g.stroke(); }
+    // hat: wide brim and a tall cone that flops back at the tip
+    g.beginPath(); g.ellipse(-8, -50, 22, 3.6, -.16, 0, TAU); g.fill();
+    const tip = w3 * 4;
+    g.beginPath(); g.moveTo(-20, -50); g.quadraticCurveTo(-4, -70, 12, -84); g.quadraticCurveTo(24 + tip, -96, 36 + tip, -90); g.quadraticCurveTo(22, -86, 18, -78); g.quadraticCurveTo(10, -64, 4, -51); g.closePath(); g.fill();
+  }
+  function drawWitch(t) {
+    const u = lin(T_WITCH, T_WITCH + 1.5, t); if (u <= 0 || u >= 1) return;
+    // the bat swarm trails her, wings flapping
+    for (const b of swarm) {
+      const q = u - b.d; if (q <= 0) continue;
+      const [bx, by] = witchPos(q), w = 70 * b.z, h = 35 * b.z;
+      ctx.drawImage(bats[((t * 24 + b.f) | 0) % bats.length], bx + b.ox * (.4 + q) - w / 2, by + b.oy * (.4 + q) - h / 2 + Math.sin(t * 9 + b.f) * 6, w, h);
+    }
+    // the witch: drawn into her own layer so the violet rim glow is a single blur
+    const [x, y] = witchPos(u), [nx, ny] = witchPos(u + .01), slope = -Math.atan2(ny - y, x - nx) * .8; // nose dips when she descends
+    if (witchCanvas.width !== canvas.width || witchCanvas.height !== canvas.height) { witchCanvas.width = canvas.width; witchCanvas.height = canvas.height; }
+    wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, witchCanvas.width, witchCanvas.height);
+    wg.setTransform(fitS, 0, 0, fitS, fitX, fitY); wg.translate(x, y); wg.rotate(slope); wg.scale(1.35, 1.35);
+    witchShape(wg, t);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (hq) { ctx.shadowColor = 'rgba(255,255,255,.6)'; ctx.shadowBlur = 14 * fitS; }
-    ctx.drawImage(skelCanvas, 0, 0); ctx.restore();
+    if (hq) { ctx.shadowColor = 'rgba(190,140,255,.75)'; ctx.shadowBlur = 10 * fitS; }
+    ctx.drawImage(witchCanvas, 0, 0); ctx.restore();
   }
 
   // ---------- scene 5: logo ----------
@@ -459,22 +519,67 @@
     if (!logo) return;
     const a = ss(T_LOGO, T_LOGO + .8, t); if (a <= 0) return;
     const sharp = ss(T_LOGO + .35, T_LOGO + 1.1, t), sc = 1.08 - .08 * easeOut(lin(T_LOGO, T_LOGO + 1.75, t));
-    const lw = 760 * sc, lh = lw * logo.height / logo.width, x0 = W / 2 - lw / 2, y0 = H / 2 - lh / 2 + 10;
+    const lw = 700 * sc, f = lw / logo.width, lh = logo.height * f, x0 = W / 2 - lw / 2, y0 = 345 - lh / 2;
     ctx.save();
-    const grd = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 700); grd.addColorStop(0, `rgba(120,60,190,${.3 * a})`); grd.addColorStop(1, 'rgba(60,20,110,0)');
+    const grd = ctx.createRadialGradient(W / 2, 345, 40, W / 2, 345, 700); grd.addColorStop(0, `rgba(120,60,190,${.3 * a})`); grd.addColorStop(1, 'rgba(60,20,110,0)');
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+    // bats burst out from behind the logo
+    const bu = lin(T_LOGO + .2, T_LOGO + 1.7, t);
+    if (bu > 0 && bu < 1) for (const b of logoBats) {
+      const q = Math.max(0, bu - b.d), d = 150 + q * b.v, w = 90 * b.z * (1 + q), h = 45 * b.z * (1 + q);
+      ctx.globalAlpha = clamp(q * 8, 0, 1) * (1 - ss(.7, 1, bu)); ctx.drawImage(bats[((t * 26 + b.f) | 0) % bats.length], W / 2 + Math.cos(b.a) * d - w / 2, 345 + Math.sin(b.a) * d * .7 - q * 80 - h / 2, w, h);
+    }
+    ctx.globalAlpha = 1;
+    // lightning behind the logo
+    const flash = Math.exp(-(((t - T_BOLT) / .04) ** 2)) + .6 * Math.exp(-(((t - T_BOLT - .13) / .035) ** 2));
+    if (flash > .01) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = clamp(flash, 0, 1); ctx.drawImage(bolt, 0, 0); ctx.globalAlpha = clamp(flash, 0, 1) * .22; ctx.fillStyle = '#d8c8ff'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
     // it condenses out of the smoke: a blurred copy first, then the sharp artwork
-    ctx.globalAlpha = a * (1 - sharp * .7); const f = lw / logo.width; ctx.drawImage(logoSoft, x0 - SOFT_PAD * f, y0 - SOFT_PAD * f, logoSoft.width * f, logoSoft.height * f);
-    ctx.globalAlpha = sharp; ctx.drawImage(logo, x0, y0, lw, lh);
-    // the glowing cracks and pumpkins breathe
-    const pulse = ss(T_LOGO + 1, T_LOGO + 1.5, t) * (.12 + .08 * Math.sin(t * 5) + .04 * Math.sin(t * 13));
-    if (pulse > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse; ctx.drawImage(logo, x0, y0, lw, lh); }
+    ctx.globalAlpha = a * (1 - sharp * .7); ctx.drawImage(logoSoft, x0 - SOFT_PAD * f, y0 - SOFT_PAD * f, logoSoft.width * f, logoSoft.height * f);
+    // the sharp mark; the drips below the letters run down slowly
+    const drip = .15 + .85 * ss(T_LOGO + .3, T_LOGO + 1.5, t) + .22 * ss(T_LOGO + 1.5, DUR, t);
+    const drawMark = () => {
+      ctx.drawImage(logo, 0, 0, logo.width, DRIP_Y, x0, y0, lw, DRIP_Y * f);
+      ctx.drawImage(logo, 0, DRIP_Y, logo.width, logo.height - DRIP_Y, x0, y0 + DRIP_Y * f, lw, (logo.height - DRIP_Y) * f * drip);
+    };
+    ctx.globalAlpha = sharp; drawMark();
+    // the glowing edges breathe, and flare up with the lightning
+    const pulse = ss(T_LOGO + 1, T_LOGO + 1.5, t) * (.12 + .08 * Math.sin(t * 5) + .04 * Math.sin(t * 13)) + .7 * clamp(flash, 0, 1);
+    if (pulse > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = clamp(pulse, 0, 1); drawMark(); }
     ctx.restore();
+    // droplets falling from the drip tips
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    dripTips.forEach(([dx, dy], i) => {
+      const t0 = T_LOGO + 1.45 + i * .23, period = 1.25 + i * .11, k = t < t0 ? -1 : ((t - t0) % period) / period; if (k < 0) return;
+      const px = x0 + dx * f, py = y0 + (DRIP_Y + (dy - DRIP_Y) * drip) * f + 4 + 260 * k * k, al = 1 - k;
+      const g2 = ctx.createRadialGradient(px, py, 0, px, py, 6); g2.addColorStop(0, `rgba(255,170,70,${al})`); g2.addColorStop(1, 'rgba(255,90,20,0)');
+      ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(px, py, 3.4, 5 + 6 * k, 0, 0, TAU); ctx.fill();
+    });
+    ctx.restore();
+    // HAPPY HALLOWEEN, NAME
+    const tx = ss(T_LOGO + .9, T_LOGO + 1.5, t);
+    if (tx > 0) {
+      ctx.save(); ctx.globalAlpha = tx; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '800 18px "Segoe UI", system-ui, sans-serif';
+      ctx.shadowColor = 'rgba(255,120,20,.9)'; ctx.shadowBlur = 14; ctx.fillStyle = '#ffb35a';
+      const text = greeting(), sp = 7, widths = [...text].map((ch) => ctx.measureText(ch).width), total = widths.reduce((s2, w) => s2 + w + sp, -sp);
+      let x = W / 2 - total / 2;
+      [...text].forEach((ch, i) => { ctx.fillText(ch, x + widths[i] / 2, 612 + (1 - tx) * 8); x += widths[i] + sp; });
+      ctx.restore();
+    }
     // purple fog drifting in front along the bottom
+    drawGroundFog(t, .5 * a);
+  }
+  const logoBats = Array.from({ length: 16 }, () => ({ a: -Math.PI / 2 + (rnd() - .5) * 3.2, v: 260 + rnd() * 520, z: .45 + rnd() * .6, d: rnd() * .25, f: rnd() * 8 }));
+  // "HAPPY HALLOWEEN, NAME": the signed-in account (cached from the last start, updated by the account UI)
+  let bootName = '';
+  try { bootName = localStorage.getItem('h1tBootName') || ''; } catch { /* no storage */ }
+  const greeting = () => { const n = bootName.replace(/[^\p{L}\p{N} ._-]/gu, '').trim().slice(0, 18).toUpperCase(); return n ? `HAPPY HALLOWEEN, ${n}` : 'HAPPY HALLOWEEN'; };
+  // purple fog rolling along the ground
+  function drawGroundFog(t, a, lift = 0) {
+    if (a <= 0) return;
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     for (const f of fog) {
       const s = 320 * f.s, x = ((f.x + t * f.v * 1.5) % (W + 500)) - 250;
-      ctx.globalAlpha = f.a * .5 * a; ctx.drawImage(purpleSmoke[f.k], x - s / 2, f.y + 40 - s / 2 + Math.sin(t + f.p) * 8, s, s * .6);
+      ctx.globalAlpha = f.a * a; ctx.drawImage(purpleSmoke[f.k], x - s / 2, f.y + 40 - lift - s / 2 + Math.sin(t + f.p) * 8, s, s * .6);
     }
     ctx.restore();
   }
@@ -489,6 +594,101 @@
     }
     ctx.restore();
   }
+
+  // ---------- sound (synthesized, no audio files) ----------
+  // Wind and a ghostly "whooo", the sheet flapping, the knife carving, the candle catching and crackling, a riser
+  // into the white burst, the witch's cackle with squeaking bats, an organ chord for the logo and rolling thunder.
+  // Off with the "Startanimation > Sound" switch in the settings (localStorage h1tBootSound = '0') and with reduced motion.
+  let audio = null;
+  function startSound(startMs) {
+    try { if (reduced || localStorage.getItem('h1tBootSound') === '0') return; } catch { /* no storage: play */ }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const ac = new AC(), out = buildSound(ac, ac.currentTime - (performance.now() - startMs) / 1000 + .03);
+    if (ac.state === 'suspended') ac.resume().catch(() => {});
+    audio = { ac, out };
+  }
+  function buildSound(ac, base) {
+    const out = ac.createGain(), limiter = ac.createDynamicsCompressor(), verb = ac.createConvolver(), wet = ac.createGain();
+    limiter.threshold.value = -6; limiter.knee.value = 4; limiter.ratio.value = 12; limiter.attack.value = .002; limiter.release.value = .2;
+    out.gain.value = .5; out.connect(limiter).connect(ac.destination); wet.gain.value = .4; verb.connect(wet).connect(out);
+    // a big dark hall
+    const ir = ac.createBuffer(2, ac.sampleRate * 2.4, ac.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2.6); }
+    verb.buffer = ir;
+    const noise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate); { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    const at = (t) => Math.max(ac.currentTime, base + t);
+    const send = (node, amount) => { node.connect(out); if (amount) { const s2 = ac.createGain(); s2.gain.value = amount; node.connect(s2).connect(verb); } };
+    const shape = (g, t0, pts) => { g.gain.setValueAtTime(0, t0); for (const [dt, v] of pts) g.gain.linearRampToValueAtTime(v, t0 + dt); };
+    const env = (g, t0, peak, dur, attack = .004) => { g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(peak, t0 + attack); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur); };
+    const noiseSrc = (t0, dur) => { const src = ac.createBufferSource(); src.buffer = noise; src.loop = true; src.start(t0, Math.random() * 1.5); src.stop(t0 + dur + .05); return src; };
+    const hiss = (t, dur, type, f0, f1, q, peak, rv = .3, attack = .004) => {
+      const t0 = at(t), f = ac.createBiquadFilter(), g = ac.createGain();
+      f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t0); f.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+      env(g, t0, peak, dur, attack); noiseSrc(t0, dur).connect(f).connect(g); send(g, rv);
+    };
+    const boom = (t, f0, f1, dur, peak, rv = .5) => {
+      const o = ac.createOscillator(), g = ac.createGain(), t0 = at(t); o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+      env(g, t0, peak, dur); o.connect(g); send(g, rv); o.start(t0); o.stop(t0 + dur + .05);
+    };
+    // wind: two slowly sweeping band-pass noises over the whole ghost act
+    for (const [f0, f1, v] of [[380, 900, .32], [1400, 600, .14]]) {
+      const t0 = at(0), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = 'bandpass'; f.Q.value = 3;
+      f.frequency.setValueAtTime(f0, t0); f.frequency.linearRampToValueAtTime(f1, t0 + 1.3); f.frequency.linearRampToValueAtTime(f0, t0 + 2.6);
+      shape(g, t0, [[.8, v], [2.2, v * .8], [T_COVER + .1, 0]]); noiseSrc(t0, T_COVER + .2).connect(f).connect(g); send(g, .4);
+    }
+    // the ghost's "whooo": a wavering sine with a breathy band of noise
+    { const t0 = at(.55), o = ac.createOscillator(), vib = ac.createOscillator(), vg = ac.createGain(), g = ac.createGain();
+      o.frequency.setValueAtTime(300, t0); o.frequency.linearRampToValueAtTime(390, t0 + .5); o.frequency.linearRampToValueAtTime(240, t0 + 1.5);
+      vib.frequency.value = 5.5; vg.gain.value = 9; vib.connect(vg).connect(o.frequency);
+      shape(g, t0, [[.3, .17], [1.1, .14], [1.6, 0]]); o.connect(g); send(g, .8); o.start(t0); vib.start(t0); o.stop(t0 + 1.7); vib.stop(t0 + 1.7);
+      hiss(.55, 1.6, 'bandpass', 600, 420, 6, .08, .7, .4); }
+    // gust and the sheet flapping away
+    hiss(T_BLOW - .1, .7, 'bandpass', 500, 2600, 1.4, .42, .3, .2);
+    { const t0 = at(T_CUT), f = ac.createBiquadFilter(), g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
+      f.type = 'lowpass'; f.frequency.value = 1100; lfo.frequency.setValueAtTime(15, t0); lfo.frequency.linearRampToValueAtTime(9, t0 + .6); lg.gain.value = .22;
+      shape(g, t0, [[.05, .24], [.5, .2], [.62, 0]]); lfo.connect(lg).connect(g.gain); noiseSrc(t0, .7).connect(f).connect(g); send(g, .25); lfo.start(t0); lfo.stop(t0 + .7); }
+    hiss(T_COVER - .08, .35, 'lowpass', 2400, 300, .7, .5, .3, .03);
+    // carving: a scraping knife, then the candle catching ("fwoomp") and crackling
+    { const t0 = at(T_PUMPKIN + .14), f = ac.createBiquadFilter(), g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
+      f.type = 'bandpass'; f.Q.value = 4; f.frequency.setValueAtTime(2200, t0); f.frequency.linearRampToValueAtTime(3200, t0 + .42); lfo.frequency.value = 9; lg.gain.value = .09;
+      shape(g, t0, [[.04, .1], [.4, .1], [.45, 0]]); lfo.connect(lg).connect(g.gain); noiseSrc(t0, .5).connect(f).connect(g); send(g, .2); lfo.start(t0); lfo.stop(t0 + .5); }
+    boom(T_PUMPKIN + .5, 140, 55, .55, .55, .5); hiss(T_PUMPKIN + .5, .5, 'lowpass', 900, 200, .7, .3, .4, .05);
+    for (let i = 0; i < 26; i++) { const tt = T_PUMPKIN + .6 + Math.random() * (T_RUSH - T_PUMPKIN - .6); hiss(tt, .025, 'highpass', 2500, 2000, 1, .05 + Math.random() * .08, .1, .001); }
+    // riser into the white burst, then the burst
+    hiss(T_RUSH - .1, T_FLASH - T_RUSH + .1, 'bandpass', 300, 4500, 1.6, .55, .3, .4);
+    boom(T_FLASH, 110, 30, 1.4, 1, .7); hiss(T_FLASH, 1.1, 'lowpass', 3000, 150, .7, .6, .7, .01);
+    // the witch: a cackle of falling "ha" syllables (saw tone through two formants) and squeaking bats
+    { const f1 = ac.createBiquadFilter(), f2 = ac.createBiquadFilter(), mix = ac.createGain(); f1.type = f2.type = 'bandpass'; f1.frequency.value = 820; f1.Q.value = 6; f2.frequency.value = 1350; f2.Q.value = 7; mix.gain.value = .9;
+      f1.connect(mix); f2.connect(mix); send(mix, .7);
+      for (let i = 0; i < 7; i++) {
+        const t0 = at(T_WITCH + .35 + i * .118), o = ac.createOscillator(), g = ac.createGain(), pitch = 760 - i * 42 + (i % 2) * 30;
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(pitch * 1.06, t0); o.frequency.exponentialRampToValueAtTime(pitch * .88, t0 + .09);
+        env(g, t0, .2 - i * .015, .1, .008); o.connect(g); g.connect(f1); g.connect(f2); o.start(t0); o.stop(t0 + .12);
+      } }
+    for (let i = 0; i < 12; i++) {
+      const t0 = at(T_WITCH + .2 + Math.random() * 1.3), o = ac.createOscillator(), g = ac.createGain(), f = 6500 + Math.random() * 2500;
+      o.frequency.setValueAtTime(f, t0); o.frequency.exponentialRampToValueAtTime(f * .7, t0 + .05); env(g, t0, .035, .06, .003); o.connect(g); send(g, .3); o.start(t0); o.stop(t0 + .08);
+    }
+    { const t0 = at(T_WITCH + .2), f = ac.createBiquadFilter(), g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
+      f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 1; lfo.frequency.value = 22; lg.gain.value = .07;
+      shape(g, t0, [[.2, .08], [1.1, .06], [1.4, 0]]); lfo.connect(lg).connect(g.gain); noiseSrc(t0, 1.5).connect(f).connect(g); send(g, .3); lfo.start(t0); lfo.stop(t0 + 1.5); }
+    // the logo: a low organ chord in D minor swelling up
+    { const t0 = at(T_LOGO), lp = ac.createBiquadFilter(), g = ac.createGain(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(400, t0); lp.frequency.linearRampToValueAtTime(1800, t0 + 1.4);
+      shape(g, t0, [[.6, .1], [1.6, .085], [DUR - T_LOGO + .4, 0]]); lp.connect(g); send(g, .9);
+      for (const [hz, v] of [[73.4, 1], [110, .8], [146.8, .7], [174.6, .6], [220, .45], [293.7, .3]]) for (const det of [-3, 3]) {
+        const o = ac.createOscillator(), og = ac.createGain(); o.type = 'sawtooth'; o.frequency.value = hz; o.detune.value = det; og.gain.value = v * .5; o.connect(og).connect(lp); o.start(t0); o.stop(t0 + DUR - T_LOGO + .5);
+      } }
+    // lightning: a sharp crack, then thunder rolling away
+    hiss(T_BOLT, .12, 'highpass', 3500, 1800, .7, .7, .5, .002);
+    hiss(T_BOLT + .05, 2.4, 'lowpass', 600, 60, .8, .9, .6, .08); boom(T_BOLT + .02, 70, 28, 1.6, .7, .6);
+    return out;
+  }
+  function stopSound() {
+    if (!audio) return;
+    const { ac, out } = audio; audio = null;
+    try { out.gain.setTargetAtTime(0, ac.currentTime, .06); setTimeout(() => ac.close().catch(() => {}), 400); } catch { /* already closed */ }
+  }
+  splash.addEventListener('pointerdown', stopSound);
 
   // ---------- frame ----------
   // hq: bloom and soft shadows on. If the machine cannot hold 60 fps it drops to a lighter mode (no bloom, 1x pixels).
@@ -513,12 +713,16 @@
     if (t < T_PUMPKIN + .3) {
       // scene 1–2: spotlight, cobwebs, ghost, the sheet blowing at the camera
       const room = ss(.15, .9, t);
-      let grd = ctx.createRadialGradient(W / 2, -60, 20, W / 2, 120, 640);
-      grd.addColorStop(0, `rgba(255,255,255,${.2 * room})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+      // purple moonlit night: dark violet sky, a cool moonbeam from above, light rising from below where the ghost comes up
+      let grd = ctx.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#0e0818'); grd.addColorStop(1, '#040208');
+      ctx.globalAlpha = room; ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.globalAlpha = 1;
+      grd = ctx.createRadialGradient(W / 2, -60, 20, W / 2, 120, 640);
+      grd.addColorStop(0, `rgba(205,190,255,${.22 * room})`); grd.addColorStop(1, 'rgba(160,130,255,0)');
       ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
       grd = ctx.createRadialGradient(W / 2, H + 60, 10, W / 2, H, 420 * ss(.1, .6, t) + 1);
-      grd.addColorStop(0, `rgba(255,255,255,${.35 * (1 - ss(.9, 1.6, t))})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+      grd.addColorStop(0, `rgba(220,205,255,${.35 * (1 - ss(.9, 1.6, t))})`); grd.addColorStop(1, 'rgba(180,150,255,0)');
       ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+      drawGroundFog(t, room * .55);
       const webs = ss(.5, 1.4, t) * .55;
       if (webs > 0) {
         ctx.globalAlpha = webs;
@@ -565,11 +769,12 @@
       // scene 4–5: grey fog, dust, burst, skeleton, logo
       drawFogBackdrop(t, .55 + .45 * ss(T_FLASH, T_FLASH + 1, t));
       // the grey fog turns into a purple Halloween night for the logo
-      const night = ss(T_LOGO - .3, T_LOGO + .8, t);
+      const night = ss(T_LOGO - .3, T_LOGO + .8, t) * .5;
       if (night > 0) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = night; ctx.fillStyle = 'rgb(150,95,215)'; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.restore(); }
       drawDust(t, (1 - .7 * ss(T_FLASH + .8, T_LOGO, t)) * ss(T_FLASH, T_FLASH + .08, t));
       drawBurst(t);
-      drawSkeleton(t);
+      drawMoon(t);
+      drawWitch(t);
       drawLogo(t);
       drawMotes(t, ss(T_LOGO, T_LOGO + 1, t) * .5, ember, embers, 30);
     }
@@ -597,15 +802,16 @@
   }
 
   resize();
-  warm([...smoke, ...whiteSmoke, ...warmSmoke, ...purpleSmoke, ember, mote, vignette, web, pumpkinBody, pumpkinFace, pumpkinSpill]);
+  warm([...smoke, ...whiteSmoke, ...warmSmoke, ...purpleSmoke, ...bats, moon, bolt, ember, mote, vignette, web, pumpkinBody, pumpkinFace, pumpkinSpill]);
   // Render one frame of every scene up front (the screen is still black) so first-use costs never stall a scene.
-  for (const t of [1.2, 2.7, 3.05, 3.25, 4.5, 4.75, 5.6]) frame(t);
+  for (const t of [1.2, 2.7, 3.05, 3.4, 3.9, 4.5, 4.75, 5.4, 6.6, 7.0]) frame(t);
   window.addEventListener('resize', resize);
   const start = performance.now();
   const STEP = 1000 / 60;
+  startSound(start);
   let raf = 0, last = -1e9, due = 0, slow = 0, frames = 0;
   function tick(now) {
-    if (!canvas.isConnected) return;
+    if (!canvas.isConnected) { stopSound(); return; }
     raf = requestAnimationFrame(tick);
     // steady 60 fps: on 120/144 Hz screens the extra vsyncs are skipped, keeping an average of exactly 60 renders a second
     if (now < due - 3) return;
@@ -615,9 +821,11 @@
     frame(t);
     // more than a third of the last 30 frames late: switch to the lighter mode once
     if (hq && t > .5) { frames++; if (gap > 24) slow++; if (frames >= 30) { if (slow > 10) { hq = false; resize(); } frames = slow = 0; } }
-    if (t >= DUR) cancelAnimationFrame(raf);
+    if (t >= DUR) { cancelAnimationFrame(raf); setTimeout(stopSound, 2200); }
   }
   raf = requestAnimationFrame(tick);
   // Test/preview hook: render any moment (used by the frame captures).
-  window.H1tHalloweenBoot = { renderAt: (t) => { cancelAnimationFrame(raf); frame(t); }, duration: DUR, ready: () => !!logo };
+  window.H1tHalloweenBoot = { renderAt: (t) => { cancelAnimationFrame(raf); frame(t); }, duration: DUR, ready: () => !!logo, setName: (n) => { bootName = String(n || ''); },
+    // test hook: render the soundtrack offline (for listening checks)
+    renderSound: async () => { const oc = new OfflineAudioContext(2, 44100 * 10, 44100); buildSound(oc, 0); return oc.startRendering(); } };
 })();
