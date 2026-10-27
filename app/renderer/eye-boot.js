@@ -94,17 +94,17 @@
     g.strokeStyle = 'rgba(240,240,240,.9)'; g.lineCap = 'round';
     for (const [x0, x1, w] of [[-EW, -EW - 70, 2.2], [EW, EW + 34, 1.6]]) { g.lineWidth = w; g.beginPath(); g.moveTo(x0, 0); g.lineTo(x1, 2); g.stroke(); }
   });
-  // the iris: rings of white code around the pupil, radial strands, a dark limbal ring (black and white; only the pupil is blue)
+  // the iris: rings of glowing blue code around a dark pupil, radial strands, a dark limbal ring (the only colour in the eye)
   const IR = 228, PR = 100, IK = 2, IS = IR * 2 * IK + 40;
   const iris = sprite(IS, IS, (g) => {
     g.translate(IS / 2, IS / 2); g.scale(IK, IK);
     let grd = g.createRadialGradient(0, 0, PR * .8, 0, 0, IR);
-    grd.addColorStop(0, '#3a3a3e'); grd.addColorStop(.4, '#1c1c20'); grd.addColorStop(1, '#09090b');
+    grd.addColorStop(0, '#0c5c8a'); grd.addColorStop(.4, '#0b3f9a'); grd.addColorStop(1, '#071a5c');
     g.fillStyle = grd; g.beginPath(); g.arc(0, 0, IR, 0, TAU); g.arc(0, 0, PR * .9, 0, TAU, true); g.fill();
     // radial strands
     for (let i = 0; i < 520; i++) {
       const a = rnd() * TAU, r0 = PR + rnd() * 20, r1 = r0 + 30 + rnd() * (IR - r0 - 20);
-      const c = 150 + rnd() * 105 | 0; g.strokeStyle = `rgba(${c},${c},${c},${.18 + rnd() * .36})`; g.lineWidth = .6 + rnd() * 1.6;
+      g.strokeStyle = `rgba(${90 + rnd() * 140 | 0},${200 + rnd() * 55 | 0},255,${.2 + rnd() * .4})`; g.lineWidth = .6 + rnd() * 1.6;
       g.beginPath(); g.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); g.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); g.stroke();
     }
     // rings of code
@@ -118,19 +118,19 @@
         if (rnd() < .9) {
           g.save(); g.rotate(a + da / 2); g.translate(r, 0); g.rotate(Math.PI / 2);
           const lum = 1 - k * .55;
-          g.shadowColor = 'rgba(255,255,255,.7)'; g.shadowBlur = 3;
-          const c = mix(120, 255, lum) | 0; g.fillStyle = `rgba(${c},${c},${c},${.65 + .35 * rnd()})`; g.fillText(s, -w / 2, 0); g.restore();
+          g.shadowColor = 'rgba(90,200,255,.8)'; g.shadowBlur = 3;
+          g.fillStyle = `rgba(${mix(40, 225, lum) | 0},${mix(150, 255, lum) | 0},255,${.65 + .35 * rnd()})`; g.fillText(s, -w / 2, 0); g.restore();
         }
         a += da + rnd() * .04;
       }
     }
     // bright collarette around the pupil and the dark limbal ring at the edge
-    grd = g.createRadialGradient(0, 0, PR, 0, 0, PR + 26); grd.addColorStop(0, 'rgba(255,255,255,.5)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    grd = g.createRadialGradient(0, 0, PR, 0, 0, PR + 26); grd.addColorStop(0, 'rgba(190,250,255,.55)'); grd.addColorStop(1, 'rgba(120,220,255,0)');
     g.fillStyle = grd; g.beginPath(); g.arc(0, 0, PR + 26, 0, TAU); g.arc(0, 0, PR, 0, TAU, true); g.fill();
-    grd = g.createRadialGradient(0, 0, IR - 16, 0, 0, IR + 2); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.5)');
+    grd = g.createRadialGradient(0, 0, IR - 16, 0, 0, IR + 2); grd.addColorStop(0, 'rgba(4,10,40,0)'); grd.addColorStop(1, 'rgba(4,10,40,.4)');
     g.fillStyle = grd; g.beginPath(); g.arc(0, 0, IR + 2, 0, TAU); g.fill();
   });
-  const irisGlow = sprite(IS, IS, (g) => { g.filter = 'blur(14px) brightness(1.1)'; g.drawImage(iris, 0, 0); });
+  const irisGlow = sprite(IS, IS, (g) => { g.filter = 'blur(14px) brightness(1.3)'; g.drawImage(iris, 0, 0); });
 
   // ---------- gaze: scripted looks, then it follows the mouse ----------
   let mouseX = W / 2, mouseY = H / 2, hasMouse = false;
@@ -216,16 +216,8 @@
       ctx.save(); ctx.translate(ix, iy); ctx.scale(fx, fy); ctx.rotate(t * .08); ctx.drawImage(iris, -ir - pad, -ir - pad, (ir + pad) * 2, (ir + pad) * 2); ctx.restore();
       const pr = PR * s * (opts.pupil || 1);
       ctx.save(); ctx.translate(ix, iy); ctx.scale(fx, fy);
-      // the pupil glows light blue: a dark rim, a luminous ice-blue disc, a brighter core, a halo spilling over the iris
-      ctx.fillStyle = 'rgba(4,6,10,.85)'; ctx.beginPath(); ctx.arc(0, 0, pr * 1.06, 0, TAU); ctx.fill();
-      const pulse = 1 + .05 * Math.sin(t * 3.2);
-      const pg = ctx.createRadialGradient(-pr * .18, -pr * .2, pr * .05, 0, 0, pr * pulse);
-      pg.addColorStop(0, '#e2f1ff'); pg.addColorStop(.3, '#a8d4ff'); pg.addColorStop(.75, '#6aaeef'); pg.addColorStop(1, '#3d7cc4');
-      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(0, 0, pr * pulse, 0, TAU); ctx.fill();
-      ctx.globalCompositeOperation = 'lighter';
-      const halo = ctx.createRadialGradient(0, 0, pr * .8, 0, 0, pr * 1.9); halo.addColorStop(0, 'rgba(160,205,255,.32)'); halo.addColorStop(1, 'rgba(160,205,255,0)');
-      ctx.fillStyle = halo; ctx.fillRect(-pr * 2, -pr * 2, pr * 4, pr * 4);
-      ctx.globalCompositeOperation = 'source-over'; ctx.restore();
+      const pg = ctx.createRadialGradient(0, 0, pr * .6, 0, 0, pr * 1.06); pg.addColorStop(0, '#03061a'); pg.addColorStop(.86, '#07103a'); pg.addColorStop(1, 'rgba(10,30,90,0)');
+      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(0, 0, pr * 1.06, 0, TAU); ctx.fill(); ctx.restore();
       ctx.restore();
     }
     // the lid edges: a glowing line of light along the aperture
