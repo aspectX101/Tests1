@@ -5,8 +5,9 @@
 //                  around a large dark pupil; it looks right, left, blinks, then looks at you (it follows the mouse)
 //   3 Close      – the camera pushes into the iris until it fills the screen, the lids shut into a thick band of code,
 //                  the band pulls back into a thin curved line
-//   4 Into app   – as soon as the tweaker is ready, the line peeks open, blinks and opens wide: the tweaker is what the
-//                  eye sees (the canvas cuts the hole, the app shows through). If the app needs longer, the line breathes.
+//   4 Into app   – as soon as the tweaker is ready, the wide line slowly opens like waking up and the tweaker is what
+//                  the eye sees, first over-exposed, then clear (the canvas cuts the hole, the app shows through).
+//                  If the app needs longer, the line breathes.
 // Everything is drawn in code; the code textures are pre-rendered once into sprites and each frame only composes
 // them. Active only when <html> has .eye-boot (halloween-boot-head.js picks it and sets H1T_BOOT_MS).
 (() => {
@@ -58,7 +59,7 @@
       let x = -rnd() * 200;
       while (x < W) {
         const s = codeLine(8 + ((rnd() * 40) | 0)), a = .08 + rnd() * .22;
-        g.fillStyle = `rgba(${150 + rnd() * 50 | 0},${170 + rnd() * 40 | 0},235,${a})`; g.fillText(s, x, y);
+        const c = 170 + rnd() * 60 | 0; g.fillStyle = `rgba(${c},${c},${c},${a})`; g.fillText(s, x, y);
         x += g.measureText(s).width + 20 + rnd() * 120;
       }
     }
@@ -84,26 +85,26 @@
         if (rnd() < (edge ? .03 : .1)) { x += w + 6; continue; } // gaps
         const xm = x + w / 2, ang = Math.atan2(rowY(x + w) - rowY(x), w), a = edge ? 1 : .62 + .38 * Math.pow(r, .8) * (.7 + .3 * rnd());
         g.save(); g.translate(xm, rowY(xm)); g.rotate(ang);
-        g.shadowColor = 'rgba(200,225,255,.7)'; g.shadowBlur = edge ? 7 : 2.5;
-        g.fillStyle = `rgba(${225 + rnd() * 30 | 0},${235 + rnd() * 20 | 0},255,${a})`; g.fillText(s, -w / 2, 0); g.restore();
+        g.shadowColor = 'rgba(235,235,240,.7)'; g.shadowBlur = edge ? 7 : 2.5;
+        const c = 228 + rnd() * 27 | 0; g.fillStyle = `rgba(${c},${c},${c},${a})`; g.fillText(s, -w / 2, 0); g.restore();
         x += w + 2 + rnd() * 3;
       }
     }
     // the long tapered corners
-    g.strokeStyle = 'rgba(235,242,255,.9)'; g.lineCap = 'round';
+    g.strokeStyle = 'rgba(240,240,240,.9)'; g.lineCap = 'round';
     for (const [x0, x1, w] of [[-EW, -EW - 70, 2.2], [EW, EW + 34, 1.6]]) { g.lineWidth = w; g.beginPath(); g.moveTo(x0, 0); g.lineTo(x1, 2); g.stroke(); }
   });
-  // the iris: rings of blue code around the pupil, radial strands, a dark limbal ring
+  // the iris: rings of white code around the pupil, radial strands, a dark limbal ring (black and white; only the pupil is blue)
   const IR = 228, PR = 100, IK = 2, IS = IR * 2 * IK + 40;
   const iris = sprite(IS, IS, (g) => {
     g.translate(IS / 2, IS / 2); g.scale(IK, IK);
     let grd = g.createRadialGradient(0, 0, PR * .8, 0, 0, IR);
-    grd.addColorStop(0, '#0c5c8a'); grd.addColorStop(.4, '#0b3f9a'); grd.addColorStop(1, '#071a5c');
+    grd.addColorStop(0, '#3a3a3e'); grd.addColorStop(.4, '#1c1c20'); grd.addColorStop(1, '#09090b');
     g.fillStyle = grd; g.beginPath(); g.arc(0, 0, IR, 0, TAU); g.arc(0, 0, PR * .9, 0, TAU, true); g.fill();
     // radial strands
     for (let i = 0; i < 520; i++) {
       const a = rnd() * TAU, r0 = PR + rnd() * 20, r1 = r0 + 30 + rnd() * (IR - r0 - 20);
-      g.strokeStyle = `rgba(${90 + rnd() * 140 | 0},${200 + rnd() * 55 | 0},255,${.2 + rnd() * .4})`; g.lineWidth = .6 + rnd() * 1.6;
+      const c = 150 + rnd() * 105 | 0; g.strokeStyle = `rgba(${c},${c},${c},${.18 + rnd() * .36})`; g.lineWidth = .6 + rnd() * 1.6;
       g.beginPath(); g.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); g.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); g.stroke();
     }
     // rings of code
@@ -117,19 +118,19 @@
         if (rnd() < .9) {
           g.save(); g.rotate(a + da / 2); g.translate(r, 0); g.rotate(Math.PI / 2);
           const lum = 1 - k * .55;
-          g.shadowColor = 'rgba(90,200,255,.8)'; g.shadowBlur = 3;
-          g.fillStyle = `rgba(${mix(40, 225, lum) | 0},${mix(150, 255, lum) | 0},255,${.65 + .35 * rnd()})`; g.fillText(s, -w / 2, 0); g.restore();
+          g.shadowColor = 'rgba(255,255,255,.7)'; g.shadowBlur = 3;
+          const c = mix(120, 255, lum) | 0; g.fillStyle = `rgba(${c},${c},${c},${.65 + .35 * rnd()})`; g.fillText(s, -w / 2, 0); g.restore();
         }
         a += da + rnd() * .04;
       }
     }
     // bright collarette around the pupil and the dark limbal ring at the edge
-    grd = g.createRadialGradient(0, 0, PR, 0, 0, PR + 26); grd.addColorStop(0, 'rgba(190,250,255,.55)'); grd.addColorStop(1, 'rgba(120,220,255,0)');
+    grd = g.createRadialGradient(0, 0, PR, 0, 0, PR + 26); grd.addColorStop(0, 'rgba(255,255,255,.5)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = grd; g.beginPath(); g.arc(0, 0, PR + 26, 0, TAU); g.arc(0, 0, PR, 0, TAU, true); g.fill();
-    grd = g.createRadialGradient(0, 0, IR - 16, 0, 0, IR + 2); grd.addColorStop(0, 'rgba(4,10,40,0)'); grd.addColorStop(1, 'rgba(4,10,40,.4)');
+    grd = g.createRadialGradient(0, 0, IR - 16, 0, 0, IR + 2); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.5)');
     g.fillStyle = grd; g.beginPath(); g.arc(0, 0, IR + 2, 0, TAU); g.fill();
   });
-  const irisGlow = sprite(IS, IS, (g) => { g.filter = 'blur(14px) brightness(1.3)'; g.drawImage(iris, 0, 0); });
+  const irisGlow = sprite(IS, IS, (g) => { g.filter = 'blur(14px) brightness(1.1)'; g.drawImage(iris, 0, 0); });
 
   // ---------- gaze: scripted looks, then it follows the mouse ----------
   let mouseX = W / 2, mouseY = H / 2, hasMouse = false;
@@ -172,7 +173,7 @@
   function drawBackground(t, a, tint = 1) {
     if (a <= 0) return;
     const grd = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 820);
-    grd.addColorStop(0, `rgb(${8 * tint | 0},${13 * tint | 0},${44 * tint | 0})`); grd.addColorStop(1, `rgb(${1 * tint | 0},${2 * tint | 0},${9 * tint | 0})`);
+    grd.addColorStop(0, `rgb(${16 * tint | 0},${16 * tint | 0},${18 * tint | 0})`); grd.addColorStop(1, `rgb(${2 * tint | 0},${2 * tint | 0},${3 * tint | 0})`);
     ctx.globalAlpha = a; ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80);
     const off = (t * 14) % H;
     ctx.globalAlpha = a * (.42 + .1 * Math.sin(t * 7)) * tint;
@@ -215,14 +216,22 @@
       ctx.save(); ctx.translate(ix, iy); ctx.scale(fx, fy); ctx.rotate(t * .08); ctx.drawImage(iris, -ir - pad, -ir - pad, (ir + pad) * 2, (ir + pad) * 2); ctx.restore();
       const pr = PR * s * (opts.pupil || 1);
       ctx.save(); ctx.translate(ix, iy); ctx.scale(fx, fy);
-      const pg = ctx.createRadialGradient(0, 0, pr * .6, 0, 0, pr * 1.06); pg.addColorStop(0, '#03061a'); pg.addColorStop(.86, '#07103a'); pg.addColorStop(1, 'rgba(10,30,90,0)');
-      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(0, 0, pr * 1.06, 0, TAU); ctx.fill(); ctx.restore();
+      // the pupil glows light blue: a dark rim, a luminous ice-blue disc, a brighter core, a halo spilling over the iris
+      ctx.fillStyle = 'rgba(4,6,10,.85)'; ctx.beginPath(); ctx.arc(0, 0, pr * 1.06, 0, TAU); ctx.fill();
+      const pulse = 1 + .05 * Math.sin(t * 3.2);
+      const pg = ctx.createRadialGradient(-pr * .18, -pr * .2, pr * .05, 0, 0, pr * pulse);
+      pg.addColorStop(0, '#e2f1ff'); pg.addColorStop(.3, '#a8d4ff'); pg.addColorStop(.75, '#6aaeef'); pg.addColorStop(1, '#3d7cc4');
+      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(0, 0, pr * pulse, 0, TAU); ctx.fill();
+      ctx.globalCompositeOperation = 'lighter';
+      const halo = ctx.createRadialGradient(0, 0, pr * .8, 0, 0, pr * 1.9); halo.addColorStop(0, 'rgba(160,205,255,.32)'); halo.addColorStop(1, 'rgba(160,205,255,0)');
+      ctx.fillStyle = halo; ctx.fillRect(-pr * 2, -pr * 2, pr * 4, pr * 4);
+      ctx.globalCompositeOperation = 'source-over'; ctx.restore();
       ctx.restore();
     }
     // the lid edges: a glowing line of light along the aperture
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
-    ctx.strokeStyle = `rgba(190,220,255,${open < .1 ? .3 : .18})`; ctx.lineWidth = 8 * s; ctx.stroke(ap);
-    ctx.strokeStyle = 'rgba(240,248,255,.6)'; ctx.lineWidth = 1.6 * s; ctx.stroke(ap);
+    ctx.strokeStyle = `rgba(230,230,235,${open < .1 ? .26 : .14})`; ctx.lineWidth = 8 * s; ctx.stroke(ap);
+    ctx.strokeStyle = 'rgba(250,250,250,.6)'; ctx.lineWidth = 1.6 * s; ctx.stroke(ap);
     ctx.restore();
   }
   // the shut eye drawing itself outwards from the centre, with a soft glow along its curve
@@ -233,13 +242,13 @@
     const line = new Path2D(); for (let i = 0; i <= 40; i++) { const x = -EW + (2 * EW * i) / 40; line[i ? 'lineTo' : 'moveTo'](W / 2 + x * s, H / 2 + shutY(x) * s); }
     ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.globalAlpha = (1 - lin(t0 + .3, t0 + .9, t) * .5) * (t > t0 + .9 ? .85 + .15 * Math.sin((t - t0) * 5) : 1);
-    ctx.strokeStyle = 'rgba(140,190,255,.22)'; ctx.lineWidth = 26; ctx.stroke(line);
-    ctx.strokeStyle = 'rgba(200,230,255,.35)'; ctx.lineWidth = 8; ctx.stroke(line);
+    ctx.strokeStyle = 'rgba(220,220,225,.18)'; ctx.lineWidth = 26; ctx.stroke(line);
+    ctx.strokeStyle = 'rgba(245,245,245,.32)'; ctx.lineWidth = 8; ctx.stroke(line);
     ctx.restore();
   }
   // horizontal glitch: slices of the frame jump sideways for a moment
   function glitch(amount, t) {
-    if (amount <= 0) return;
+    if (amount < .02) return;
     const n = 7, f = (t * 30) | 0;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (let i = 0; i < n; i++) {
@@ -263,18 +272,26 @@
     bloomA.width = Math.max(1, canvas.width >> 2); bloomA.height = Math.max(1, canvas.height >> 2);
     bloomB.width = Math.max(1, canvas.width >> 4); bloomB.height = Math.max(1, canvas.height >> 4);
   }
-  // the final eye: the line peeks open, blinks, then opens past the screen edges (`reveal` 0..1)
-  const SEAM_S = 1.25, Z_IRIS = 2.7;
-  const revealOpen = (r) => r < .22 ? mix(.014, .3, easeOut(r / .22)) : r < .36 ? mix(.3, .05, ss(.22, .36, r)) : mix(.05, 3.2, easeIn(lin(.36, 1, r)) * .7 + ss(.36, 1, r) * .3);
+  // the final eye: like waking up, the wide line of code opens slowly and the tweaker appears in it, at first
+  // over-exposed as if the eye still has to get used to the light (`reveal` 0..1 over REVEAL_MS)
+  const SEAM_S = 1.25, Z_IRIS = 2.7, REVEAL_MS = 1700;
+  const revealOpen = (r) => mix(.014, 2.3, Math.pow(ss(0, 1, r), 1.6));
   function drawReveal(t, r) {
-    const open = revealOpen(r), sc = SEAM_S + 1.6 * easeIn(lin(.36, 1, r));
-    drawBackground(t, 1);
+    const open = revealOpen(r), sc = SEAM_S + .45 * ss(0, 1, r);
+    drawBackground(t, 1 - ss(.55, 1, r));
     drawEye(t, W / 2, H / 2, sc, open, 0, 0, { noIris: true });
-    // cut the inner window: the tweaker shows through it
-    const hole = aperture(W / 2, H / 2, sc, open, .8);
+    // cut the window between the lids: only the outer rows of code stay, as the lids
+    const hole = aperture(W / 2, H / 2, sc, open, .9);
     ctx.globalCompositeOperation = 'destination-out'; ctx.fill(hole); ctx.globalCompositeOperation = 'source-over';
+    // the light of the tweaker floods in first and then settles
+    const flood = (1 - ss(.15, .85, r)) * .78;
+    if (flood > 0) {
+      ctx.save(); ctx.clip(hole);
+      const g = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 760); g.addColorStop(0, `rgba(255,255,255,${flood})`); g.addColorStop(1, `rgba(210,225,240,${flood * .75})`);
+      ctx.fillStyle = g; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.restore();
+    }
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
-    ctx.strokeStyle = 'rgba(160,210,255,.28)'; ctx.lineWidth = 10; ctx.stroke(hole); ctx.strokeStyle = 'rgba(235,246,255,.8)'; ctx.lineWidth = 1.8; ctx.stroke(hole);
+    ctx.strokeStyle = 'rgba(235,235,240,.25)'; ctx.lineWidth = 12; ctx.stroke(hole); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2; ctx.stroke(hole);
     ctx.restore();
   }
   function frame(t, reveal = 0) {
@@ -311,7 +328,7 @@
       ctx.restore();
     }
     // glitches: when the eye wakes, at the blink, when it shuts, and as the final eye snaps open
-    const gl = Math.max(Math.exp(-(((t - T_OPEN) / .06) ** 2)), Math.exp(-(((t - T_BLINK - .12) / .05) ** 2)) * .6, Math.exp(-(((t - T_CLOSE - .3) / .07) ** 2)) * .8, reveal > 0 ? Math.exp(-(((reveal - .3) / .06) ** 2)) : 0);
+    const gl = Math.max(Math.exp(-(((t - T_OPEN) / .06) ** 2)), Math.exp(-(((t - T_BLINK - .12) / .05) ** 2)) * .6, Math.exp(-(((t - T_CLOSE - .3) / .07) ** 2)) * .8, reveal > 0 ? Math.exp(-(((reveal - .06) / .04) ** 2)) * .5 : 0);
     // bloom: brightest parts, blurred by down-scaling, added back on top
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (hq && !reveal) {
@@ -326,7 +343,7 @@
     glitch(gl, t);
     if (!reveal) ctx.drawImage(vignette, 0, 0, canvas.width, canvas.height);
     // the last frames of the reveal fade out whatever is left of the lids
-    if (reveal > .8) { ctx.globalCompositeOperation = 'destination-out'; ctx.globalAlpha = ss(.8, 1, reveal); ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
+    if (reveal > .82) { ctx.globalCompositeOperation = 'destination-out'; ctx.globalAlpha = ss(.82, 1, reveal); ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
     const fadeIn = 1 - ss(0, .3, t);
     if (fadeIn > 0 && !reveal) { ctx.globalAlpha = fadeIn; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
   }
@@ -390,14 +407,12 @@
     tone(T_CLOSE + .32, 'sine', 120, 28, 1.2, [[.01, .7], [1.2, 0]], .6); hiss(T_CLOSE + .32, .25, 'lowpass', 1800, 200, .7, .4, .5, .002);
     hiss(T_CLOSE + .4, .9, 'bandpass', 4000, 1200, 2, .14, .5, .3);
     const revealSound = (t0) => {
-      // the eye opens onto the tweaker: a blink tick, then a deep braam (detuned saws through an opening low-pass) and a shimmer
-      const tick = (dt) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(1800, t0 + dt); o.frequency.exponentialRampToValueAtTime(1200, t0 + dt + .06); env(g, t0 + dt, .1, .06, .004); o.connect(g); send(g, .2); o.start(t0 + dt); o.stop(t0 + dt + .08); };
-      tick(.16); tick(.27);
-      const tb = t0 + .27, lp = ac.createBiquadFilter(), g = ac.createGain(); lp.type = 'lowpass'; lp.Q.value = 3; lp.frequency.setValueAtTime(180, tb); lp.frequency.exponentialRampToValueAtTime(1400, tb + .45); lp.frequency.exponentialRampToValueAtTime(300, tb + 2);
-      shape(g, tb, [[.05, .22], [1.1, .12], [2, 0]]); lp.connect(g); send(g, .7);
-      for (const [hz, v] of [[43.65, 1], [65.4, .8], [87.3, .6], [130.8, .35]]) for (const det of [-7, 0, 7]) { const o = ac.createOscillator(), og = ac.createGain(); o.type = 'sawtooth'; o.frequency.value = hz; o.detune.value = det; og.gain.value = v * .35; o.connect(og).connect(lp); o.start(tb); o.stop(tb + 2.1); }
-      const f = ac.createBiquadFilter(), hg = ac.createGain(); f.type = 'highpass'; f.frequency.setValueAtTime(4000, tb); f.frequency.exponentialRampToValueAtTime(9000, tb + .9);
-      env(hg, tb, .16, .9, .1); noiseSrc(tb, .9).connect(f).connect(hg); send(hg, .6);
+      // the eye slowly opens onto the tweaker: a deep braam (detuned saws through an opening low-pass) and a shimmer
+      const tb = t0 + .05, lp = ac.createBiquadFilter(), g = ac.createGain(); lp.type = 'lowpass'; lp.Q.value = 3; lp.frequency.setValueAtTime(160, tb); lp.frequency.exponentialRampToValueAtTime(1500, tb + 1.1); lp.frequency.exponentialRampToValueAtTime(300, tb + 2.6);
+      shape(g, tb, [[.6, .2], [1.5, .14], [2.6, 0]]); lp.connect(g); send(g, .7);
+      for (const [hz, v] of [[43.65, 1], [65.4, .8], [87.3, .6], [130.8, .35]]) for (const det of [-7, 0, 7]) { const o = ac.createOscillator(), og = ac.createGain(); o.type = 'sawtooth'; o.frequency.value = hz; o.detune.value = det; og.gain.value = v * .35; o.connect(og).connect(lp); o.start(tb); o.stop(tb + 2.7); }
+      const f = ac.createBiquadFilter(), hg = ac.createGain(); f.type = 'highpass'; f.frequency.setValueAtTime(3000, tb); f.frequency.exponentialRampToValueAtTime(9000, tb + 1.4);
+      env(hg, tb, .16, 1.6, .9); noiseSrc(tb, 1.6).connect(f).connect(hg); send(hg, .6);
     };
     return { out, revealSound };
   }
@@ -411,7 +426,7 @@
   warm([bgCode, sclera, iris, irisGlow, vignette]);
   // Render one frame of every act up front (the screen is still black) so first-use costs never stall a scene.
   for (const t of [.6, 1.5, 2.8, 3.8, 4.6, 5.2, 5.7]) frame(t);
-  for (const r of [.2, .5, .9]) frame(5.8, r);
+  for (const r of [.15, .5, .9]) frame(5.8, r);
   window.addEventListener('resize', resize);
   const start = performance.now(), STEP = 1000 / 60;
   startSound(start);
@@ -425,8 +440,8 @@
     const gap = now - last; last = now;
     // once the app starts hiding the splash, the giant eye opens wide and reveals the tweaker behind it
     if (splash.classList.contains('out')) {
-      if (!revealStart) { revealStart = now; try { audio?.revealSound?.(audio.ac.currentTime); } catch { /* no sound */ } setTimeout(stopSound, 2600); }
-      frame((now - start) / 1000, lin(0, 760, now - revealStart));
+      if (!revealStart) { revealStart = now; try { audio?.revealSound?.(audio.ac.currentTime); } catch { /* no sound */ } setTimeout(stopSound, 3200); }
+      frame((now - start) / 1000, lin(0, REVEAL_MS, now - revealStart));
       return;
     }
     // after DUR the seam keeps breathing until the app is ready
