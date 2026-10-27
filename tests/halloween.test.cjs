@@ -48,7 +48,7 @@ test('in season the title-bar button is taken over in the capture phase', () => 
   assert.ok(listeners.some((l) => l.type === 'click' && l.capture === true));
 });
 
-test('the boot animation is chosen before the first paint: Halloween in season, the gunshot reveal otherwise', () => {
+test('the boot animation is chosen before the first paint: Halloween in season, the code eye otherwise', () => {
   const head = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/halloween-boot-head.js'), 'utf8');
   const run = (iso, stored) => {
     const RealDate = Date;
@@ -56,13 +56,13 @@ test('the boot animation is chosen before the first paint: Halloween in season, 
     const classes = new Set(), window = { matchMedia: () => ({ matches: false }) };
     vm.runInNewContext(head, { window, Date: FakeDate, JSON, localStorage: { getItem: () => (stored ? JSON.stringify(stored) : null) },
       document: { documentElement: { classList: { add: (c) => classes.add(c) } } } });
-    return { boot: classes.has('hw-boot'), gun: classes.has('gun-boot'), ms: window.H1T_BOOT_MS };
+    return { boot: classes.has('hw-boot'), eye: classes.has('eye-boot'), ms: window.H1T_BOOT_MS };
   };
-  assert.equal(JSON.stringify(run('2026-10-24T12:00:00')), JSON.stringify({ boot: true, gun: false, ms: 8000 }));
-  assert.equal(JSON.stringify(run('2026-10-24T12:00:00', { year: 2026, on: false })), JSON.stringify({ boot: false, gun: true, ms: 8000 }));
-  assert.equal(JSON.stringify(run('2026-12-24T12:00:00')), JSON.stringify({ boot: false, gun: true, ms: 8000 }));
+  assert.equal(JSON.stringify(run('2026-10-24T12:00:00')), JSON.stringify({ boot: true, eye: false, ms: 8000 }));
+  assert.equal(JSON.stringify(run('2026-10-24T12:00:00', { year: 2026, on: false })), JSON.stringify({ boot: false, eye: true, ms: 5800 }));
+  assert.equal(JSON.stringify(run('2026-12-24T12:00:00')), JSON.stringify({ boot: false, eye: true, ms: 5800 }));
   const index = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/index.html'), 'utf8');
   assert.ok(index.indexOf('halloween-boot-head.js') < index.indexOf('<body'), 'head script runs before the splash is painted');
-  assert.ok(index.indexOf('glock-boot.js') > 0 && index.indexOf('glock-boot.js') < index.indexOf('app.js'), 'gunshot boot loads before app.js');
+  assert.ok(index.indexOf('eye-boot.js') > 0 && index.indexOf('eye-boot.js') < index.indexOf('app.js'), 'code-eye boot loads before app.js');
   assert.ok(fs.existsSync(path.join(__dirname, '..', 'app/renderer/assets/halloween-pumpkin.jpg')));
 });

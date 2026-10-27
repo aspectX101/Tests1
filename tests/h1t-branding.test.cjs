@@ -39,7 +39,9 @@ test('the H1T logos are used for the opening animations, sidebar, dashboard and 
     const img = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets', f));
     assert.equal(img.subarray(1, 4).toString(), 'PNG'); assert.equal(img[25], 6, `${f} is an RGBA PNG with a transparent background`);
   }
-  assert.match(read('app/renderer/glock-boot.js'), /assets\/h1t-logo-main\.png/);
+  // the dark design's boot (code eye) ends by opening onto the tweaker itself instead of showing a logo
+  assert.match(read('app/renderer/eye-boot.js'), /splash\.classList\.contains\('out'\)/);
+  assert.match(read('app/renderer/boot.css'), /html\.eye-boot \.splash\.boot\.out \{ background: transparent; opacity: 1;/);
   assert.match(read('app/renderer/halloween-boot.js'), /assets\/h1t-logo-halloween\.png/);
   assert.match(read('app/renderer/mono.css'), /\.h1t-dash-hero:after \{ display: none !important; \}/);
   const ico = fs.readFileSync(path.join(__dirname, '..', 'build/icon.ico'));
