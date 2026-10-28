@@ -299,7 +299,7 @@ function renderHome() {
     <div class="h1t-metric-meter" aria-hidden="true"><i></i></div>
   </div>`;
   const seg=(k)=>`<button data-metric="${k}" class="${state.metric===k?'active':''}">${k.toUpperCase()}</button>`;
-  return `<div class="dashboard-home h1t-dashboard">
+  return `<div class="dashboard-home h1t-dashboard">${driftBanner()}
     <header class="h1t-dash-hero"><div class="h1t-dash-copy">
       <span class="h1t-dash-eyebrow">${esc(dict.label)}</span>
       <h1>Dashboard</h1><p>${esc(dict.sub)}</p></div></header>
@@ -768,17 +768,17 @@ function renderResolution() {
 }
 
 const SET_TEXT = {
-  de: { account: 'H1T.CC Account', accountDesc: 'Lizenz, verknüpfter PC, Profil und Datenschutz.', details: 'Details', support: 'Support', supportDesc: 'Hilfe, Tickets und Customer Area.', open: 'Öffnen',
+  de: { account: 'H1T.CC Account', accountDesc: 'Lizenz, verknüpfter PC, Profil und Datenschutz.', details: 'Details', support: 'Support', supportDesc: 'Hilfe, Tickets und Customer Area. Der Support-Bericht fasst Systeminfos und Fehlerprotokolle in einer Datei für den Support zusammen.', report: 'Support-Bericht exportieren', reportDone: 'Support-Bericht gespeichert. Schick die Datei an den Support.', open: 'Öffnen',
     sys: 'Systeminfo', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Halloween-Modus', halloweenDesc: 'Gruseliger Look mit Effekten – vom 15.10. bis 1.11. automatisch an. Auch über den Kürbis oben schaltbar.', halloweenOff: 'Nur in der Halloween-Zeit (15.10.–1.11.) verfügbar.',
     spotify: 'Spotify', spotifyDesc: 'Zeigt den laufenden Song aus der Spotify-Desktop-App im Dashboard und steuert ihn (Windows-Medienwiedergabe, kein Login nötig).', spotifyShow: 'Im Dashboard anzeigen', spotifyOpen: 'Spotify öffnen',
     boot: 'Startanimation', bootDesc: 'Sound der Startanimationen (dunkles Design und Halloween) – komplett im Tweaker erzeugt.', bootSound: 'Sound',
     reloadTitle: 'Daten neu laden', on: 'An', off: 'Aus' },
-  en: { account: 'H1T.CC account', accountDesc: 'License, linked PC, profile and privacy.', details: 'Details', support: 'Support', supportDesc: 'Help, tickets and Customer Area.', open: 'Open',
+  en: { account: 'H1T.CC account', accountDesc: 'License, linked PC, profile and privacy.', details: 'Details', support: 'Support', supportDesc: 'Help, tickets and Customer Area. The support report puts system info and error logs into one file for support.', report: 'Export support report', reportDone: 'Support report saved. Send the file to support.', open: 'Open',
     sys: 'System info', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Halloween mode', halloweenDesc: 'Spooky look with effects – on automatically from 15 Oct to 1 Nov. Also switchable with the pumpkin at the top.', halloweenOff: 'Only available during Halloween (15 Oct – 1 Nov).',
     spotify: 'Spotify', spotifyDesc: 'Shows and controls the song playing in the Spotify desktop app on the dashboard (Windows media session, no login needed).', spotifyShow: 'Show on dashboard', spotifyOpen: 'Open Spotify',
     boot: 'Startup animation', bootDesc: 'Sound for the startup animations (dark design and Halloween) – generated entirely inside the tweaker.', bootSound: 'Sound',
     reloadTitle: 'Reload data', on: 'On', off: 'Off' },
-  it: { account: 'Account H1T.CC', accountDesc: 'Licenza, PC collegato, profilo e privacy.', details: 'Dettagli', support: 'Supporto', supportDesc: 'Aiuto, ticket e Customer Area.', open: 'Apri',
+  it: { account: 'Account H1T.CC', accountDesc: 'Licenza, PC collegato, profilo e privacy.', details: 'Dettagli', support: 'Supporto', supportDesc: 'Aiuto, ticket e Customer Area. Il report di supporto raccoglie info di sistema e log degli errori in un unico file per il supporto.', report: 'Esporta report di supporto', reportDone: 'Report di supporto salvato. Invia il file al supporto.', open: 'Apri',
     sys: 'Info di sistema', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows', halloween: 'Modalità Halloween', halloweenDesc: 'Look spettrale con effetti – attivo automaticamente dal 15/10 al 1/11. Attivabile anche con la zucca in alto.', halloweenOff: 'Disponibile solo nel periodo di Halloween (15/10 – 1/11).',
     spotify: 'Spotify', spotifyDesc: 'Mostra e controlla nel dashboard il brano dell’app desktop di Spotify (sessione multimediale di Windows, nessun login).', spotifyShow: 'Mostra nel dashboard', spotifyOpen: 'Apri Spotify',
     boot: 'Animazione di avvio', bootDesc: 'Audio delle animazioni di avvio (design scuro e Halloween) – generato interamente nel tweaker.', bootSound: 'Audio',
@@ -808,7 +808,7 @@ function renderSettings() {
   const langBtn = (l, label) => `<button data-lang="${l}" class="${state.lang === l ? 'active' : ''}">${label}</button>`;
   return `<div class="set-grid">
     ${card('account', s.account, esc(s.accountDesc), `<div class="set-actions"><button class="pill dark" data-go="account">${esc(s.details)}</button></div>`)}
-    ${card('support', s.support, esc(s.supportDesc), `<div class="set-actions"><button class="pill dark" id="set-support">${esc(s.open)}</button></div>`)}
+    ${card('support', s.support, esc(s.supportDesc), `<div class="set-actions"><button class="pill dark" id="set-support">${esc(s.open)}</button><button class="pill dark" id="set-report">${esc(s.report)}</button></div>`)}
     ${card('sys', s.sys, '', `${row(s.cpu, info.cpu)}${row(s.gpu, info.gpu)}${row(s.ram, info.ramGB ? `${info.ramGB} GB` : '')}${row(s.os, info.os)}`)}
     ${card('update', t().updates, `${esc(t().version(state.version))} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}${u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-log">${t().upLog}</button>`}</div>`)}
     ${card('halloween', s.halloween, esc(season ? s.halloweenDesc : s.halloweenOff), `<div class="set-row"><span>${esc(hw?.isOn() ? s.on : s.off)}</span><label class="switch"><input type="checkbox" id="set-halloween" ${hw?.isOn() ? 'checked' : ''} ${season ? '' : 'disabled'} aria-label="${esc(s.halloween)}"><span></span></label></div>`)}
@@ -1095,6 +1095,14 @@ async function safeAction(kind) {
   if (state.route.page === 'safemode') render();
 }
 
+async function supportExport() {
+  let res;
+  try { res = await bridge.exportJson('support'); } catch (err) { res = { ok: false, error: err.message }; }
+  const s = SET_TEXT[state.lang] || SET_TEXT.de;
+  if (res?.ok && !res.canceled) toast(s.reportDone);
+  else if (!res?.ok) toast(errorText(res?.error), 'error');
+}
+
 async function safeExport() {
   state.safeBusy = 'export';
   render();
@@ -1272,6 +1280,53 @@ async function restartPc() {
   toast(r?.ok ? t().restartSoon : errorText(r?.error), r?.ok ? 'info' : 'error');
 }
 
+// Tweaks reset by Windows (app/renderer/drift.js): shown on the dashboard with "Apply again".
+const DRIFT_TEXT = {
+  de: { title: (n) => `Windows hat ${n} Tweak(s) zurückgesetzt, meist passiert das bei einem Windows-Update.`, again: 'Erneut anwenden', hide: 'Ausblenden',
+    done: (ok, n) => `${ok} von ${n} Tweak(s) wieder angewendet.`, some: (n) => `${n} Tweak(s) ließen sich nicht automatisch anwenden. Unter Sicherungen prüfen.` },
+  en: { title: (n) => `Windows reset ${n} tweak(s), usually during a Windows update.`, again: 'Apply again', hide: 'Hide',
+    done: (ok, n) => `${ok} of ${n} tweak(s) applied again.`, some: (n) => `${n} tweak(s) could not be applied automatically. Check Backups.` },
+  it: { title: (n) => `Windows ha ripristinato ${n} modifica/e, di solito durante un aggiornamento di Windows.`, again: 'Applica di nuovo', hide: 'Nascondi',
+    done: (ok, n) => `${ok} di ${n} modifica/e applicate di nuovo.`, some: (n) => `${n} modifica/e non applicate automaticamente. Controlla Backup.` },
+};
+const driftText = () => DRIFT_TEXT[state.lang] || DRIFT_TEXT.de;
+
+async function driftCheck() {
+  const res = await call('backup-list');
+  if (!res?.ok || !window.H1tDrift) return;
+  const list = window.H1tDrift.find(res.backups, state.tweaks);
+  state.drift = list.length && window.H1tDrift.key(list) !== store.get('driftHidden', '') ? list : [];
+  if (state.drift.length && state.route.page === 'home') render();
+}
+
+function driftBanner() {
+  if (!state.drift?.length) return '';
+  const d = driftText(), names = state.drift.slice(0, 4).map((x) => x.name).join(', ') + (state.drift.length > 4 ? ' …' : '');
+  return `<div class="restart drift" role="status"><span>${esc(d.title(state.drift.length))}<small>${esc(names)}</small></span>
+    <button class="pill" id="drift-apply" ${state.driftBusy ? 'disabled' : ''}>${esc(d.again)}</button><button class="pill ghost" id="drift-hide" ${state.driftBusy ? 'disabled' : ''}>${esc(d.hide)}</button></div>`;
+}
+
+// An active backup blocks a plain "apply": restore it first (Windows already put the original back), then apply.
+async function driftApply() {
+  if (state.driftBusy || !state.drift?.length) return;
+  state.driftBusy = true;
+  render();
+  const list = state.drift;
+  let ok = 0;
+  for (const tw of list) {
+    const off = await call('revert', tw.id);
+    const on = off?.ok ? await call('apply', tw.id) : off;
+    if (on?.ok) { ok++; if (on.restartRequired) state.restartPending = true; logActivity('on', t().applied(tw.name)); }
+    else logActivity('fail', `${tw.name}: ${errorText(on?.error)}`);
+  }
+  const fresh = await call('list');
+  if (fresh?.ok) state.tweaks = fresh.tweaks || [];
+  state.driftBusy = false;
+  state.drift = [];
+  toast(ok === list.length ? driftText().done(ok, list.length) : driftText().some(list.length - ok), ok === list.length ? 'info' : 'error');
+  render();
+}
+
 async function load() {
   state.loading = true;
   render();
@@ -1284,6 +1339,7 @@ async function load() {
   state.enter = true;
   render();
   hideSplash();
+  if (list?.ok) setTimeout(() => driftCheck(), 4000);
   // Debloat-Inventar (Apps, Autostart) vorab im Hintergrund laden, damit der Tab sofort fertig ist
   setTimeout(() => debloatLoad(), 2500);
 }
@@ -1361,6 +1417,9 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'up-check') bridge.checkUpdate();
   else if (el.id === 'up-install') bridge.installUpdate();
   else if (el.id === 'up-log') bridge.openUpdateLog();
+  else if (el.id === 'set-report') supportExport();
+  else if (el.id === 'drift-apply') driftApply();
+  else if (el.id === 'drift-hide') { store.set('driftHidden', window.H1tDrift.key(state.drift)); state.drift = []; render(); }
   else if (el.id === 'app-show') bridge.showExe().then((r) => { if (!r?.ok) toast(errorText(r?.error), 'error'); });
   else if (el.id === 'app-lnk-desktop' || el.id === 'app-lnk-start') {
     const where = el.id === 'app-lnk-start' ? 'startmenu' : 'desktop';
@@ -1494,6 +1553,8 @@ function hideSplash() {
     document.body.classList.remove('booting');
     state.enter = true;
     render();
+    // The UI is usable: tells the update health check this version starts fine (no rollback).
+    try { bridge.uiReady?.(); } catch { /* browser preview */ }
     // the code eye (eye-boot.js) opens slowly onto the app through the splash, so it stays a little longer
     setTimeout(() => el?.remove(), document.documentElement.classList.contains('eye-boot') ? 1900 : 800);
   }, wait);

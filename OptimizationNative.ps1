@@ -80,9 +80,11 @@ function Get-OptimizationPowerError([uint32]$Code) {
     }
 }
 function Invoke-OptimizationPowerFallback([uint32]$Code,[string[]]$Arguments) {
+    $why=''
     try {$null=Invoke-PowerCfg $Arguments; return} catch { # powercfg refused as well: report the API reason
+        $why=[string]$_.Exception.Data['detail']; if (-not $why) {$why=$_.Exception.Message}
     }
-    throw (Get-OptimizationPowerError $Code)
+    throw (New-TweakerError (Get-OptimizationPowerError $Code) ('Windows power API error {0} (0x{0:X}); {1}' -f $Code,$why))
 }
 function Get-OptimizationRegistryValue($Definition) {
     $hive=[Microsoft.Win32.RegistryKey]::OpenBaseKey($Definition.hive,'Registry64');$key=$null

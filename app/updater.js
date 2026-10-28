@@ -28,6 +28,7 @@ let exePath = null;   // die portable Exe, die der Nutzer gestartet hat
 let pending = null;   // { file, version } – fertig geladenes Update
 let busy = false;
 let applying = false;
+let health = null;     // app/update-health.js: Vorgänger-Exe merken, zurückgerollte Versionen überspringen
 
 function log(level, msg) {
   if (!logFile) return;
@@ -67,8 +68,9 @@ function swapTarget(file) {
   return fs.existsSync(renamed) ? file : renamed;
 }
 
-function start(onChange) {
+function start(onChange, opts = {}) {
   notify = onChange;
+  health = opts.health || null;
   // Nur in der portablen Windows-Exe (electron-builder setzt PORTABLE_EXECUTABLE_FILE).
   exePath = process.env.PORTABLE_EXECUTABLE_FILE || null;
   if (!app.isPackaged || process.platform !== 'win32' || !exePath) return;
@@ -98,6 +100,13 @@ async function check() {
     const asset = pickAsset(release);
     const base = waiting?.version || app.getVersion();
     log('info', `latest tag=${release.tag_name} asset=${asset?.name || '-'} current=${app.getVersion()} pending=${waiting?.version || '-'}`);
+    // Eine Version, die zweimal nicht sauber gestartet ist und zurückgerollt wurde, wird nicht erneut angeboten.
+    if (asset && health?.isBad(asset.version)) {
+      log('warn', `release ${asset.version} skipped: rolled back on this PC`);
+      if (waiting) set({ status: 'ready', version: waiting.version, latest: asset.version, checkedAt: new Date().toISOString() });
+      else set({ status: 'latest', latest: asset.version, skipped: asset.version, checkedAt: new Date().toISOString() });
+      return;
+    }
     if (!asset || !newer(asset.version, base)) {
       if (waiting) set({ status: 'ready', version: waiting.version, latest: asset?.version, checkedAt: new Date().toISOString() });
       else set({ status: 'latest', latest: asset?.version, checkedAt: new Date().toISOString() });
@@ -178,11 +187,18 @@ async function download(asset, target) {
 // Ersetzt die Exe, sobald sie frei ist (der portable Starter beendet sich mit der App), und startet sie neu.
 // Tausch-Skript: wartet auf das Ende der App, ersetzt die Exe (sobald der portable Starter sie freigibt) und startet
 // neu. Klappt der Tausch nicht, wird wenigstens die alte Exe wieder gestartet. Jeder Schritt: logs\updater-swap.log
-const SWAP_SCRIPT = `param([string]$Src, [string]$Dst, [string]$Log, [int]$Relaunch, [int]$WaitPid, [string]$Old = '')
+const SWAP_SCRIPT = `param([string]$Src, [string]$Dst, [string]$Log, [int]$Relaunch, [int]$WaitPid, [string]$Old = '', [string]$Prev = '')
 function L($m) { try { Add-Content -LiteralPath $Log -Value ('{0} {1}' -f (Get-Date -Format o), $m) } catch {} }
 if (-not $Old) { $Old = $Dst }
-L "swap start pid=$PID src=$Src dst=$Dst old=$Old relaunch=$Relaunch waitPid=$WaitPid"
+L "swap start pid=$PID src=$Src dst=$Dst old=$Old relaunch=$Relaunch waitPid=$WaitPid prev=$Prev"
 try { Wait-Process -Id $WaitPid -Timeout 60 -ErrorAction Stop; L 'app exited' } catch { L "wait: $($_.Exception.Message)" }
+if ($Prev) {
+  # Keep the running version as the way back (update-health.js rolls back to it). Never blocks the update.
+  try {
+    New-Item -ItemType Directory -Path (Split-Path -Parent $Prev) -Force | Out-Null
+    Copy-Item -LiteralPath $Old -Destination $Prev -Force -ErrorAction Stop; L "previous kept: $Prev"
+  } catch { L "previous not kept: $($_.Exception.Message)" }
+}
 $ok = $false
 for ($i = 1; $i -le 180; $i++) {
   try { Move-Item -LiteralPath $Src -Destination $Dst -Force -ErrorAction Stop; $ok = $true; L "replaced after $($i) tries"; break }
@@ -222,6 +238,31 @@ L 'swap done'
 function apply(relaunch) {
   if (!pending || applying) return;
   applying = true;
+  // Long path form: shortcuts store C:\Users\Name\..., the environment may hand over C:\Users\NAME~1\...
+  let old = exePath;
+  try { old = fs.realpathSync.native(exePath); } catch { /* keep as is */ }
+  let prev = '';
+  if (health) {
+    prev = health.previousFile();
+    health.rememberPrevious({ version: app.getVersion(), file: prev, forVersion: pending.version });
+  }
+  log('info', `apply ${pending.version} relaunch=${relaunch} prev=${prev || '-'}`);
+  if (!launchSwap({ src: pending.file, dst: swapTarget(old), old, relaunch, prev })) applying = false;
+}
+
+// Zurück zur Vorgängerversion (update-health.js): dieselbe Tausch-Mechanik, die gesicherte Exe ersetzt die aktuelle.
+function rollback(previous) {
+  exePath = exePath || process.env.PORTABLE_EXECUTABLE_FILE || null;
+  if (!exePath || !previous?.file) return false;
+  if (!logFile) { logFile = path.join(app.getPath('logs'), 'updater.log'); try { fs.mkdirSync(path.dirname(logFile), { recursive: true }); } catch { /* egal */ } }
+  let cur = exePath;
+  try { cur = fs.realpathSync.native(exePath); } catch { /* keep as is */ }
+  log('warn', `rollback v${app.getVersion()} -> v${previous.version} from ${previous.file}`);
+  applying = true;
+  return launchSwap({ src: previous.file, dst: cur, old: cur, relaunch: true, prev: '' });
+}
+
+function launchSwap({ src, dst, old, relaunch, prev }) {
   const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   const script = path.join(app.getPath('temp'), 'undcc-tweaker-swap.ps1');
   const swapLog = path.join(path.dirname(logFile), 'updater-swap.log');
@@ -229,16 +270,11 @@ function apply(relaunch) {
     fs.writeFileSync(script, '\ufeff' + SWAP_SCRIPT, 'utf8');
   } catch (err) {
     log('error', `swap script not written: ${err.message}`);
-    applying = false;
-    return;
+    return false;
   }
-  // Long path form: shortcuts store C:\Users\Name\..., the environment may hand over C:\Users\NAME~1\...
-  let old = exePath;
-  try { old = fs.realpathSync.native(exePath); } catch { /* keep as is */ }
-  const dst = swapTarget(old);
   const cmd = `"${ps}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"` +
-    ` -Src "${pending.file}" -Dst "${dst}" -Log "${swapLog}" -Relaunch ${relaunch ? 1 : 0} -WaitPid ${process.pid} -Old "${old}"`;
-  log('info', `apply ${pending.version} relaunch=${relaunch} cmd=${cmd}`);
+    ` -Src "${src}" -Dst "${dst}" -Log "${swapLog}" -Relaunch ${relaunch ? 1 : 0} -WaitPid ${process.pid} -Old "${old}"` + (prev ? ` -Prev "${prev}"` : '');
+  log('info', `swap cmd=${cmd}`);
   const launcher = "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $env:UNDCC_CMD }; [Console]::Out.Write(\"$($r.ReturnValue) $($r.ProcessId)\")";
   const res = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(launcher, 'utf16le').toString('base64')],
     { env: { ...process.env, UNDCC_CMD: cmd }, windowsHide: true, encoding: 'utf8', timeout: 30000 });
@@ -247,9 +283,10 @@ function apply(relaunch) {
   if (code !== '0') {
     log('warn', 'wmi failed, falling back to detached spawn');
     spawn(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script,
-      '-Src', pending.file, '-Dst', dst, '-Log', swapLog, '-Relaunch', relaunch ? '1' : '0', '-WaitPid', String(process.pid), '-Old', old],
-    { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(exePath) }).unref();
+      '-Src', src, '-Dst', dst, '-Log', swapLog, '-Relaunch', relaunch ? '1' : '0', '-WaitPid', String(process.pid), '-Old', old, ...(prev ? ['-Prev', prev] : [])],
+    { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(dst) }).unref();
   }
+  return true;
 }
 
 function install() {
@@ -262,5 +299,5 @@ function install() {
 const openLog = () => logFile && shell.openPath(path.dirname(logFile));
 const openReleases = () => shell.openExternal(RELEASES_URL);
 
-module.exports = { start, check, install, openLog, openReleases, getState: () => state,
+module.exports = { start, check, install, rollback, openLog, openReleases, getState: () => state,
   _test: { newer, pickAsset, swapTarget, download, rateLimitText, SWAP_SCRIPT, useExe(file) { exePath = file; }, pending: () => pending } };

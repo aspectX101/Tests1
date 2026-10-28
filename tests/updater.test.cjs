@@ -110,3 +110,47 @@ test('Windows: swap renames the exe, repoints a desktop shortcut and removes the
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('a release that was rolled back on this PC is not offered again; a newer one is', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'upd-bad-'));
+  const exe = path.join(dir, 'H1T.CC-Tweaker.exe'); fs.writeFileSync(exe, 'old');
+  const data = { '0.9.17': Buffer.from('build 0.9.17'), '0.9.18': Buffer.from('build 0.9.18') };
+  let latest = '0.9.17';
+  const { updater, downloads } = load({ release: () => ({ tag_name: 'v' + latest, assets: [asset(latest, data[latest])] }), bytes: (url) => data[url.split('/').pop()] });
+  updater.start(() => {}, { health: { isBad: (v) => v === '0.9.17' } });
+  updater._test.useExe(exe);
+  await updater.check();
+  assert.equal(downloads.length, 0);
+  assert.equal(updater.getState().status, 'latest');
+  assert.equal(updater.getState().skipped, '0.9.17');
+  latest = '0.9.18';
+  await updater.check();
+  assert.equal(downloads.length, 1);
+  assert.equal(updater.getState().status, 'ready');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Windows: swap keeps the running version as the way back, and the rollback swap restores it', { skip: process.platform !== 'win32' }, () => {
+  const { spawnSync } = require('node:child_process');
+  const { updater } = load({ release: () => ({}), bytes: () => Buffer.alloc(0) });
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'upd-prev-')));
+  const exe = path.join(dir, 'H1T.CC-Tweaker.exe'), src = exe + '.new', prev = path.join(dir, 'previous', 'H1T.CC-Tweaker-previous.exe');
+  const script = path.join(dir, 'swap.ps1'), log = path.join(dir, 'swap.log');
+  const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  fs.writeFileSync(exe, 'build 1.0.18'); fs.writeFileSync(src, 'build 1.0.19');
+  fs.writeFileSync(script, '\ufeff' + updater._test.SWAP_SCRIPT, 'utf8');
+  const swap = (args) => spawnSync(ps, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-Log', log, '-Relaunch', '0', '-WaitPid', '999999', ...args], { encoding: 'utf8', timeout: 120000 });
+  try {
+    let r = swap(['-Src', src, '-Dst', exe, '-Old', exe, '-Prev', prev]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(fs.readFileSync(exe, 'utf8'), 'build 1.0.19');
+    assert.equal(fs.readFileSync(prev, 'utf8'), 'build 1.0.18', fs.readFileSync(log, 'utf8'));
+    // Rollback: the kept exe replaces the current one (what updater.rollback starts).
+    r = swap(['-Src', prev, '-Dst', exe, '-Old', exe]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(fs.readFileSync(exe, 'utf8'), 'build 1.0.18');
+    assert.equal(fs.existsSync(prev), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

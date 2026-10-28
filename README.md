@@ -38,6 +38,21 @@ Sie fordert beim Start Adminrechte an. Kein Installer: einfach die Exe irgendwo 
 Release, lädt `UNDCC-Tweaker-<version>.exe` neben die laufende Exe, prüft Größe und SHA-256 und ersetzt die Exe beim
 Neustart („Jetzt neu starten“) oder beim Beenden. Protokoll: Einstellungen → Update-Hilfe → Protokoll öffnen.
 
+**Rollback (ab Updates, die 1.0.18 installiert):** Beim Austausch bleibt die laufende Exe als
+`%APPDATA%\UND.CC Tweaker\previous\H1T.CC-Tweaker-previous.exe` erhalten (`previous.json`). Endet die neue Version zweimal,
+bevor ihre Oberfläche bereit ist (normales Schließen zählt nicht), tauscht `app/update-health.js` beim dritten Start auf die
+gesicherte Exe zurück und markiert die Version als schlecht; der Updater bietet sie nicht mehr an, eine neuere schon.
+
+**Support-Bericht:** Jede fehlgeschlagene Backend-Anfrage landet mit Code, technischem Detail (`detail`, z. B. Windows-Fehlercode)
+und Fundstelle (`at`) in `logs\backend.log` (`app/support.js`, Benutzernamen werden ersetzt). Einstellungen → Support →
+„Support-Bericht exportieren“ speichert Systeminfos, Lizenz-/Update-Stand, aktive Sicherungen und die letzten Protokolle als JSON.
+
+**Von Windows zurückgesetzte Tweaks:** Steht eine Sicherung auf „aktiv“, der Tweak ist aber nicht mehr angewendet (meist nach
+einem Windows-Update), zeigt das Dashboard „Erneut anwenden“ (`app/renderer/drift.js`: Sicherung zurücksetzen, dann neu anwenden).
+
+**Tests:** `npm test` führt auf Windows auch alle PowerShell-Suiten aus (`tests/powershell-suites.test.cjs`);
+`.github/workflows/tests.yml` läuft bei jedem Push und meldet rote Suiten als Annotationen.
+
 1. `version` in `package.json` erhöhen (z. B. 0.6.0 → 0.6.1). Ohne höhere Version gibt es kein Update.
 2. `npm run dist`
 3. Release mit der Exe anlegen (der Dateiname muss `UNDCC-Tweaker-<version>.exe` bleiben):

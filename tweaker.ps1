@@ -120,7 +120,15 @@ try {
 } catch {
     # Stable error code for localization, technical detail for diagnostics.
     $errorCode=if($Action.StartsWith('display-')){$_.Exception.GetBaseException().Message}else{$_.Exception.Message}
-    @{ok=$false;error=$errorCode} | ConvertTo-Json -Depth 4 -Compress
+    $failure=@{ok=$false;error=$errorCode}
+    try {
+        $detail=[string]$_.Exception.Data['detail']
+        if (-not $detail -and $_.Exception.InnerException) {$detail=$_.Exception.GetBaseException().Message}
+        if ($detail) {$failure.detail=$detail.Substring(0,[Math]::Min(800,$detail.Length))}
+        if ($_.InvocationInfo.ScriptName) {$failure.at=('{0}:{1}' -f (Split-Path -Leaf $_.InvocationInfo.ScriptName),$_.InvocationInfo.ScriptLineNumber)}
+    } catch { # diagnostics are optional, the error code is not
+    }
+    $failure | ConvertTo-Json -Depth 4 -Compress
     exit 1
 }
 

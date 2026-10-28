@@ -228,6 +228,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   background: linear-gradient(90deg, rgba(84, 84, 84, .28), rgba(84, 84, 84, .08)); border: 1px solid rgba(84, 84, 84, .5); }
 .restart span { flex: 1; }
 .restart .pill { background: #fff; color: #000; height: 28px; }
+.restart .pill.ghost { background: transparent; color: inherit; border: 1px solid rgba(255, 255, 255, .25); }
+.restart small { display: block; font-weight: 400; opacity: .7; margin-top: 2px; }
 
 /* Skeleton */
 .skeleton { height: 70px; border-radius: 14px; background: linear-gradient(90deg, #0e0e10 25%, #161616 50%, #0e0e10 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }

@@ -43,6 +43,15 @@ if (relaunched) {
   });
 }
 
+// Support log: every failed backend request lands in logs\backend.log (code, technical detail, where it happened).
+const support = require('./support').createSupport({ logDir: path.join(app.getPath('userData'), 'logs'), version: app.getVersion() });
+{
+  const raw = backend;
+  backend = async (req) => {
+    try { const res = await raw(req); support.record(req, res); return res; } catch (err) { support.record(req, null, err); throw err; }
+  };
+}
+
 // License expiry: when the license ends, restore every change the tweaker made (same records as "Revert All").
 // Started invisibly by the "H1T.CC License Check" task with --h1t-expiry-check when the app is not open.
 const expiryCheckOnly = process.argv.includes('--h1t-expiry-check');
@@ -102,7 +111,7 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.loadFile(INDEX);
   usage.start((u) => sendToUi('tweaker:usage', u));
-  win.webContents.once('did-finish-load', () => updater.start((st) => sendToUi('tweaker:update', st)));
+  win.webContents.once('did-finish-load', () => updater.start((st) => sendToUi('tweaker:update', st), { health }));
 }
 
 // Nur Anfragen aus unserer eigenen, lokal geladenen Oberfläche annehmen.
@@ -169,9 +178,26 @@ ipcMain.handle('tweaker:call', async (e, request) => {
   }
 });
 
-// SafeMode-Bericht oder Wiederherstellungs-Nachweis als JSON speichern; den Ort wählt der Nutzer im Windows-Dialog.
+// Support-Bericht: Systeminfos, Lizenz-/Update-Stand, aktive Sicherungen und die letzten Protokolle in einer Datei.
+async function supportReport() {
+  let backups = null;
+  try {
+    const list = await backend({ action: 'backup-list' });
+    if (list?.ok) backups = list.backups.map((b) => ({ kind: b.kind, id: b.tweakId, status: b.status, created: b.createdUtc, canRestore: b.canRestore, reason: b.reason || undefined }));
+  } catch { /* report without backups */ }
+  return support.report({ mode: useMock ? 'mock' : 'powershell', license: licenseExpiry.state(), update: updater.getState(), backups });
+}
+
+// SafeMode-Bericht, Wiederherstellungs-Nachweis oder Support-Bericht als JSON speichern; den Ort wählt der Nutzer im Windows-Dialog.
 ipcMain.handle('tweaker:export', async (e, what, backupId) => {
   if (!trusted(e)) return { ok: false, error: 'untrusted_sender' };
+  if (what === 'support') {
+    const data = await supportReport();
+    const { canceled, filePath } = await dialog.showSaveDialog(win, { defaultPath: `h1t-support-${new Date().toISOString().slice(0, 10)}.json`, filters: [{ name: 'JSON', extensions: ['json'] }] });
+    if (canceled || !filePath) return { ok: true, canceled: true };
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+    return { ok: true, path: filePath };
+  }
   let req;
   if (what === 'safemode') req = { action: 'safemode-report', lang: currentLang };
   else if (what === 'backup' && typeof backupId === 'string' && /^[a-f0-9]{32}$/.test(backupId)) req = { action: 'backup-export', backupId, lang: currentLang };
@@ -266,7 +292,16 @@ ipcMain.on('window:minimize', (e) => trusted(e) && win?.minimize());
 ipcMain.on('window:maximize', (e) => { if (trusted(e) && win) { if (win.isMaximized()) win.unmaximize(); else win.maximize(); } });
 ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 
+// Update health (app/update-health.js): a new version that twice ends before its UI is ready goes back to the
+// exe it replaced. Only the real portable app counts, not the invisible license check or the mock.
+const health = app.isPackaged && !useMock && !expiryCheckOnly && process.env.PORTABLE_EXECUTABLE_FILE
+  ? require('./update-health').createUpdateHealth({ dir: app.getPath('userData'), version: app.getVersion() }) : null;
+ipcMain.on('tweaker:ui-ready', (e) => { if (trusted(e)) health?.healthy(); });
+app.on('will-quit', () => health?.closed());
+
 if (!relaunched) app.whenReady().then(async () => {
+  const back = health?.begin();
+  if (back?.rollback && updater.rollback(back.rollback)) { app.exit(0); return; }
   await h1tAccount.load(); await licenseExpiry.load();
   if (expiryCheckOnly) {
     // Invisible run from the scheduled task: check the license, restore if it ended, then exit.

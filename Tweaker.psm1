@@ -65,9 +65,16 @@ function Get-TweakerCatalog {
     )
 }
 
+# Stable error code for the UI plus technical detail for the support log (tweaker.ps1 reports both).
+function New-TweakerError([string]$Code, [string]$Detail) {
+    $e = [Exception]::new($Code)
+    if ($Detail) { $e.Data['detail'] = $Detail }
+    return $e
+}
+
 function Invoke-PowerCfg([string[]]$Arguments) {
     $result = & "$env:SystemRoot\System32\powercfg.exe" @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) { throw 'powercfg_failed' }
+    if ($LASTEXITCODE -ne 0) { throw (New-TweakerError 'powercfg_failed' ("powercfg $($Arguments[0]) exit $LASTEXITCODE`: " + (($result | Out-String).Trim()))) }
     return ($result -join "`n")
 }
 
