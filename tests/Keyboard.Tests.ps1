@@ -123,7 +123,10 @@ $module = Get-Module Tweaker
         $result = Invoke-TweakerPerformance apply keyboard.repeat.fast -StateDirectory $fresh
         Assert ($result.status -eq 'unchanged' -and $checkpointBefore -eq $script:checkpointCount) 'Already applied is a no-op'
         Assert (-not (Test-Path -LiteralPath (Join-Path $fresh 'keyboard.repeat.fast.json'))) 'No invented backup'
-        Expect-Error { Invoke-TweakerPerformance restore keyboard.repeat.fast -StateDirectory $fresh } 'backup_not_found'
+        # Switching off without a backup (setting was active before Tweaker) resets to the Windows default.
+        $off = Invoke-TweakerPerformance restore keyboard.repeat.fast -StateDirectory $fresh
+        Assert ($off.status -eq 'restored' -and $script:values.delay -eq (Get-KeyboardDefault delay) -and $script:values.speed -eq (Get-KeyboardDefault speed)) 'Off without backup resets to the Windows default'
+        Assert (-not (Test-Path -LiteralPath (Join-Path $fresh 'keyboard.repeat.fast.json'))) 'Off without backup invents no backup'
         # No simultaneous mutations from separate CLI processes.
         $held = [IO.File]::Open((Join-Path $dir 'operation.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
         try {

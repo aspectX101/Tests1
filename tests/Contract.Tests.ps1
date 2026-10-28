@@ -31,9 +31,12 @@ function Invoke-JsonCli([string]$Arguments, [int]$ExpectedExit) {
         return $json
     } finally { $process.Dispose() }
 }
+# The CLI lists exactly the module catalog (it grows with new tweaks, so no fixed number).
+Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
+$catalogCount = @(Get-TweakerCatalog).Count
 foreach ($language in @('de','en','it')) {
     $result = Invoke-JsonCli "-Action list -Lang $language" 0
-    if (-not $result.ok -or @($result.tweaks).Count -ne 49) { throw 'Invalid catalog' }
+    if (-not $result.ok -or $catalogCount -lt 49 -or @($result.tweaks).Count -ne $catalogCount) { throw "Invalid catalog: $(@($result.tweaks).Count) of $catalogCount" }
     foreach ($tweak in $result.tweaks) {
         foreach ($property in @('id','name','description','category','risk','requiresRestart','reversible','applied')) {
             if ($tweak.PSObject.Properties.Name -notcontains $property) { throw "Missing $property" }
