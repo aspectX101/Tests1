@@ -59,6 +59,8 @@ window.I18N = {
       power_plan_changed: "Der Energieplan wurde inzwischen gewechselt. Zuerst den gesicherten Plan wieder auswaehlen.",
       power_setting_unavailable: "Diese Energieeinstellung wird von diesem PC nicht angeboten.",
       power_setting_write_failed: "Windows konnte die Energieeinstellung nicht vollstaendig uebernehmen. Wiederherstellung pruefen.",
+      power_setting_access_denied: "Windows verweigert Änderungen am aktiven Energieplan. Meist sperrt ihn ein anderes Tool oder eine Richtlinie. In den Energieoptionen „Höchstleistung“ oder „Ausbalanciert“ wählen und erneut versuchen.",
+      power_setting_rejected: "Windows lehnt diesen Wert für die Energieeinstellung auf diesem PC ab. Der Tweak wurde nicht angewendet.",
       optimization_state_unavailable: "Der Zustand konnte nicht gelesen werden. Administratorrechte und Windows-Komponenten pruefen.",
       task_state_unavailable: "Der Status der geplanten Aufgabe ist nicht eindeutig.",
 
@@ -340,6 +342,8 @@ window.I18N = {
       power_plan_changed: "The active power plan changed. Select the saved plan before restoring.",
       power_setting_unavailable: "This PC does not expose this power setting.",
       power_setting_write_failed: "Windows could not fully apply the power setting. Check recovery.",
+      power_setting_access_denied: "Windows refuses changes to the active power plan. Usually another tool or a policy locks it. Choose “High performance” or “Balanced” in Power Options and try again.",
+      power_setting_rejected: "Windows rejects this value for the power setting on this PC. The tweak was not applied.",
       optimization_state_unavailable: "Could not read the state. Check administrator rights and Windows components.",
       task_state_unavailable: "The scheduled task state is ambiguous.",
 
@@ -621,6 +625,8 @@ window.I18N = {
       power_plan_changed: "Il piano energia attivo e cambiato. Selezionare il piano salvato prima del ripristino.",
       power_setting_unavailable: "Questo PC non offre questa impostazione energia.",
       power_setting_write_failed: "Windows non ha applicato completamente l impostazione energia. Controllare ripristino.",
+      power_setting_access_denied: "Windows rifiuta modifiche al piano energia attivo. Di solito lo blocca un altro programma o un criterio. Scegliere “Prestazioni elevate” o “Bilanciato” in Opzioni risparmio energia e riprovare.",
+      power_setting_rejected: "Windows rifiuta questo valore per l impostazione energia su questo PC. La modifica non e stata applicata.",
       optimization_state_unavailable: "Impossibile leggere lo stato. Verificare diritti amministratore e componenti Windows.",
       task_state_unavailable: "Lo stato dell attivita pianificata non e univoco.",
 

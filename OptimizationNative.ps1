@@ -70,6 +70,20 @@ namespace Tweaker {
 }
 '@ -ErrorAction Stop
 }
+# Some PCs refuse a power API write (plan locked by another tool or by policy). powercfg gets one
+# second attempt; if that fails too, the error code keeps the Windows reason for the UI.
+function Get-OptimizationPowerError([uint32]$Code) {
+    switch ($Code) {
+        5 {'power_setting_access_denied'}
+        87 {'power_setting_rejected'}
+        default {'power_setting_write_failed'}
+    }
+}
+function Invoke-OptimizationPowerFallback([uint32]$Code,[string[]]$Arguments) {
+    try {$null=Invoke-PowerCfg $Arguments; return} catch { # powercfg refused as well: report the API reason
+    }
+    throw (Get-OptimizationPowerError $Code)
+}
 function Get-OptimizationRegistryValue($Definition) {
     $hive=[Microsoft.Win32.RegistryKey]::OpenBaseKey($Definition.hive,'Registry64');$key=$null
     try {
@@ -202,8 +216,10 @@ function Set-OptimizationNativeValue($D,$Value) {
             Initialize-OptimizationPowerApi
             $parts=$Value.value.Split('|');$scheme=[guid]$parts[0];$sub=[guid]$D.subgroup;$setting=[guid]$D.setting
             if ((Get-PowerState) -ne $scheme.ToString()) {throw 'power_plan_changed'}
-            if ([Tweaker.PowerSettings]::PowerWriteACValueIndex([IntPtr]::Zero,[ref]$scheme,[ref]$sub,[ref]$setting,[uint32]$parts[1]) -ne 0) {throw 'power_setting_write_failed'}
-            if ([Tweaker.PowerSettings]::PowerSetActiveScheme([IntPtr]::Zero,[ref]$scheme) -ne 0) {throw 'power_setting_write_failed'}
+            $code=[Tweaker.PowerSettings]::PowerWriteACValueIndex([IntPtr]::Zero,[ref]$scheme,[ref]$sub,[ref]$setting,[uint32]$parts[1])
+            if ($code -ne 0) {Invoke-OptimizationPowerFallback $code @('/setacvalueindex',$scheme.ToString(),$sub.ToString(),$setting.ToString(),$parts[1])}
+            $code=[Tweaker.PowerSettings]::PowerSetActiveScheme([IntPtr]::Zero,[ref]$scheme)
+            if ($code -ne 0) {Invoke-OptimizationPowerFallback $code @('/setactive',$scheme.ToString())}
         }
         'hibernate' {
             $p=$Value.value.Split('|')
