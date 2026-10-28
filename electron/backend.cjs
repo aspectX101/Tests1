@@ -91,13 +91,19 @@ function createBackendClient(app, options = {}) {
     return new Promise((resolve, reject) => {
       run(powershell, args, { windowsHide: true, shell: false, encoding: 'utf8', timeout: 600000, maxBuffer: 8 * 1024 * 1024 }, (error, stdout, stderr) => {
         // Valid backend errors use exit 1 AND a JSON object. Preserve them for the UI.
-        if (error && error.code !== 1) return reject(new Error(error.killed ? 'backend_timeout_or_terminated' : 'backend_process_failed'));
+        // Stable code for the UI, the Windows reason (exit code, spawn error, first stderr lines) as detail for support.
+        const fail = (code, detail) => { const err = new Error(code); if (detail) err.detail = String(detail).slice(0, 400); return err; };
+        const firstLines = (text) => String(text || '').trim().split(/\r?\n/).filter(Boolean).slice(0, 3).join(' | ');
+        if (error && error.code !== 1) {
+          const how = typeof error.code === 'number' ? `exit ${error.code} (0x${(error.code >>> 0).toString(16)})` : `spawn ${error.code || error.errno || error.message}`;
+          return reject(fail(error.killed ? 'backend_timeout_or_terminated' : 'backend_process_failed', [how, error.signal && `signal ${error.signal}`, firstLines(stderr)].filter(Boolean).join('; ')));
+        }
         let result;
         try { result = JSON.parse(String(stdout).replace(/^\uFEFF/, '')); }
-        catch { return reject(new Error('invalid_backend_json')); }
+        catch { return reject(fail('invalid_backend_json', firstLines(stderr) || firstLines(stdout))); }
         if (!result || Array.isArray(result) || typeof result !== 'object' || typeof result.ok !== 'boolean') return reject(new Error('invalid_backend_response'));
         if ((error && result.ok) || (!error && !result.ok)) return reject(new Error('backend_exit_mismatch'));
-        if (stderr && String(stderr).trim()) return reject(new Error('unexpected_backend_stderr'));
+        if (stderr && String(stderr).trim()) return reject(fail('unexpected_backend_stderr', firstLines(stderr)));
         resolve(result);
       });
     });

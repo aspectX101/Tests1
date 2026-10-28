@@ -32,7 +32,7 @@ function createSupport({ logDir, version = '0.0.0', now = () => new Date(), reda
   // Called with every backend request and its answer (or the thrown error).
   function record(req, res, err) {
     const base = { action: String(req?.action || ''), ...(req?.id ? { id: String(req.id) } : {}) };
-    if (err) return write({ ...base, error: String(err.message || err) });
+    if (err) return write({ ...base, error: String(err.message || err), ...(err.detail ? { detail: String(err.detail) } : {}) });
     if (!res || typeof res !== 'object') return undefined;
     if (res.ok === false) write({ ...base, error: String(res.error || 'unknown'), ...(res.detail ? { detail: String(res.detail) } : {}), ...(res.at ? { at: String(res.at) } : {}) });
     for (const r of Array.isArray(res.results) ? res.results : []) {

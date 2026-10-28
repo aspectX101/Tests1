@@ -201,8 +201,10 @@ function fmtBytes(n) {
 }
 const fmtDate = (iso) => { try { return new Date(iso).toLocaleString(state.lang, { dateStyle: 'medium', timeStyle: 'short' }); } catch { return iso; } };
 
-function errorText(code) {
+function errorText(code, detail) {
   const e = t().errors;
+  // When PowerShell itself fails, the Windows reason helps support more than any translation.
+  if (detail && /^backend_(process_failed|timeout_or_terminated)$|^(invalid_backend_json|unexpected_backend_stderr)$/.test(code || '')) return `${e[code] || code} (${detail})`;
   if (e[code]) return e[code];
   if (/_verification_failed$/.test(code || '')) return e.verification;
   return code || t().unknownError;
@@ -1335,7 +1337,7 @@ async function load() {
   if (info?.ok) state.info = info;
   if (mods?.ok) state.mods = mods;
   if (list?.ok) state.tweaks = list.tweaks || [];
-  else toast(`${t().loadFailed}: ${errorText(list?.error)}`, 'error');
+  else toast(`${t().loadFailed}: ${errorText(list?.error, list?.detail)}`, 'error');
   state.enter = true;
   render();
   hideSplash();

@@ -174,7 +174,7 @@ ipcMain.handle('tweaker:call', async (e, request) => {
   try {
     return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss: confirmDataLoss === true, layout, extra });
   } catch (err) {
-    return { ok: false, error: err.message };
+    return { ok: false, error: err.message, ...(err.detail ? { detail: err.detail } : {}) };
   }
 });
 
