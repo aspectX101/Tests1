@@ -17,7 +17,7 @@
       consent: 'Ich stimme zu, dass eine pseudonyme Kennung dieser Windows-Installation zur Lizenzbindung übertragen wird. Es werden keine Hardware-Seriennummern übertragen.',
       bind: 'Gerät aktivieren', errTitle: 'Prüfung fehlgeschlagen', err: 'Keine Verbindung oder die Lizenzprüfung ist fehlgeschlagen.',
       check: 'Erneut prüfen', signOut: 'Abmelden', foot: 'HTTPS · Serverseitige Lizenzprüfung · Token bleibt verschlüsselt im Hauptprozess',
-      revertRunning: 'Deine Lizenz ist abgelaufen. Alle Änderungen des Tweakers werden auf die Originalwerte zurückgesetzt…', revertDone: (n) => `Lizenz abgelaufen: ${n} Änderung(en) des Tweakers wurden auf die Originalwerte zurückgesetzt.`, revertNothing: 'Lizenz abgelaufen: Es waren keine Tweaks aktiv, nichts musste zurückgesetzt werden.', revertFailed: (n) => `${n} Änderung(en) konnten nicht zurückgesetzt werden. Die App versucht es in einer Stunde erneut; du kannst sie auch unter Sicherungen zurücksetzen.`, revertRestart: 'Bitte starte den PC neu, damit alles wieder wie vorher wirkt.',
+      revertWhy: { license_expired: 'Lizenz abgelaufen', license_inactive: 'Lizenz nicht mehr aktiv', license_unconfirmed: 'Lizenz seit 30 Tagen nicht bestätigt' }, revertRunning: (why) => `${why}. Alle Änderungen des Tweakers werden auf die Originalwerte zurückgesetzt…`, revertDone: (n, why) => `${why}: ${n} Änderung(en) des Tweakers wurden auf die Originalwerte zurückgesetzt.`, revertNothing: (why) => `${why}: Es waren keine Tweaks aktiv, nichts musste zurückgesetzt werden.`, revertFailed: (n) => `${n} Änderung(en) konnten nicht zurückgesetzt werden. Die App versucht es in einer Stunde erneut; du kannst sie auch unter Sicherungen zurücksetzen.`, revertRestart: 'Bitte starte den PC neu, damit alles wieder wie vorher wirkt.', revertUnconfirmed: 'Die App konnte deine Lizenz 30 Tage lang nicht beim Server bestätigen (offline oder abgemeldet). Melde dich an, um den Tweaker wieder freizuschalten.',
       myAccount: 'Mein Account', customerArea: 'Customer Area', licenses: 'Lizenzen', support: 'Support', account: 'Account',
       lifetime: 'Lifetime', expires: 'Läuft ab', plan: 'Plan', status: 'Status', devices: 'Geräte', key: 'Key', thisDevice: 'Dieser PC',
       profile: 'Profil', displayName: 'Anzeigename', username: 'Benutzername', accountId: 'Konto-ID', memberSince: 'Mitglied seit',
@@ -43,7 +43,7 @@
       consent: 'I consent to transmitting a pseudonymous identifier for this Windows installation to bind the license. No hardware serial numbers are transmitted.',
       bind: 'Activate device', errTitle: 'Verification failed', err: 'Network unavailable or license verification failed.',
       check: 'Check again', signOut: 'Sign out', foot: 'HTTPS · Server-side license checks · Token stays encrypted in the main process',
-      revertRunning: 'Your license has expired. All changes made by the tweaker are being restored to their original values…', revertDone: (n) => `License expired: ${n} change(s) made by the tweaker were restored to their original values.`, revertNothing: 'License expired: no tweaks were active, nothing had to be restored.', revertFailed: (n) => `${n} change(s) could not be restored. The app retries in an hour; you can also restore them under Backups.`, revertRestart: 'Please restart the PC so everything works as before.',
+      revertWhy: { license_expired: 'License expired', license_inactive: 'License no longer active', license_unconfirmed: 'License not confirmed for 30 days' }, revertRunning: (why) => `${why}. All changes made by the tweaker are being restored to their original values…`, revertDone: (n, why) => `${why}: ${n} change(s) made by the tweaker were restored to their original values.`, revertNothing: (why) => `${why}: no tweaks were active, nothing had to be restored.`, revertFailed: (n) => `${n} change(s) could not be restored. The app retries in an hour; you can also restore them under Backups.`, revertRestart: 'Please restart the PC so everything works as before.', revertUnconfirmed: 'The app could not confirm your license with the server for 30 days (offline or signed out). Sign in to unlock the tweaker again.',
       myAccount: 'My Account', customerArea: 'Customer Area', licenses: 'Licenses', support: 'Support', account: 'Account',
       lifetime: 'Lifetime', expires: 'Expires', plan: 'Plan', status: 'Status', devices: 'Devices', key: 'Key', thisDevice: 'This PC',
       profile: 'Profile', displayName: 'Display name', username: 'Username', accountId: 'Account ID', memberSince: 'Member since',
@@ -69,7 +69,7 @@
       consent: 'Acconsento alla trasmissione di un identificatore pseudonimo di questa installazione Windows per la licenza. Nessun numero di serie hardware viene trasmesso.',
       bind: 'Attiva dispositivo', errTitle: 'Verifica fallita', err: 'Connessione non disponibile o verifica della licenza fallita.',
       check: 'Riprova', signOut: 'Esci', foot: 'HTTPS · Verifica licenze lato server · Il token resta cifrato nel processo principale',
-      revertRunning: 'La tua licenza è scaduta. Tutte le modifiche del tweaker vengono riportate ai valori originali…', revertDone: (n) => `Licenza scaduta: ${n} modifica/e del tweaker sono state riportate ai valori originali.`, revertNothing: 'Licenza scaduta: nessun tweak era attivo, non c’era nulla da ripristinare.', revertFailed: (n) => `${n} modifica/e non sono state ripristinate. L’app riprova tra un’ora; puoi ripristinarle anche in Backup.`, revertRestart: 'Riavvia il PC perché tutto torni come prima.',
+      revertWhy: { license_expired: 'Licenza scaduta', license_inactive: 'Licenza non più attiva', license_unconfirmed: 'Licenza non confermata da 30 giorni' }, revertRunning: (why) => `${why}. Tutte le modifiche del tweaker vengono riportate ai valori originali…`, revertDone: (n, why) => `${why}: ${n} modifica/e del tweaker sono state riportate ai valori originali.`, revertNothing: (why) => `${why}: nessun tweak era attivo, non c’era nulla da ripristinare.`, revertFailed: (n) => `${n} modifica/e non sono state ripristinate. L’app riprova tra un’ora; puoi ripristinarle anche in Backup.`, revertRestart: 'Riavvia il PC perché tutto torni come prima.', revertUnconfirmed: 'L’app non è riuscita a confermare la tua licenza con il server per 30 giorni (offline o disconnesso). Accedi per sbloccare di nuovo il tweaker.',
       myAccount: 'Il mio account', customerArea: 'Customer Area', licenses: 'Licenze', support: 'Supporto', account: 'Account',
       lifetime: 'Lifetime', expires: 'Scade', plan: 'Piano', status: 'Stato', devices: 'Dispositivi', key: 'Chiave', thisDevice: 'Questo PC',
       profile: 'Profilo', displayName: 'Nome visualizzato', username: 'Nome utente', accountId: 'ID account', memberSince: 'Membro dal',
@@ -233,8 +233,10 @@
   function revertBanner(t) {
     const r = licenseRevert;
     if (!r || (!r.running && !r.result)) return '';
-    if (r.running) return `<p class="h1t-revert" role="status"><i class="h1t-spin"></i><span>${esc(t.revertRunning)}</span></p>`;
-    const res = r.result, lines = [res.restored ? t.revertDone(res.restored) : t.revertNothing];
+    const why = (reason) => t.revertWhy[reason] || t.revertWhy.license_expired;
+    if (r.running) return `<p class="h1t-revert" role="status"><i class="h1t-spin"></i><span>${esc(t.revertRunning(why(r.reason)))}</span></p>`;
+    const res = r.result, lines = [res.restored ? t.revertDone(res.restored, why(res.reason)) : t.revertNothing(why(res.reason))];
+    if (res.reason === 'license_unconfirmed') lines.unshift(t.revertUnconfirmed);
     if (res.failed) lines.push(t.revertFailed(res.failed));
     if (res.restart_required) lines.push(t.revertRestart);
     return `<div class="h1t-revert${res.failed ? ' warn' : ''}" role="status">${svg('refresh')}<div>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div></div>`;

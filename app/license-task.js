@@ -1,8 +1,9 @@
 'use strict';
-// Windows scheduled task "H1T.CC License Check": starts the tweaker invisibly (--h1t-expiry-check) when a
-// time-limited license ends, so changes are restored even if the app is not open at that moment.
-// StartWhenAvailable runs it at the next opportunity if the PC was off. Removed again for lifetime
-// licenses and after a completed restore. Values reach PowerShell only through environment variables.
+// Windows scheduled task "H1T.CC License Check": starts the tweaker invisibly (--h1t-expiry-check) once a day
+// for every licensed PC (lifetime too, so a revoked key is noticed without opening the app) and additionally
+// right after a time-limited license ends. Changes are restored even if the app is not open at that moment.
+// StartWhenAvailable runs it at the next opportunity if the PC was off. Removed again after a completed
+// restore. Values reach PowerShell only through environment variables.
 const { execFile } = require('node:child_process');
 const path = require('node:path');
 
@@ -17,13 +18,17 @@ if ($env:H1T_TASK_MODE -eq 'remove') {
 if ($env:H1T_TASK_MODE -eq 'query') {
   $t = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
   if (-not $t) { 'none'; exit 0 }
+  $once = @($t.Triggers | Where-Object { $_.CimClass.CimClassName -eq 'MSFT_TaskTimeTrigger' })
+  $daily = @($t.Triggers | Where-Object { $_.CimClass.CimClassName -eq 'MSFT_TaskDailyTrigger' })
   [pscustomobject]@{ execute = $t.Actions[0].Execute; arguments = $t.Actions[0].Arguments
-    at = ([datetime]$t.Triggers[0].StartBoundary).ToUniversalTime().ToString('o') } | ConvertTo-Json -Compress
+    at = $(if ($once.Count) { ([datetime]$once[0].StartBoundary).ToUniversalTime().ToString('o') } else { $null })
+    daily = ($daily.Count -eq 1) } | ConvertTo-Json -Compress
   exit 0
 }
-$at = [DateTimeOffset]::Parse($env:H1T_TASK_AT, [Globalization.CultureInfo]::InvariantCulture).LocalDateTime
+$parse = { param($v) [DateTimeOffset]::Parse($v, [Globalization.CultureInfo]::InvariantCulture).LocalDateTime }
 $action = New-ScheduledTaskAction -Execute $env:H1T_TASK_EXE -Argument '--h1t-expiry-check'
-$trigger = New-ScheduledTaskTrigger -Once -At $at
+$trigger = @(New-ScheduledTaskTrigger -Daily -At (& $parse $env:H1T_TASK_DAILY))
+if ($env:H1T_TASK_AT) { $trigger += New-ScheduledTaskTrigger -Once -At (& $parse $env:H1T_TASK_AT) }
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
 $principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType Interactive -RunLevel Highest
 Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
@@ -41,18 +46,20 @@ function runScript(env) {
 }
 
 // exe: () => path of the portable exe (null when not packaged). Re-registers only when exe or end date change.
-function createLicenseTask({ exe, name = TASK_NAME, run = runScript } = {}) {
+function createLicenseTask({ exe, name = TASK_NAME, run = runScript, now = Date.now } = {}) {
   let registered = null;
   return {
     name,
     async sync({ licensed, lifetime, expires_at } = {}) {
       const target = exe();
-      if (!licensed || lifetime || !Number.isFinite(expires_at) || !target) return this.remove();
+      if (!licensed || !target) return this.remove();
       // A minute after the end, so the server already reports the license as expired.
-      const at = new Date(expires_at + 60000).toISOString();
+      const at = !lifetime && Number.isFinite(expires_at) ? new Date(expires_at + 60000).toISOString() : '';
       const key = `${target}|${at}`;
       if (registered === key) return 'unchanged';
-      const out = await run({ name, H1T_TASK_MODE: 'register', H1T_TASK_EXE: target, H1T_TASK_AT: at });
+      // The daily check starts 15 minutes from now and then repeats at that time of day.
+      const daily = new Date(now() + 15 * 60000).toISOString();
+      const out = await run({ name, H1T_TASK_MODE: 'register', H1T_TASK_EXE: target, H1T_TASK_DAILY: daily, H1T_TASK_AT: at });
       registered = key;
       return out;
     },
