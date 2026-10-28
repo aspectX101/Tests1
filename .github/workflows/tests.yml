@@ -1,0 +1,21 @@
+name: Tests
+# Every push runs the full suite on Windows (Node tests plus the PowerShell backend suites).
+# Publishing stays in publish-update.yml, which runs the same tests before it builds a release.
+on:
+  push:
+    branches: ['codex/performance-backend']
+    paths-ignore: ['package.json', 'release-notes/**']
+  workflow_dispatch:
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
