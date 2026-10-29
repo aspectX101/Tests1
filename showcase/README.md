@@ -86,7 +86,8 @@ moving: a point of light runs around the border, a scan crosses the top edge, du
 18 s the edge light re-ignites with a logo flash and a short glitch. Everything repeats exactly every 18 s. Fonts and logo are embedded, so the single file works
 offline.
 
-**OBS / Streamlabs:** add a *Browser* source → *Local file* → `h1t-overlay.html`, width 1920, height 1080.
+**OBS / Streamlabs:** add a *Browser* source → *Local file* → `h1t-overlay.html` (English), `h1t-overlay-de.html`
+or `h1t-overlay-it.html`, width 1920, height 1080.
 Options go into the URL field instead (`file:///C:/…/h1t-overlay.html?lang=de&pos=br`):
 
 | Option | Values | Default |

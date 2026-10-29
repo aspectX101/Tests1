@@ -120,7 +120,7 @@ const COPY = {
 };
 const params = new URLSearchParams(location.search);
 const num = (key, fallback) => (params.has(key) && !Number.isNaN(Number(params.get(key))) ? Number(params.get(key)) : fallback);
-const lang = COPY[params.get('lang')] ? params.get('lang') : 'en';
+const lang = COPY[params.get('lang')] ? params.get('lang') : '{{DEFAULT_LANG}}';
 const pos = ['bl', 'br', 'tl', 'tr'].includes(params.get('pos')) ? params.get('pos') : 'bl';
 const SHOW = Math.max(8, num('show', 24));
 const EVERY = Math.max(0, num('every', 0));

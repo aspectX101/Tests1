@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Builds the stream overlay: overlay/template.html → overlay/h1t-overlay.html with fonts and logo embedded,
-// so the single file works as an OBS / Streamlabs browser source without a server or internet.
+// Builds the stream overlay: overlay/template.html → overlay/h1t-overlay.html (English by default) and
+// overlay/h1t-overlay-<lang>.html (German / Italian by default) with fonts and logo embedded, so each single file
+// works as an OBS / Streamlabs browser source without a server, internet or URL options.
 //
 // Usage: node showcase/scripts/build-overlay.cjs [--video]
 //   --video  also renders per language, as transparent WebM (VP9 with alpha, 1920×1080, 60 fps) in showcase/out/:
@@ -29,8 +30,11 @@ const html = fs.readFileSync(path.join(root, 'overlay', 'template.html'), 'utf8'
   .replaceAll('{{LOGO}}', b64(tmpLogo));
 fs.rmSync(tmpLogo);
 const target = path.join(root, 'overlay', 'h1t-overlay.html');
-fs.writeFileSync(target, html);
-console.log(`Overlay: ${path.relative(process.cwd(), target)} (${Math.round(html.length / 1024)} KB)`);
+for (const [lang, file] of [['en', target], ['de', target.replace('.html', '-de.html')], ['it', target.replace('.html', '-it.html')]]) {
+  const page = html.replaceAll('{{DEFAULT_LANG}}', lang);
+  fs.writeFileSync(file, page);
+  console.log(`Overlay (${lang}): ${path.relative(process.cwd(), file)} (${Math.round(page.length / 1024)} KB)`);
+}
 
 if (process.argv.includes('--video')) {
   renderVideos(target).catch((e) => { console.error(e); process.exit(1); });
