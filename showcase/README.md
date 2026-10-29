@@ -62,6 +62,10 @@ stay inside the area TikTok's buttons and caption leave free. Output: `out/h1t-t
 npm run showcase:render -- --format vertical --lang it --music song.mp3
 ```
 
+**AI voice-over** (English): `scripts/make-voiceover.py` speaks one line per scene with Kokoro-82M, locally (setup in
+the script header). Mixed in front, with the song ducked under the voice and the cue effects quiet:
+`out/h1t-tiktok-en-voice-male.mp4` (voice `am_michael`) and `-female.mp4` (`af_heart`).
+
 ## Timeline (120 BPM grid, one beat = 0.5 s)
 
 | Time | Scene | What happens |
