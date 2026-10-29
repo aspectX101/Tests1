@@ -29,12 +29,9 @@ const outDir = path.join(showcase, 'assets', 'ui');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'h1t-capture-'));
 const WIDTH = 1400, HEIGHT = 860, SCALE = 3;
 
-// Brand rule: the film never names other tools. Texts in the app that do are replaced while capturing
-// (only in the served copy; the app checkout is not changed). Remove entries once the app text is fixed.
-const TEXT_FIXES = [
-  ['Our alternative to Elux: sets minimum CPU performance to 100% and sleep to Never in the current plan,',
-    'Sets minimum CPU performance to 100% and sleep to Never in the current power plan,'],
-];
+// Brand rule: the film never names other tools. Capturing fails if such a name is visible; until the app
+// text is fixed, an entry [from, to] here replaces it in the served copy (the app checkout is not changed).
+const TEXT_FIXES = [];
 const FORBIDDEN = /\b(elux|aqua)\b/i;
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
