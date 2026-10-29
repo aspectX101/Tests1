@@ -5,7 +5,8 @@ Reads the cue list the animation writes (assets/audio/cues.json: impacts, whoosh
 48 kHz stereo WAV: a dark low drone, a 120 BPM pulse that grows into the montage, and one sound per cue.
 It is meant as a finished temp score and a sync guide; music can be laid over it or replace the bed.
 
-Usage: python3 make-audio.py cues.json out.wav   (needs NumPy)
+Usage: python3 make-audio.py cues.json out.wav [--sfx-only]   (needs NumPy)
+  --sfx-only  only the cue sounds, without drone and pulse (for laying a song underneath)
 """
 import json
 import sys
@@ -246,9 +247,15 @@ def level_at(time, points):
     return np.interp(time, xs, ys)
 
 
-def build(cues, duration):
+def build(cues, duration, bed=True):
     mix = Mix(duration + 4)
+    if bed:
+        add_bed(mix, duration)
+    add_cues(mix, cues)
+    return master(mix, duration)
 
+
+def add_bed(mix, duration):
     # Drone automation across the five scenes.
     bed = drone(duration + 3)
     tt = t_axis(bed.shape[1] / SR)
@@ -274,6 +281,8 @@ def build(cues, duration):
         mix.add(pan(bass_note(ROOTS[bar], 4 * BEAT), 0) * 0.32, t, reverb=0.05)
         t += 4 * BEAT
 
+
+def add_cues(mix, cues):
     makers = {
         'impact': lambda c: impact(), 'whoosh': lambda c: whoosh(c.get('duration', 0.8)), 'riser': lambda c: riser(c.get('duration', 1.6)),
         'shimmer': lambda c: shimmer(c.get('duration', 1.2)), 'glitch': lambda c: glitch(c.get('duration', 0.3)), 'click': lambda c: click(),
@@ -291,6 +300,8 @@ def build(cues, duration):
         at = cue['t'] - (sound.shape[1] / SR if kind == 'reverse' else 0)
         mix.add(sound, at, gain=gains[kind] * cue.get('gain', 1.0), reverb=sends.get(kind, 0.25))
 
+
+def master(mix, duration):
     wet = convolve(mix.send, reverb_ir())
     out = mix.dry + wet * 0.9
     out = out[:, : int(duration * SR)]
@@ -303,7 +314,7 @@ def build(cues, duration):
 def main():
     cues_file, target = sys.argv[1], sys.argv[2]
     data = json.load(open(cues_file))
-    audio = build(data['cues'], data['duration'])
+    audio = build(data['cues'], data['duration'], bed='--sfx-only' not in sys.argv[3:])
     pcm = (np.clip(audio.T, -1, 1) * 32767).astype('<i2')
     with wave.open(target, 'wb') as w:
         w.setnchannels(2)
