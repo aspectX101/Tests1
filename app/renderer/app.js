@@ -812,7 +812,7 @@ function renderSettings() {
     ${card('account', s.account, esc(s.accountDesc), `<div class="set-actions"><button class="pill dark" data-go="account">${esc(s.details)}</button></div>`)}
     ${card('support', s.support, esc(s.supportDesc), `<div class="set-actions"><button class="pill dark" id="set-support">${esc(s.open)}</button><button class="pill dark" id="set-report">${esc(s.report)}</button></div>`)}
     ${card('sys', s.sys, '', `${row(s.cpu, info.cpu)}${row(s.gpu, info.gpu)}${row(s.ram, info.ramGB ? `${info.ramGB} GB` : '')}${row(s.os, info.os)}`)}
-    ${card('update', t().updates, `${esc(t().version(state.version))} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}${u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-log">${t().upLog}</button>`}</div>`)}
+    ${card('update', t().updates, `${esc(PRODUCT_VERSION)} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}${u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-log">${t().upLog}</button>`}</div>`)}
     ${card('halloween', s.halloween, esc(season ? s.halloweenDesc : s.halloweenOff), `<div class="set-row"><span>${esc(hw?.isOn() ? s.on : s.off)}</span><label class="switch"><input type="checkbox" id="set-halloween" ${hw?.isOn() ? 'checked' : ''} ${season ? '' : 'disabled'} aria-label="${esc(s.halloween)}"><span></span></label></div>`)}
     ${card('spotify', s.spotify, esc(s.spotifyDesc), `<div class="set-row"><span>${esc(s.spotifyShow)}</span><label class="switch"><input type="checkbox" id="set-spotify" ${spotifyOn ? 'checked' : ''} aria-label="${esc(s.spotifyShow)}"><span></span></label></div><div class="set-actions"><button class="pill dark" id="set-spotify-open">${esc(s.spotifyOpen)}</button></div>`)}
     ${card('boot', s.boot, esc(s.bootDesc), `<div class="set-row"><span>${esc(s.bootSound)}</span><label class="switch"><input type="checkbox" id="set-bootsound" ${bootSound ? 'checked' : ''} aria-label="${esc(s.bootSound)}"><span></span></label></div>`)}
@@ -830,7 +830,7 @@ function render() {
   const langCode=$('#h1t-lang-code');if(langCode)langCode.textContent=state.lang.toUpperCase();
   const r = state.route;
   const upReady = state.update?.status === 'ready'
-    ? `<div class="restart"><span>${esc(t().upBanner(state.update.version || ''))}</span><button class="pill" id="up-install">${t().upInstall}</button></div>`
+    ? `<div class="restart"><span>${esc(t().upBanner())}</span><button class="pill" id="up-install">${t().upInstall}</button></div>`
     : '';
   let html = upReady;
   if (state.loading && !['settings', 'cleanup', 'safemode', 'backups', 'mods', 'profiles', 'search', 'account'].includes(r.page)) {
@@ -1535,10 +1535,9 @@ function onUpdate(st) {
 bridge.onUpdate(onUpdate);
 bridge.updateState().then(onUpdate);
 bridge.appLocation().then((l) => { state.exe = l?.exe || null; if (state.route.page === 'settings') render(); });
-bridge.version().then((v) => {
-  state.version = v;
-  document.querySelector('.brand-ver').textContent = `V${v}`;
-});
+// Shown product version: V1 stays fixed while background updates bump the internal build (bridge.version()).
+const PRODUCT_VERSION = 'V1';
+bridge.version().then((v) => { state.version = v; });
 
 // Start-Animation (boot.css): einmal ganz durchlaufen lassen; Klick überspringt; spätestens nach 7 s weg.
 // halloween-boot-head.js picks a canvas boot animation (Halloween or the gunshot reveal) and sets its length.

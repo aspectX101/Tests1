@@ -213,7 +213,7 @@
     return Number.isNaN(d.getTime()) ? tx().never : d.toLocaleTimeString(lang(), { timeStyle: 'short' });
   }
   const errorMessage = (code) => tx().errors[code] || tx().err;
-  const appVersion = () => (document.querySelector('.brand-ver')?.textContent || '').replace(/^V/i, '') || tx().never;
+  const appVersion = () => (document.querySelector('.brand-ver')?.textContent || '').trim() || tx().never;
   const openLink = (kind) => (bridge.h1tOpenAccountLink ? bridge.h1tOpenAccountLink(kind) : bridge.h1tOpenAccountPortal?.());
   function goAccount(section) {
     pendingScroll = section || '';
