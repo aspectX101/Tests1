@@ -192,6 +192,34 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
 }
 .discord .dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 12px rgba(255, 255, 255, 0.8); }
 
+/* ---------- vertical cut (1080×1920) ---------- */
+.vertical .v-line { top: 37.5%; width: 860px; margin-left: -430px; }
+.vertical .v-logo { width: 760px; height: 364px; margin-left: -380px; top: calc(37.5% - 182px); }
+.vertical .v-halo { top: calc(37.5% - 340px); }
+.vertical .v-hook-title { position: absolute; left: 60px; right: 60px; top: 50.5%; text-align: center; }
+.vertical .v-hook-title .wordmark { margin-bottom: 34px; }
+.vertical .headline.v-xxl { font-size: 150px; line-height: 0.98; }
+.vertical .headline.v-xl { font-size: 128px; line-height: 1.0; }
+.vertical .headline.v-lg { font-size: 96px; line-height: 1.02; letter-spacing: -0.035em; }
+.vertical .headline.v-md { font-size: 78px; line-height: 1.04; letter-spacing: -0.03em; }
+.vertical .v-top { position: absolute; left: 70px; right: 70px; top: 250px; z-index: 20; }
+.vertical .v-top .mono-label { margin-bottom: 22px; font-size: 20px; }
+.vertical .v-top .v-label { color: var(--silver); }
+.vertical .v-feature { position: absolute; inset: 0; }
+.vertical .v-feature .counter i { display: inline-block; width: 44px; height: 1px; background: #4a4a4a; vertical-align: middle; margin: 0 14px; }
+.vertical .v-sidebar { width: 300px; height: 1016px; margin: -508px 0 0 -150px; }
+.vertical .v-wall { scale: 0.85; }
+.vertical .shot .headline { position: static; translate: none; }
+.vertical .v-center { position: absolute; left: 60px; right: 60px; top: 50%; translate: 0 -50%; text-align: center; z-index: 10; }
+.vertical .v-rule { top: 72%; }
+.vertical .v-final-logo { top: calc(33% - 182px); }
+.vertical .v-finale .v-halo { top: calc(33% - 340px); }
+.vertical .v-final-text { position: absolute; left: 60px; right: 60px; top: 48%; text-align: center; }
+.vertical .v-final-text .wordmark { margin-bottom: 34px; font-size: 28px; }
+.vertical .v-final-text .call { margin-top: 44px; font-size: 22px; }
+.vertical .v-discord { margin-top: 36px; font-size: 34px; padding: 20px 40px 20px 34px; gap: 18px; }
+.vertical .v-discord .dot { width: 10px; height: 10px; }
+
 /* ---------- preview controls ---------- */
 .progress { position: fixed; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255, 255, 255, 0.08); cursor: pointer; z-index: 10; }
 .progress i { display: block; height: 100%; background: #fff; transform-origin: left; transform: scaleX(0); }

@@ -51,6 +51,17 @@ and the click positions per language in `src/ui-map.js`. Add `en`, `de` or `it` 
 The whole film is one paused GSAP timeline: the preview plays it in real time, the export seeks it frame by frame,
 so both always show the same thing.
 
+## TikTok / Reels / Shorts cut
+
+`?format=vertical` (preview) and `--format vertical` (render) switch to a 9:16 cut, 1080×1920, 25 s, built in
+`src/vertical.js` from the same captures and building blocks: the logo lands at 0.6 s, then the app with real clicks,
+the four categories (headline on top, app in the middle, close-up below), the montage and Discord. Text, logo and Discord
+stay inside the area TikTok's buttons and caption leave free. Output: `out/h1t-tiktok-<lang>.mp4`.
+
+```bash
+npm run showcase:render -- --format vertical --lang it --music song.mp3
+```
+
 ## Timeline (120 BPM grid, one beat = 0.5 s)
 
 | Time | Scene | What happens |

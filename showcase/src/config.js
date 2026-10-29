@@ -2,7 +2,12 @@
 // Times are seconds from the start of the video. The cut grid follows 120 BPM (one beat = 0.5 s),
 // so music laid under the export lines up with the transitions.
 
-export const VIDEO = { width: 1920, height: 1080, fps: 60, duration: 45 };
+// Format of this render: the 16:9 film (default) or ?format=vertical, the 9:16 TikTok / Reels / Shorts cut.
+const query = new URLSearchParams(globalThis.location?.search || '');
+export const FORMAT = query.get('format') === 'vertical' ? 'vertical' : 'wide';
+export const VIDEO = FORMAT === 'vertical'
+  ? { width: 1080, height: 1920, fps: 60, duration: 25 }
+  : { width: 1920, height: 1080, fps: 60, duration: 45 };
 export const BPM = 120;
 
 export const BRAND = {
@@ -19,9 +24,18 @@ export const SCENES = {
   finale: { start: 35, end: 45 },
 };
 
+// The vertical cut: the hook lands in the first second, everything is shorter.
+export const SCENES_VERTICAL = {
+  hook: { start: 0, end: 2.6 },
+  reveal: { start: 2.6, end: 6.4 },
+  features: { start: 6.4, end: 16.4 },
+  montage: { start: 16.4, end: 21 },
+  finale: { start: 21, end: 25 },
+};
+
 // Language of this render: ?lang=en|de|it (default en). Changes both the app captures and the copy.
 export const LANGS = ['en', 'de', 'it'];
-const requested = new URLSearchParams(globalThis.location?.search || '').get('lang');
+const requested = query.get('lang');
 export const LANG = LANGS.includes(requested) ? requested : 'en';
 
 // Only categories that exist in the app (PC Optimization, Gaming Tweaks, Network, Debloat).

@@ -1,7 +1,7 @@
 // Builds the whole film as one paused GSAP timeline.
 //   Preview (index.html): plays in real time, fullscreen-fit. Space = play/pause, ←/→ = ±1 s, R = restart, F = fullscreen.
 //   Export (index.html?render): no UI, scripts/render.cjs calls window.__showcase.seek(t) for every frame.
-import { BRAND, LANG, UI, VIDEO } from './config.js';
+import { BRAND, FORMAT, LANG, UI, VIDEO } from './config.js';
 import { Atmosphere } from './lib/atmosphere.js';
 import { el, registerSize } from './lib/motion.js';
 import { buildIntro } from './scenes/intro.js';
@@ -9,12 +9,14 @@ import { buildReveal } from './scenes/reveal.js';
 import { buildFeatures } from './scenes/features.js';
 import { buildExperience } from './scenes/experience.js';
 import { buildFinale } from './scenes/finale.js';
+import { buildVertical } from './vertical.js';
 
 const { gsap } = window;
 const params = new URLSearchParams(location.search);
 const renderMode = params.has('render');
 document.documentElement.classList.toggle('render', renderMode);
 document.documentElement.lang = LANG;
+document.documentElement.classList.toggle('vertical', FORMAT === 'vertical');
 
 const UI_FILES = [
   'home', 'home-after', 'perf-0', 'perf-1', 'perf-2', 'perf-3', 'perf-4', 'gaming-0', 'gaming-1', 'gaming-2', 'gaming-3', 'gaming-4',
@@ -59,11 +61,15 @@ async function main() {
     },
   };
 
-  buildIntro(tl, ctx);
-  buildReveal(tl, ctx);
-  buildFeatures(tl, ctx);
-  buildExperience(tl, ctx);
-  buildFinale(tl, ctx);
+  if (FORMAT === 'vertical') {
+    buildVertical(tl, ctx);
+  } else {
+    buildIntro(tl, ctx);
+    buildReveal(tl, ctx);
+    buildFeatures(tl, ctx);
+    buildExperience(tl, ctx);
+    buildFinale(tl, ctx);
+  }
   tl.set({}, {}, VIDEO.duration); // pin the exact length
   cues.sort((a, b) => a.t - b.t);
 

@@ -7,9 +7,10 @@
 // with scripts/make-audio.py (Python 3 + NumPy) into out/h1t-sound-design-<lang>.wav and muxes it in at -14 LUFS.
 // With --music <file>, the song plays from its first note under the cue effects (no synthesised bed).
 //
-// Usage: node showcase/scripts/render.cjs [--lang en|de|it] [--music song.mp3] [--shutter 2] [--from 0] [--to 45]
-//                                         [--crf 14] [--no-audio]
-// Output: showcase/out/h1t-showcase-<lang>.mp4 (with sound) and h1t-showcase-<lang>-silent.mp4
+// Usage: node showcase/scripts/render.cjs [--lang en|de|it] [--format wide|vertical] [--music song.mp3] [--shutter 2]
+//                                         [--from 0] [--to 45] [--crf 14] [--no-audio]
+// Output: showcase/out/h1t-showcase-<lang>.mp4 (16:9) or h1t-tiktok-<lang>.mp4 (9:16, --format vertical),
+//         each with a -silent variant
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -27,6 +28,8 @@ const crf = String(opt('crf', 14));
 const withAudio = !args.includes('--no-audio');
 const lang = opt('lang', 'en');
 const music = opt('music', '');
+const vertical = opt('format', 'wide') === 'vertical';
+const base = vertical ? 'h1t-tiktok' : 'h1t-showcase';
 if (!['en', 'de', 'it'].includes(lang)) { console.error('--lang must be en, de or it'); process.exit(1); }
 if (music && !fs.existsSync(music)) { console.error(`Music file not found: ${music}`); process.exit(1); }
 const root = path.resolve(__dirname, '..');
@@ -42,9 +45,9 @@ function run(cmd, cmdArgs) {
   const server = createServer();
   await new Promise((r) => server.listen(0, r));
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: vertical ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   page.on('pageerror', (e) => console.error('page error:', e.message));
-  await page.goto(`http://localhost:${server.address().port}/index.html?render&lang=${lang}`);
+  await page.goto(`http://localhost:${server.address().port}/index.html?render&lang=${lang}${vertical ? '&format=vertical' : ''}`);
   await page.waitForFunction(() => window.__showcaseReady === true, null, { timeout: 120000 });
   const info = await page.evaluate(() => {
     const s = window.__showcase;
@@ -55,7 +58,7 @@ function run(cmd, cmdArgs) {
   const to = Math.min(info.duration, Number(opt('to', info.duration)));
   const rate = info.fps * shutter;
   const frames = Math.round((to - from) * rate);
-  const silent = path.join(outDir, `h1t-showcase-${lang}-silent.mp4`);
+  const silent = path.join(outDir, `${base}-${lang}-silent.mp4`);
   console.log(`Rendering ${(to - from).toFixed(2)} s: ${frames} frames at ${rate} fps → ${info.fps} fps (shutter ${shutter})`);
 
   const filters = shutter > 1 ? ['-vf', `tmix=frames=${shutter},fps=${info.fps}`] : [];
@@ -84,12 +87,12 @@ function run(cmd, cmdArgs) {
   console.log(`Video: ${path.relative(process.cwd(), silent)}`);
 
   if (!withAudio) return;
-  const cuesFile = path.join(outDir, `cues-${lang}.json`);
+  const cuesFile = path.join(outDir, `cues-${base}-${lang}.json`);
   fs.writeFileSync(cuesFile, `${JSON.stringify({ duration: info.duration, cues: info.cues }, null, 2)}\n`);
-  const wav = path.join(outDir, `${music ? 'h1t-sfx-only' : 'h1t-sound-design'}-${lang}.wav`);
+  const wav = path.join(outDir, `${base}-${music ? 'sfx-only' : 'sound-design'}-${lang}.wav`);
   const py = spawnSync('python3', [path.join(__dirname, 'make-audio.py'), cuesFile, wav, ...(music ? ['--sfx-only'] : [])], { stdio: 'inherit' });
   if (py.status !== 0) { console.warn('Sound design skipped (needs Python 3 with NumPy). The silent video is ready.'); return; }
-  const final = path.join(outDir, `h1t-showcase-${lang}.mp4`);
+  const final = path.join(outDir, `${base}-${lang}.mp4`);
   const offset = ['-ss', String(from), '-t', String(to - from)];
   const encode = ['-ar', '48000', '-c:a', 'aac', '-b:a', '320k', '-shortest', '-movflags', '+faststart', final];
   if (music) {
