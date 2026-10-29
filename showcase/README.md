@@ -81,8 +81,9 @@ stays in sync when timing changes. The render writes them to `out/cues-<lang>.js
 ## Stream overlay
 
 `overlay/h1t-overlay.html` is a lower-third banner for Twitch streams: H1T.CC logo with a light sweep, rotating lines
-(EN/DE/IT) and discord.gg/h1tcc, on a transparent background. It stays on screen permanently by default; the lines
-and light sweeps repeat endlessly. Fonts and logo are embedded, so the single file works
+(EN/DE/IT) and discord.gg/h1tcc, on a transparent background. It stays on screen permanently by default and keeps
+moving: a point of light runs around the border, a scan crosses the top edge, dust drifts through the card, and every
+18 s the edge light re-ignites with a logo flash and a short glitch. Everything repeats exactly every 18 s. Fonts and logo are embedded, so the single file works
 offline.
 
 **OBS / Streamlabs:** add a *Browser* source → *Local file* → `h1t-overlay.html`, width 1920, height 1080.
