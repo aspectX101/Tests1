@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>H1T.CC Stream Overlay</title>
+<!--
+  H1T.CC stream overlay — OBS / Streamlabs browser source, transparent background, 1920×1080.
+  Built from overlay/template.html by scripts/build-overlay.cjs (fonts and logo are embedded, the file works offline).
+
+  URL options (append to the file path, e.g. h1t-overlay.html?lang=de&pos=br):
+    lang   en | de | it                       text language (default en)
+    pos    bl | br | tl | tr                  corner: bottom-left (default), bottom-right, top-left, top-right
+    show   seconds the banner stays visible   (default 24)
+    every  seconds between appearances        (default 300 = every 5 minutes; 0 = stay on screen)
+    delay  seconds before the first appearance (default 2)
+    scale  size factor                        (default 1)
+-->
+<style>
+  @font-face { font-family: 'Inter Tight'; font-weight: 600; src: url(data:font/woff2;base64,{{FONT_600}}) format('woff2'); }
+  @font-face { font-family: 'Inter Tight'; font-weight: 700; src: url(data:font/woff2;base64,{{FONT_700}}) format('woff2'); }
+  @font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: url(data:font/woff2;base64,{{MONO_500}}) format('woff2'); }
+
+  :root {
+    --black: #050505;
+    --graphite: #141414;
+    --silver: #c9c9c9;
+    --silver-dim: #8a8a8a;
+    --scale: 1;
+  }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+  .anchor { position: absolute; transform: scale(var(--scale)); }
+  .pos-bl { left: 56px; bottom: 64px; transform-origin: left bottom; }
+  .pos-br { right: 56px; bottom: 64px; transform-origin: right bottom; }
+  .pos-tl { left: 56px; top: 56px; transform-origin: left top; }
+  .pos-tr { right: 56px; top: 56px; transform-origin: right top; }
+
+  .banner { position: relative; width: 700px; height: 156px; font-family: 'Inter Tight', system-ui, sans-serif; color: #fff;
+    -webkit-font-smoothing: antialiased; visibility: hidden; }
+  .banner.on { visibility: visible; }
+  .card {
+    position: absolute; inset: 0; border-radius: 16px; overflow: hidden;
+    background: linear-gradient(135deg, rgba(20, 20, 20, 0.94), rgba(5, 5, 5, 0.94) 60%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  .edge { position: absolute; left: 0; right: 0; top: 0; height: 2px; transform-origin: left center;
+    background: linear-gradient(90deg, transparent, #fff 30%, #fff 70%, transparent); box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.35); }
+  .logo { position: absolute; left: 26px; top: 50%; width: 150px; height: 72px; margin-top: -36px; }
+  .logo img { width: 100%; height: 100%; display: block; }
+  .shine { position: absolute; inset: 0; overflow: hidden; mix-blend-mode: screen;
+    -webkit-mask: url(data:image/webp;base64,{{LOGO}}) center / 100% 100%; mask: url(data:image/webp;base64,{{LOGO}}) center / 100% 100%; }
+  .shine i, .sheen i { position: absolute; top: -30%; bottom: -30%; left: 0; width: 100%; transform: translateX(-130%);
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.95) 50%, transparent 60%); }
+  .sheen { position: absolute; inset: 0; overflow: hidden; pointer-events: none; mix-blend-mode: screen; opacity: 0.18; }
+  .divider { position: absolute; left: 200px; top: 30px; bottom: 30px; width: 1px; transform-origin: center top;
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.35), transparent); }
+  .text { position: absolute; left: 228px; right: 24px; top: 26px; }
+  .label { font: 500 12px 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.32em; color: var(--silver-dim); text-transform: uppercase; }
+  .mask { overflow: hidden; padding: 2px 0 6px; margin: -2px 0 -6px; }
+  .messages { position: relative; height: 40px; margin-top: 10px; overflow: hidden; }
+  .message { position: absolute; left: 0; top: 0; white-space: nowrap; transform: translateY(110%); font-weight: 700; font-size: 30px; letter-spacing: -0.03em; line-height: 40px;
+    background: linear-gradient(180deg, #fff 0%, #ededed 45%, #a3a3a3 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .discord { display: inline-flex; align-items: center; gap: 10px; margin-top: 12px; padding: 7px 16px 7px 12px; border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.04);
+    font: 500 16px 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.04em; color: #fff; }
+  .discord svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<div class="anchor" id="anchor">
+  <div class="banner" id="banner">
+    <div class="card" id="card">
+      <div class="sheen"><i id="sheen"></i></div>
+      <div class="logo" id="logo"><img src="data:image/webp;base64,{{LOGO}}" alt="H1T.CC"><div class="shine"><i id="shine"></i></div></div>
+      <div class="divider" id="divider"></div>
+      <div class="text">
+        <div class="mask"><div class="label" id="label"></div></div>
+        <div class="messages" id="messages"></div>
+        <div class="mask"><div class="discord" id="discord">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>
+          <span>discord.gg/h1tcc</span>
+        </div></div>
+      </div>
+    </div>
+    <div class="edge" id="edge"></div>
+  </div>
+</div>
+<script>
+'use strict';
+// Every animation of one appearance is a Web Animation started at the same moment, so the whole cycle can be
+// played live (OBS) or paused and seeked frame by frame (scripts/build-overlay.cjs renders the transparent video).
+const COPY = {
+  en: { label: 'H1T.CC TWEAK UTILITY', messages: ['Performance. Redefined.', 'Windows & FiveM optimization.', 'Available now on H1T.CC'] },
+  de: { label: 'H1T.CC TWEAK UTILITY', messages: ['Performance. Neu definiert.', 'Windows- & FiveM-Optimierung.', 'Jetzt erhältlich auf H1T.CC'] },
+  it: { label: 'H1T.CC TWEAK UTILITY', messages: ['Performance. Ridefinita.', 'Ottimizzazione Windows & FiveM.', 'Disponibile ora su H1T.CC'] },
+};
+const params = new URLSearchParams(location.search);
+const num = (key, fallback) => (params.has(key) && !Number.isNaN(Number(params.get(key))) ? Number(params.get(key)) : fallback);
+const lang = COPY[params.get('lang')] ? params.get('lang') : 'en';
+const pos = ['bl', 'br', 'tl', 'tr'].includes(params.get('pos')) ? params.get('pos') : 'bl';
+const SHOW = Math.max(8, num('show', 24));
+const EVERY = Math.max(0, num('every', 300));
+const DELAY = Math.max(0, num('delay', 2));
+document.documentElement.lang = lang;
+document.documentElement.style.setProperty('--scale', num('scale', 1));
+
+const $ = (id) => document.getElementById(id);
+const anchor = $('anchor'), banner = $('banner');
+anchor.className = `anchor pos-${pos}`;
+$('label').textContent = COPY[lang].label;
+const messages = COPY[lang].messages.map((text) => {
+  const node = document.createElement('div');
+  node.className = 'message';
+  node.textContent = text;
+  $('messages').appendChild(node);
+  return node;
+});
+
+const EXPO_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const EXPO_IN = 'cubic-bezier(0.7, 0, 0.84, 0)';
+const INOUT = 'cubic-bezier(0.65, 0, 0.35, 1)';
+
+// One appearance: in (0–1.6 s), messages rotate, out (last 0.9 s). Returns its animations.
+// Long translations shrink until they fit the card.
+function fitMessages() {
+  const room = $('messages').clientWidth;
+  messages.forEach((node) => {
+    node.style.fontSize = '';
+    const width = node.scrollWidth;
+    if (width > room) node.style.fontSize = `${Math.floor(30 * (room / width) * 10) / 10}px`;
+  });
+}
+
+function cycle(stay) {
+  const ms = (s) => s * 1000;
+  const anims = [];
+  const add = (node, frames, start, duration, easing = EXPO_OUT, extra = {}) => {
+    anims.push(node.animate(frames, { delay: ms(start), duration: ms(duration), easing, fill: 'both', ...extra }));
+  };
+  const outAt = SHOW - 0.9;
+
+  // In: a line of light draws along the top edge, the card opens behind it.
+  add($('edge'), [{ transform: 'scaleX(0)', opacity: 1 }, { transform: 'scaleX(1)', opacity: 1 }], 0, 0.55, INOUT);
+  add($('edge'), [{ opacity: 1 }, { opacity: 0.25 }], 0.6, 1.2, 'ease-out');
+  add($('card'), [{ clipPath: 'inset(0 100% 0 0 round 16px)' }, { clipPath: 'inset(0 0% 0 0 round 16px)' }], 0.2, 0.9);
+  add($('logo'), [{ opacity: 0, filter: 'brightness(2.4) blur(6px)', transform: 'translateX(-14px)' },
+    { opacity: 1, filter: 'brightness(1) blur(0px)', transform: 'none' }], 0.45, 1.0);
+  add($('divider'), [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], 0.6, 0.8);
+  add($('label'), [{ transform: 'translateY(120%)' }, { transform: 'none' }], 0.7, 0.8);
+  add($('discord'), [{ transform: 'translateY(130%)' }, { transform: 'none' }], 0.95, 0.8);
+
+  // Light sweeps over the logo and the card, then again every 6 s.
+  for (let t = 1.1; t < (stay ? 3600 : outAt - 0.5); t += 6) {
+    add($('shine'), [{ transform: 'translateX(-130%)' }, { transform: 'translateX(130%)' }], t, 1.1, INOUT, { fill: 'none' });
+    add($('sheen'), [{ transform: 'translateX(-130%)' }, { transform: 'translateX(130%)' }], t + 0.15, 1.4, INOUT, { fill: 'none' });
+  }
+
+  // Messages: each slides up into view and out again; the last one stays until the exit.
+  const first = 0.85;
+  const slot = stay ? 6 : Math.max(2.4, (outAt - first) / messages.length);
+  const rounds = stay ? 600 : 1;
+  for (let r = 0; r < rounds; r++) {
+    messages.forEach((node, i) => {
+      const at = first + (r * messages.length + i) * slot;
+      const last = !stay && i === messages.length - 1;
+      const length = last ? outAt - at : slot;
+      const frames = [
+        { transform: 'translateY(110%)', offset: 0, easing: EXPO_OUT },
+        { transform: 'none', offset: 0.6 / length, easing: 'linear' },
+        ...(last ? [{ transform: 'none', offset: 1 }]
+          : [{ transform: 'none', offset: (slot - 0.4) / slot, easing: EXPO_IN }, { transform: 'translateY(-110%)', offset: 1 }]),
+      ];
+      // Outside its own slot a message sits below the mask (CSS), so no fill is needed.
+      add(node, frames, at, length, 'linear', { fill: last ? 'forwards' : 'none' });
+    });
+  }
+
+  if (!stay) {
+    // Out: content drops away, the card closes to the left, the edge light runs out.
+    add($('label'), [{ transform: 'none' }, { transform: 'translateY(-120%)' }], outAt, 0.4, EXPO_IN, { fill: 'forwards' });
+    add(messages[messages.length - 1], [{ transform: 'none' }, { transform: 'translateY(-110%)' }], outAt, 0.4, EXPO_IN, { fill: 'forwards' });
+    add($('discord'), [{ transform: 'none' }, { transform: 'translateY(130%)' }], outAt, 0.4, EXPO_IN, { fill: 'forwards' });
+    add($('logo'), [{ opacity: 1 }, { opacity: 0 }], outAt + 0.1, 0.4, 'ease-in', { fill: 'forwards' });
+    add($('card'), [{ clipPath: 'inset(0 0% 0 0 round 16px)' }, { clipPath: 'inset(0 100% 0 0 round 16px)' }], outAt + 0.25, 0.6, EXPO_IN, { fill: 'forwards' });
+    add($('edge'), [{ transform: 'scaleX(1)', opacity: 0.25 }, { transform: 'scaleX(0)', opacity: 1 }], outAt + 0.25, 0.6, EXPO_IN, { fill: 'forwards' });
+  }
+  return anims;
+}
+
+let current = [];
+function play() {
+  current.forEach((a) => a.cancel());
+  banner.classList.add('on');
+  current = cycle(EVERY === 0);
+  if (EVERY > 0) setTimeout(() => banner.classList.remove('on'), SHOW * 1000);
+}
+
+// Export hook: one appearance, paused, seekable.
+window.__overlay = {
+  duration: SHOW,
+  prepare() { fitMessages(); current.forEach((a) => a.cancel()); banner.classList.add('on'); current = cycle(false); current.forEach((a) => a.pause()); },
+  seek(t) { current.forEach((a) => { a.currentTime = t * 1000; }); },
+};
+
+if (!params.has('render')) {
+  document.fonts.ready.then(() => {
+    fitMessages();
+    setTimeout(() => {
+      play();
+      if (EVERY > 0) setInterval(play, Math.max(EVERY, SHOW + 1) * 1000);
+    }, DELAY * 1000);
+  });
+}
+</script>
+</body>
+</html>

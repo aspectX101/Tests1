@@ -7,7 +7,8 @@
     "showcase": "node showcase/scripts/serve.cjs",
     "showcase:render": "node showcase/scripts/render.cjs",
     "showcase:capture": "node showcase/scripts/capture-ui.cjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "overlay:build": "node showcase/scripts/build-overlay.cjs"
   },
   "repository": {
     "type": "git",
