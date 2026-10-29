@@ -21,6 +21,11 @@ Oberfläche dreisprachig (de/en/it, `app/renderer/i18n.js`) – neue Texte immer
 - Mod Manager installiert nie ausführbare Dateien (.exe/.dll/.asi/Skripte). Soundpacks gehen in `<GTA V>\x64\audio\sfx` (`gta:`-Ziele).
 - Design: Schwarz, dunkles Waldgrün `#2d6a4f`, Weiß; feine grüne Verlaufslinien. Rot bleibt Fehlern, destruktiven Aktionen und hohen Risiken vorbehalten. Animationen respektieren `prefers-reduced-motion`.
 
+## Angezeigte Version: V1 (Vorgabe des Nutzers, 29.10.2026)
+
+- In der App steht fest **V1** (Abzeichen unter dem Logo, `PRODUCT_VERSION` in `app/renderer/app.js` und `index.html`). Nicht ändern ohne ausdrücklichen Auftrag.
+- Kleine Fixes kommen als Hintergrund-Updates: interne Build-Nummer in `package.json` weiter hochzählen (1.0.x), die Oberfläche zeigt keine Build-Nummern. Die interne Version steht nur im Support-Bericht, im Updater-Protokoll und bei GitHub.
+
 ## Auslieferung (wichtig – lange Fehlersuche dahinter)
 
 - **Eine portable Exe** `UNDCC-Tweaker-<version>.exe`, **kein Installer**. Der NSIS-Installer (0.4.0–0.5.3) scheiterte auf dem
