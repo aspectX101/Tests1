@@ -14,7 +14,7 @@ export function buildReveal(tl, ctx) {
   const floor = el('div', 'floor-glow', cam);
   const text = el('div', 'reveal-text', root);
   const label = el('div', 'mono-label', text, COPY.reveal.label);
-  const headline = splitText(text, COPY.reveal.headline, { by: 'chars', className: 'headline xl' });
+  const headline = splitText(text, COPY.reveal.headline, { by: 'chars', className: 'headline xl', maxWidth: 1680 });
   const exitStreak = addStreak(root, '52%');
   showScene(tl, root, t0, end);
 

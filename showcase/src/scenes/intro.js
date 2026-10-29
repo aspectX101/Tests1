@@ -15,7 +15,7 @@ export function buildIntro(tl, ctx) {
   const halo = el('div', 'logo-halo', cam);
   const title = el('div', 'intro-title', cam);
   const wordmark = el('div', 'wordmark', title, COPY.intro.wordmark);
-  const tagline = splitText(title, COPY.intro.tagline.join(' '), { by: 'words', className: 'tagline' });
+  const tagline = splitText(title, COPY.intro.tagline.join(' '), { by: 'words', className: 'tagline', maxWidth: 1500 });
   const exitStreak = addStreak(root, '50%');
   showScene(tl, root, t0, end);
 

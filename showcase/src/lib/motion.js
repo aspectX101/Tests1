@@ -3,8 +3,10 @@
 //
 // Convention: initial states are set with gsap.set at build time and changes are tl.to / tl.set,
 // so seeking forwards and backwards always lands on the same frame.
-import { UI_MAP, UI_SIZE } from '../ui-map.js';
-import { UI } from '../config.js';
+import { UI_MAPS, UI_SIZE } from '../ui-map.js';
+import { LANG, UI } from '../config.js';
+
+const UI_MAP = UI_MAPS[LANG];
 
 const { gsap } = window;
 
@@ -60,7 +62,8 @@ export function showScene(tl, root, start, end) {
 // ---------- typography ----------
 
 // Splits text into masked units: <span class="mask"><span class="unit">…</span></span>.
-export function splitText(parent, text, { by = 'chars', className = '' } = {}) {
+// maxWidth (px): shrinks the font until the line fits, for longer translations.
+export function splitText(parent, text, { by = 'chars', className = '', maxWidth = 0 } = {}) {
   const line = el('div', `split ${className}`, parent);
   const units = [];
   const words = text.split(' ');
@@ -73,8 +76,21 @@ export function splitText(parent, text, { by = 'chars', className = '' } = {}) {
     }
     if (wi < words.length - 1) el('span', 'space', line, ' ');
   });
+  if (maxWidth) fitWidth(line, maxWidth);
   gsap.set(units, { yPercent: 115 });
   return { line, units };
+}
+
+function fitWidth(line, maxWidth) {
+  const display = line.style.display;
+  line.style.display = 'inline-block';
+  line.style.whiteSpace = 'nowrap';
+  const width = line.offsetWidth;
+  if (width > maxWidth) {
+    const size = parseFloat(getComputedStyle(line).fontSize);
+    line.style.fontSize = `${Math.floor(size * (maxWidth / width))}px`;
+  }
+  line.style.display = display;
 }
 
 export function revealText(tl, units, at, { duration = 1.0, stagger = 0.025, ease = EASE.out } = {}) {

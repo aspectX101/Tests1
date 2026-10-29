@@ -1,7 +1,7 @@
 // Builds the whole film as one paused GSAP timeline.
 //   Preview (index.html): plays in real time, fullscreen-fit. Space = play/pause, ←/→ = ±1 s, R = restart, F = fullscreen.
 //   Export (index.html?render): no UI, scripts/render.cjs calls window.__showcase.seek(t) for every frame.
-import { BRAND, VIDEO } from './config.js';
+import { BRAND, LANG, UI, VIDEO } from './config.js';
 import { Atmosphere } from './lib/atmosphere.js';
 import { el, registerSize } from './lib/motion.js';
 import { buildIntro } from './scenes/intro.js';
@@ -14,12 +14,13 @@ const { gsap } = window;
 const params = new URLSearchParams(location.search);
 const renderMode = params.has('render');
 document.documentElement.classList.toggle('render', renderMode);
+document.documentElement.lang = LANG;
 
 const UI_FILES = [
   'home', 'home-after', 'perf-0', 'perf-1', 'perf-2', 'perf-3', 'perf-4', 'gaming-0', 'gaming-1', 'gaming-2', 'gaming-3', 'gaming-4',
   'net-0', 'net-modal', 'net-done', 'debloat-0', 'profiles', 'safemode', 'cleanup', 'hitreg', 'privacy', 'services',
   'el-sidebar', 'el-home-stat', 'el-perf-card-off', 'el-perf-card-on', 'el-gt-card-off', 'el-gt-card-on', 'el-net-hero', 'el-net-hero-on',
-].map((name) => `assets/ui/${name}.webp`);
+].map(UI);
 
 async function preload(sources) {
   await Promise.all(sources.map(async (src) => {
@@ -31,7 +32,10 @@ async function preload(sources) {
 }
 
 async function main() {
-  await Promise.all([preload([...UI_FILES, BRAND.logo]), document.fonts.ready]);
+  // Load the fonts before building: long translations are measured to fit.
+  const fonts = [300, 400, 500, 600, 700, 800].map((w) => document.fonts.load(`${w} 64px "Inter Tight"`));
+  fonts.push(document.fonts.load('500 16px "JetBrains Mono"'));
+  await Promise.all([preload([...UI_FILES, BRAND.logo]), ...fonts]);
 
   const viewport = document.getElementById('viewport');
   const stage = el('div', 'stage', viewport);

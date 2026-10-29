@@ -12,7 +12,7 @@ export function buildFinale(tl, ctx) {
   const band = addSweep(logoBox, { mask: BRAND.logo, strength: 0.95, width: 20 });
   const block = el('div', 'finale-text', cam);
   const wordmark = el('div', 'wordmark small', block, COPY.finale.wordmark);
-  const headline = splitText(block, COPY.finale.headline, { by: 'words', className: 'headline md' });
+  const headline = splitText(block, COPY.finale.headline, { by: 'words', className: 'headline md', maxWidth: 1600 });
   const call = el('div', 'mono-label call', block, COPY.finale.call);
   const discord = el('div', 'discord', block, `<span class="dot"></span>${COPY.finale.discord}`);
   showScene(tl, root, t0, end);

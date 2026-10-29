@@ -59,7 +59,7 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
 }
 .headline.xxl { font-size: 124px; }
 .headline.xl { font-size: 128px; }
-.headline.lg { font-size: 82px; letter-spacing: -0.035em; line-height: 1.02; }
+.headline.lg { font-size: 76px; letter-spacing: -0.035em; line-height: 1.02; }
 .headline.md { font-size: 62px; letter-spacing: -0.03em; }
 
 .mono-label {
@@ -147,7 +147,7 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
 .feature { position: absolute; inset: 0; }
 .feature-rig { scale: 0.84; margin-left: -360px; }
 .feature.mirrored .feature-rig { margin-left: -1010px; }
-.feature-text { position: absolute; left: 128px; top: 50%; translate: 0 -50%; width: 680px; z-index: 20; }
+.feature-text { position: absolute; left: 120px; top: 50%; translate: 0 -50%; width: 560px; z-index: 20; }
 .feature.mirrored .feature-text { left: auto; right: 96px; width: 600px; }
 .feature .counter i { display: inline-block; width: 44px; height: 1px; background: #4a4a4a; vertical-align: middle; margin: 0 14px; }
 .feature-label { margin: 30px 0 22px; color: var(--silver); }

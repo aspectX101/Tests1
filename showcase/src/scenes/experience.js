@@ -28,7 +28,7 @@ export function buildExperience(tl, ctx) {
   const sidebar = el('div', 'macro sidebar-macro', aCam);
   img(UI('el-sidebar'), 'macro-img', sidebar);
   const sidebarBand = addSweep(sidebar, { strength: 0.3, width: 40 });
-  const aText = splitText(a, COPY.experience[0], { by: 'chars', className: 'headline xl left' });
+  const aText = splitText(a, COPY.experience[0], { by: 'chars', className: 'headline xl left', maxWidth: 980 });
   cut(a, t0, t0 + 1.5);
   gsap.set(sidebar, { rotationY: -58, rotationX: 10, z: -250, x: 260 });
   tl.to(sidebar, { rotationY: 24, rotationX: 4, z: 80, x: 420, duration: 1.5, ease: 'power2.inOut' }, t0);
@@ -54,7 +54,7 @@ export function buildExperience(tl, ctx) {
   const c = shot('shot-macro');
   const cCam = el('div', 'cam', c);
   const gtChip = createChip(cCam, 'el-gt-card-off', 'el-gt-card-on', { scale: 2.3, className: 'macro-chip' });
-  const cText = splitText(c, COPY.experience[1], { by: 'chars', className: 'headline xl right' });
+  const cText = splitText(c, COPY.experience[1], { by: 'chars', className: 'headline xl right', maxWidth: 980 });
   cut(c, t0 + 2.5, t0 + 3.5);
   gsap.set(gtChip.root, { rotationY: -26, rotationX: 8, z: -120, x: -600 });
   tl.to(gtChip.root, { rotationY: 12, rotationX: 2, z: 40, x: -520, duration: 1.0, ease: 'power2.out' }, t0 + 2.5);
@@ -74,7 +74,7 @@ export function buildExperience(tl, ctx) {
     return tile;
   });
   const wallBand = addSweep(wall, { strength: 0.18, width: 18 });
-  const dText = splitText(d, COPY.experience[1], { by: 'chars', className: 'headline xl right over' });
+  const dText = splitText(d, COPY.experience[1], { by: 'chars', className: 'headline xl right over', maxWidth: 980 });
   cut(d, t0 + 3.5, t0 + 6.0);
   gsap.set(dText.units, { yPercent: 0 });
   gsap.set(wall, { rotationX: 52, rotationZ: -16, z: -200, x: 260, y: 40 });
@@ -107,15 +107,17 @@ export function buildExperience(tl, ctx) {
   const fCam = el('div', 'cam', f);
   const fRig = el('div', 'rig blurred', fCam);
   createScreen(fRig, ['perf-4']);
-  const fText = splitText(f, COPY.experience[2], { by: 'words', className: 'headline xxl' });
+  const fText = splitText(f, COPY.experience[2], { by: 'words', className: 'headline xxl', maxWidth: 1680 });
   const fRule = el('div', 'rule center', f);
   cut(f, t0 + 7.5, end);
   gsap.set(fRig, { rotationY: -24, z: -500, opacity: 0 });
   gsap.set(fRule, { scaleX: 0 });
   tl.to(fRig, { rotationY: 18, z: -380, opacity: 0.35, duration: 2.4, ease: 'none' }, t0 + 7.5);
+  // One word per beat; longer translations get a tighter step so the last word still lands by 33.6 s.
+  const step = Math.min(0.5, 1.0 / Math.max(1, fText.units.length - 1));
   fText.units.forEach((unit, i) => {
-    revealText(tl, [unit], t0 + 7.55 + i * 0.5, { duration: 0.9 });
-    ctx.cue('impact', t0 + 7.55 + i * 0.5, { gain: 0.35 + i * 0.12 });
+    revealText(tl, [unit], t0 + 7.55 + i * step, { duration: 0.9 });
+    ctx.cue('impact', t0 + 7.55 + i * step, { gain: 0.35 + i * 0.12 });
   });
   tl.to(fRule, { scaleX: 1, duration: 1.4, ease: EASE.inOut }, t0 + 8.2);
   ctx.atmo(tl, { level: 1, drift: -60, duration: 1.4 }, t0 + 7.5);
