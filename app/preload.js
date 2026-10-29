@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('tweaker', {
   // H1T.CC Cloudflare account: protected main-process auth/token operations.
-  h1tAccountStatus: () => ipcRenderer.invoke('tweaker:h1t-status'),
+  h1tAccountStatus: (force) => ipcRenderer.invoke('tweaker:h1t-status', force === true),
   h1tAccountLogin: (email, password) => ipcRenderer.invoke('tweaker:h1t-login', email, password),
   h1tAccountBind: (licenseId, consent) => ipcRenderer.invoke('tweaker:h1t-bind', licenseId, consent === true),
   h1tAccountLogout: () => ipcRenderer.invoke('tweaker:h1t-logout'),

@@ -516,7 +516,9 @@
     } catch { error = 'connection_unavailable'; }
     finally { busy = false; renderAll(); }
   }
-  const refresh = () => run(() => bridge.h1tAccountStatus());
+  // force: app start and "Check again". Background checks are not forced, so an unlinked PC does not burn the
+  // server's HWID probe limit while the window stays open.
+  const refresh = (force = false) => run(() => bridge.h1tAccountStatus(force));
 
   gate.addEventListener('submit', (e) => {
     const form = e.target;
@@ -535,7 +537,7 @@
     if (e.target.name === 'consent') e.target.form.querySelector('button[type=submit]').disabled = !e.target.checked || busy;
   });
   async function act(action, el) {
-    if (action === 'check') return refresh();
+    if (action === 'check') return refresh(true);
     if (action === 'logout') { closeMenu(); diagPreview = null; diagNotice = ''; diagError = ''; lastEmail = profile?.user?.email || lastEmail; return run(() => bridge.h1tAccountLogout()); }
     if (action === 'my-account') return goAccount('');
     if (action === 'licenses') return goAccount('acc-licenses');
@@ -600,7 +602,7 @@
 
   bridge.onH1tExpiry?.((st) => { licenseRevert = st; renderGate(); });
   renderAll();
-  void refresh();
+  void refresh(true);
   // Do not erase typed credentials when a periodic check refreshes the dialog.
   const canRefresh = () => !busy && !gate.contains(document.activeElement);
   setInterval(() => { if (canRefresh()) void refresh(); }, 120000);

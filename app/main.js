@@ -129,7 +129,7 @@ function createWindow() {
 const trusted = (e) => e.senderFrame && e.senderFrame.url.split('#')[0] === INDEX_URL;
 
 // H1T.CC desktop API: credentials/tokens stay in this privileged process only.
-ipcMain.handle('tweaker:h1t-status', (e) => trusted(e) ? withLicense(h1tAccount.refresh(true)) : {ok:false,error:'untrusted_sender'});
+ipcMain.handle('tweaker:h1t-status', (e, force) => trusted(e) ? withLicense(h1tAccount.refresh(force === true)) : {ok:false,error:'untrusted_sender'});
 ipcMain.handle('tweaker:h1t-login', (e,email,password) => trusted(e) ? withLicense(h1tAccount.login(email,password)) : {ok:false,error:'untrusted_sender'});
 ipcMain.handle('tweaker:h1t-bind', (e,licenseId,consent) => trusted(e) ? withLicense(h1tAccount.bind(licenseId,consent,app.getVersion())) : {ok:false,error:'untrusted_sender'});
 ipcMain.handle('tweaker:h1t-logout', (e) => trusted(e) ? withLicense(h1tAccount.logout()) : {ok:false,error:'untrusted_sender'});

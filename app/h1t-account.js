@@ -165,10 +165,14 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
     if(!token)return snapshot();
     if(!force&&cache&&Date.now()-checkedAt<MAX_AGE)return snapshot();
     if(!force&&inflight)return inflight;
-    const run=check().then(notify);inflight=run;
+    const run=check(force).then(notify);inflight=run;
     try{return await run}finally{if(inflight===run)inflight=null}
   }
-  async function check(){
+  // Every verify-device with a hash the server does not know counts against its HWID probe limit (9 per 15 min,
+  // then a 15-minute lock with "Too many distinct HWID attempts"). An unlinked PC therefore asks again only when
+  // forced (app start, "Check again", linking) and never in the background every 2 minutes.
+  let unboundProof=null;
+  async function check(force=false){
     const generation=rev;
     try{
       const r=await req('GET');
@@ -183,7 +187,8 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
       else if(!consent)cache={authorized:false,status:'device_consent_required',profile};
       else {
         const deviceProof=proof();let verified=false;
-        for(const license of profile.licenses){
+        const skip=!force&&unboundProof===deviceProof;
+        for(const license of skip?[]:profile.licenses){
           const v=await req('POST',{action:'verify-device',license_id:license.id,device_proof:deviceProof});
           if(generation!==rev)return snapshot();
           // A rate limit or server fault is not "this PC is unlinked": report it as a failed check instead.
@@ -197,6 +202,7 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
           }
         }
         if(!verified)deviceId=null;
+        unboundProof=verified?null:deviceProof;
         // A verified PC still needs the accepted data-transfer notice before the tweaker unlocks.
         cache={authorized:verified&&diag.consent,verified,status:!verified?'device_unbound':diag.consent?'active':'diagnostics_required',profile};
       }
@@ -219,7 +225,8 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
   async function bind(license_id,approved,version){
     if(bypass)return snapshot();
     if(!token||approved!==true)return {ok:false,error:'consent_required'};
-    const status=await refresh(true);
+    // The license list is enough here; bind-device itself reports an already linked PC, no extra verify needed.
+    const status=await refresh(false);
     if(!status.licenses?.some(l=>l.id===license_id))return {ok:false,error:'license_required'};
     try{
       const r=await req('POST',{action:'bind-device',license_id,device_proof:proof(),
