@@ -10,8 +10,8 @@
   URL options (append to the file path, e.g. h1t-overlay.html?lang=de&pos=br):
     lang   en | de | it                       text language (default en)
     pos    bl | br | tl | tr                  corner: bottom-left (default), bottom-right, top-left, top-right
-    show   seconds the banner stays visible   (default 24)
-    every  seconds between appearances        (default 300 = every 5 minutes; 0 = stay on screen)
+    show   seconds the banner stays visible when every > 0 (default 24)
+    every  seconds between appearances        (default 0 = stays on screen; e.g. 300 = every 5 minutes)
     delay  seconds before the first appearance (default 2)
     scale  size factor                        (default 1)
 -->
@@ -98,7 +98,7 @@ const num = (key, fallback) => (params.has(key) && !Number.isNaN(Number(params.g
 const lang = COPY[params.get('lang')] ? params.get('lang') : 'en';
 const pos = ['bl', 'br', 'tl', 'tr'].includes(params.get('pos')) ? params.get('pos') : 'bl';
 const SHOW = Math.max(8, num('show', 24));
-const EVERY = Math.max(0, num('every', 300));
+const EVERY = Math.max(0, num('every', 0));
 const DELAY = Math.max(0, num('delay', 2));
 document.documentElement.lang = lang;
 document.documentElement.style.setProperty('--scale', num('scale', 1));
@@ -119,7 +119,6 @@ const EXPO_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
 const EXPO_IN = 'cubic-bezier(0.7, 0, 0.84, 0)';
 const INOUT = 'cubic-bezier(0.65, 0, 0.35, 1)';
 
-// One appearance: in (0–1.6 s), messages rotate, out (last 0.9 s). Returns its animations.
 // Long translations shrink until they fit the card.
 function fitMessages() {
   const room = $('messages').clientWidth;
@@ -129,6 +128,11 @@ function fitMessages() {
     if (width > room) node.style.fontSize = `${Math.floor(30 * (room / width) * 10) / 10}px`;
   });
 }
+
+// One appearance: in (0–1.6 s), messages rotate, out (last 0.9 s). With stay, there is no out and the
+// light sweeps and messages repeat endlessly (period LOOP). Returns its animations.
+const SLOT = 6; // seconds per message while staying on screen; also the light sweep interval
+const LOOP = () => messages.length * SLOT;
 
 function cycle(stay) {
   const ms = (s) => s * 1000;
@@ -148,31 +152,47 @@ function cycle(stay) {
   add($('label'), [{ transform: 'translateY(120%)' }, { transform: 'none' }], 0.7, 0.8);
   add($('discord'), [{ transform: 'translateY(130%)' }, { transform: 'none' }], 0.95, 0.8);
 
-  // Light sweeps over the logo and the card, then again every 6 s.
-  for (let t = 1.1; t < (stay ? 3600 : outAt - 0.5); t += 6) {
-    add($('shine'), [{ transform: 'translateX(-130%)' }, { transform: 'translateX(130%)' }], t, 1.1, INOUT, { fill: 'none' });
-    add($('sheen'), [{ transform: 'translateX(-130%)' }, { transform: 'translateX(130%)' }], t + 0.15, 1.4, INOUT, { fill: 'none' });
-  }
+  // Light sweeps over the logo and the card every SLOT seconds.
+  const sweep = (node, start, length) => {
+    const frames = [{ transform: 'translateX(-130%)', offset: 0, easing: INOUT }, { transform: 'translateX(130%)', offset: length / SLOT },
+      { transform: 'translateX(130%)', offset: 1 }];
+    const repeats = stay ? Infinity : Math.max(1, Math.floor((outAt - 0.5 - start) / SLOT) + 1);
+    add(node, frames, start, SLOT, 'linear', { fill: 'none', iterations: repeats });
+  };
+  sweep($('shine'), 1.1, 1.1);
+  sweep($('sheen'), 1.25, 1.4);
 
-  // Messages: each slides up into view and out again; the last one stays until the exit.
+  // Messages: each slides up into view and out again. Staying: endless rotation; otherwise the last one
+  // stays until the exit. Outside its own slot a message sits below the mask (CSS), so no fill is needed.
   const first = 0.85;
-  const slot = stay ? 6 : Math.max(2.4, (outAt - first) / messages.length);
-  const rounds = stay ? 600 : 1;
-  for (let r = 0; r < rounds; r++) {
-    messages.forEach((node, i) => {
-      const at = first + (r * messages.length + i) * slot;
-      const last = !stay && i === messages.length - 1;
-      const length = last ? outAt - at : slot;
+  const count = messages.length;
+  const slot = stay ? SLOT : Math.max(2.4, (outAt - first) / count);
+  messages.forEach((node, i) => {
+    if (stay) {
+      const loop = count * slot;
+      const a = (i * slot) / loop, b = ((i + 1) * slot) / loop;
       const frames = [
-        { transform: 'translateY(110%)', offset: 0, easing: EXPO_OUT },
-        { transform: 'none', offset: 0.6 / length, easing: 'linear' },
-        ...(last ? [{ transform: 'none', offset: 1 }]
-          : [{ transform: 'none', offset: (slot - 0.4) / slot, easing: EXPO_IN }, { transform: 'translateY(-110%)', offset: 1 }]),
+        { transform: 'translateY(110%)', offset: 0 },
+        { transform: 'translateY(110%)', offset: a, easing: EXPO_OUT },
+        { transform: 'none', offset: a + 0.6 / loop },
+        { transform: 'none', offset: b - 0.4 / loop, easing: EXPO_IN },
+        { transform: 'translateY(-110%)', offset: b },
+        ...(b < 1 ? [{ transform: 'translateY(-110%)', offset: 1 }] : []),
       ];
-      // Outside its own slot a message sits below the mask (CSS), so no fill is needed.
-      add(node, frames, at, length, 'linear', { fill: last ? 'forwards' : 'none' });
-    });
-  }
+      add(node, frames, first, loop, 'linear', { fill: 'none', iterations: Infinity });
+      return;
+    }
+    const at = first + i * slot;
+    const last = i === count - 1;
+    const length = last ? outAt - at : slot;
+    const frames = [
+      { transform: 'translateY(110%)', offset: 0, easing: EXPO_OUT },
+      { transform: 'none', offset: 0.6 / length, easing: 'linear' },
+      ...(last ? [{ transform: 'none', offset: 1 }]
+        : [{ transform: 'none', offset: (slot - 0.4) / slot, easing: EXPO_IN }, { transform: 'translateY(-110%)', offset: 1 }]),
+    ];
+    add(node, frames, at, length, 'linear', { fill: last ? 'forwards' : 'none' });
+  });
 
   if (!stay) {
     // Out: content drops away, the card closes to the left, the edge light runs out.
@@ -194,10 +214,15 @@ function play() {
   if (EVERY > 0) setTimeout(() => banner.classList.remove('on'), SHOW * 1000);
 }
 
-// Export hook: one appearance, paused, seekable.
+// Export hook, paused and seekable: one appearance (prepare()) or the permanent banner (prepare(true)), whose
+// steady state repeats every loop seconds from loopStart on.
 window.__overlay = {
   duration: SHOW,
-  prepare() { fitMessages(); current.forEach((a) => a.cancel()); banner.classList.add('on'); current = cycle(false); current.forEach((a) => a.pause()); },
+  loopStart: 7,
+  get loop() { return LOOP(); },
+  prepare(stay = false) {
+    fitMessages(); current.forEach((a) => a.cancel()); banner.classList.add('on'); current = cycle(stay); current.forEach((a) => a.pause());
+  },
   seek(t) { current.forEach((a) => { a.currentTime = t * 1000; }); },
 };
 

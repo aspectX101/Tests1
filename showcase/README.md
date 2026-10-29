@@ -81,7 +81,8 @@ stays in sync when timing changes. The render writes them to `out/cues-<lang>.js
 ## Stream overlay
 
 `overlay/h1t-overlay.html` is a lower-third banner for Twitch streams: H1T.CC logo with a light sweep, rotating lines
-(EN/DE/IT) and discord.gg/h1tcc, on a transparent background. Fonts and logo are embedded, so the single file works
+(EN/DE/IT) and discord.gg/h1tcc, on a transparent background. It stays on screen permanently by default; the lines
+and light sweeps repeat endlessly. Fonts and logo are embedded, so the single file works
 offline.
 
 **OBS / Streamlabs:** add a *Browser* source → *Local file* → `h1t-overlay.html`, width 1920, height 1080.
@@ -91,13 +92,14 @@ Options go into the URL field instead (`file:///C:/…/h1t-overlay.html?lang=de&
 | --- | --- | --- |
 | `lang` | `en`, `de`, `it` | `en` |
 | `pos` | `bl`, `br`, `tl`, `tr` (corner) | `bl` |
-| `show` | seconds on screen | `24` |
-| `every` | seconds between appearances (`0` = always on) | `300` |
+| `every` | seconds between appearances; `0` = always on screen | `0` |
+| `show` | seconds on screen per appearance (only with `every`) | `24` |
 | `delay` | seconds before the first appearance | `2` |
 | `scale` | size factor | `1` |
 
 ```bash
 npm run overlay:build
 ```
-Rebuilds `overlay/h1t-overlay.html` from `overlay/template.html`. With `-- --video` it also renders one appearance per
-language as transparent WebM (`out/h1t-overlay-<lang>.webm`) for a media source or a video editor.
+Rebuilds `overlay/h1t-overlay.html` from `overlay/template.html`. With `-- --video` it also renders transparent WebM per
+language: `out/h1t-overlay-<lang>-loop.webm` (the permanent banner as a seamless 18 s loop, for a media source with
+*Loop* on) and `out/h1t-overlay-<lang>.webm` (one appearance with in and out, for video editing).
