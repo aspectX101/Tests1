@@ -29,12 +29,23 @@ const outDir = path.join(showcase, 'assets', 'ui');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'h1t-capture-'));
 const WIDTH = 1400, HEIGHT = 860, SCALE = 3;
 
+// Brand rule: the film never names other tools. Texts in the app that do are replaced while capturing
+// (only in the served copy; the app checkout is not changed). Remove entries once the app text is fixed.
+const TEXT_FIXES = [
+  ['Our alternative to Elux: sets minimum CPU performance to 100% and sleep to Never in the current plan,',
+    'Sets minimum CPU performance to 100% and sleep to Never in the current power plan,'],
+];
+const FORBIDDEN = /\b(elux|aqua)\b/i;
+
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
   const file = path.join(appDir, decodeURIComponent(new URL(req.url, 'http://x').pathname));
   if (!file.startsWith(appDir) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream' });
-  fs.createReadStream(file).pipe(res);
+  if (path.extname(file) !== '.js') return fs.createReadStream(file).pipe(res);
+  let source = fs.readFileSync(file, 'utf8');
+  for (const [from, to] of TEXT_FIXES) source = source.split(from).join(to);
+  res.end(source);
 });
 
 (async () => {
@@ -52,7 +63,16 @@ const server = http.createServer((req, res) => {
 
   const map = {};
   const wait = (ms) => page.waitForTimeout(ms);
-  const shot = async (name, settle = 1600) => { await wait(settle); await page.screenshot({ path: path.join(tmp, `${name}.png`) }); console.log('shot', name); };
+  const checkText = async (name) => {
+    const hit = (await page.evaluate(() => document.body.innerText)).match(FORBIDDEN);
+    if (hit) throw new Error(`"${hit[0]}" is visible in ${name}: add a TEXT_FIXES entry`);
+  };
+  const shot = async (name, settle = 1600) => {
+    await wait(settle);
+    await checkText(name);
+    await page.screenshot({ path: path.join(tmp, `${name}.png`) });
+    console.log('shot', name);
+  };
   const crop = async (name, selector) => { await page.locator(selector).first().screenshot({ path: path.join(tmp, `${name}.png`) }); console.log('crop', name); };
   const rect = async (key, locator) => {
     const b = await locator.boundingBox();
