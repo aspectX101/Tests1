@@ -4,6 +4,9 @@
   "description": "Windows gaming utility for FiveM and Fortnite. Languages: German, English, Italian.",
   "main": "index.js",
   "scripts": {
+    "showcase": "node showcase/scripts/serve.cjs",
+    "showcase:render": "node showcase/scripts/render.cjs",
+    "showcase:capture": "node showcase/scripts/capture-ui.cjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,5 +22,8 @@
   "homepage": "https://github.com/aspectX101/Tests1#readme",
   "dependencies": {
     "gsap": "^3.15.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
   }
 }

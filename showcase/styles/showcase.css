@@ -1,0 +1,202 @@
+/* H1T.CC showcase — black, graphite, white, silver. No colour accents. */
+
+@font-face { font-family: 'Inter Tight'; font-weight: 300; src: url('../assets/fonts/inter-tight-latin-300-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter Tight'; font-weight: 400; src: url('../assets/fonts/inter-tight-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter Tight'; font-weight: 500; src: url('../assets/fonts/inter-tight-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter Tight'; font-weight: 600; src: url('../assets/fonts/inter-tight-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter Tight'; font-weight: 700; src: url('../assets/fonts/inter-tight-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter Tight'; font-weight: 800; src: url('../assets/fonts/inter-tight-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: url('../assets/fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: url('../assets/fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2'); }
+
+:root {
+  --black: #050505;
+  --graphite: #141414;
+  --white: #ffffff;
+  --silver: #c9c9c9;
+  --silver-dim: #8a8a8a;
+  --line: rgba(255, 255, 255, 0.12);
+  --display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+#viewport { position: fixed; inset: 0; background: #000; }
+
+.stage {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  overflow: hidden; background: var(--black); color: var(--white);
+  font-family: var(--display); -webkit-font-smoothing: antialiased;
+}
+.render .stage { left: 0; top: 0; transform: none; }
+
+/* ---------- film layers ---------- */
+.dust { position: absolute; inset: 0; z-index: 84; mix-blend-mode: screen; pointer-events: none; }
+.vignette { position: absolute; inset: 0; z-index: 85; pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.62) 100%); }
+.flash { position: absolute; inset: 0; z-index: 90; background: #fff; pointer-events: none; }
+.grain { position: absolute; inset: 0; z-index: 95; mix-blend-mode: overlay; opacity: 0.32; pointer-events: none; }
+
+/* ---------- scene + camera ---------- */
+.scene { position: absolute; inset: 0; perspective: 1600px; perspective-origin: 50% 48%; }
+.cam { position: absolute; inset: 0; transform-style: preserve-3d; }
+.rig {
+  position: absolute; left: 50%; top: 50%; width: 1400px; height: 860px; margin: -430px 0 0 -700px;
+  transform-style: preserve-3d;
+}
+
+/* ---------- typography ---------- */
+.split { display: block; }
+.split .word { display: inline-block; white-space: nowrap; }
+.split .mask { display: inline-block; overflow: hidden; vertical-align: top; padding: 0.04em 0.02em 0.1em; margin: -0.04em -0.02em -0.1em; }
+.split .unit { display: inline-block; will-change: transform; }
+.split .space { display: inline-block; width: 0.26em; }
+
+.headline { font-family: var(--display); font-weight: 700; letter-spacing: -0.038em; line-height: 0.98; }
+.headline .unit {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f1f1 40%, #a9a9a9 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.headline.xxl { font-size: 124px; }
+.headline.xl { font-size: 128px; }
+.headline.lg { font-size: 82px; letter-spacing: -0.035em; line-height: 1.02; }
+.headline.md { font-size: 62px; letter-spacing: -0.03em; }
+
+.mono-label {
+  font-family: var(--mono); font-weight: 500; font-size: 16px; letter-spacing: 0.34em;
+  text-transform: uppercase; color: var(--silver-dim);
+}
+
+.wordmark { font-family: var(--display); font-weight: 600; font-size: 30px; letter-spacing: 0.42em; color: var(--white); text-indent: 0.42em; }
+.wordmark.small { font-size: 22px; color: var(--silver); }
+
+.rule { height: 1px; width: 100%; max-width: 440px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.75), transparent); transform-origin: left center; }
+
+/* ---------- light ---------- */
+.sweep-box { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 65; mix-blend-mode: screen; }
+.sweep-box.masked {
+  -webkit-mask-image: var(--mask); mask-image: var(--mask);
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+}
+.sweep-band {
+  position: absolute; top: -20%; bottom: -20%; left: 0; width: 100%;
+  background: linear-gradient(105deg, transparent calc(50% - var(--width) / 2), rgba(255, 255, 255, var(--strength)) 50%, transparent calc(50% + var(--width) / 2));
+}
+.streak {
+  position: absolute; left: 0; right: 0; height: 2px; margin-top: -1px; z-index: 80; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85) 30%, #fff 50%, rgba(255, 255, 255, 0.85) 70%, transparent);
+  box-shadow: 0 0 26px 5px rgba(255, 255, 255, 0.3);
+}
+
+/* ---------- logo ---------- */
+.logo-box { position: absolute; left: 50%; width: 640px; height: 306px; margin-left: -320px; }
+.logo-img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.glitch-ghost { mix-blend-mode: screen; filter: brightness(1.7) contrast(1.2); }
+.logo-halo {
+  position: absolute; left: 50%; width: 1200px; height: 640px; margin-left: -600px; pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.13), transparent 62%);
+}
+
+/* ---------- the app window ---------- */
+.screen {
+  position: relative; border-radius: 14px; overflow: hidden; background: #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 60px 140px rgba(0, 0, 0, 0.9), 0 0 160px rgba(255, 255, 255, 0.035);
+}
+.screen-view { position: absolute; inset: 0; transform-origin: 62% 66%; }
+.screen-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
+.screen-pulses { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
+.pulse {
+  position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.9); box-shadow: 0 0 18px rgba(255, 255, 255, 0.35), inset 0 0 12px rgba(255, 255, 255, 0.2);
+}
+.cursor { position: absolute; left: 0; top: 0; width: 26px; height: 26px; z-index: 60; transform-origin: 20% 10%; }
+.cursor svg { width: 100%; height: 100%; fill: #fff; stroke: #000; stroke-width: 1.3; stroke-linejoin: round;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6)); }
+.screen-shade { position: absolute; inset: 0; z-index: 70; background: #000; pointer-events: none; }
+
+.chip {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%; border-radius: 12px; overflow: hidden; background: #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 40px 90px rgba(0, 0, 0, 0.95), 0 0 80px rgba(255, 255, 255, 0.05);
+}
+.chip-img { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- scene 1 ---------- */
+.slit-line {
+  position: absolute; left: 50%; top: 40%; width: 780px; height: 2px; margin: -1px 0 0 -390px;
+  background: linear-gradient(90deg, transparent, #fff 32%, #fff 68%, transparent);
+  box-shadow: 0 0 34px 6px rgba(255, 255, 255, 0.24);
+}
+.intro-logo { top: calc(40% - 153px); }
+.intro .logo-halo { top: calc(40% - 320px); }
+.intro-title { position: absolute; left: 0; right: 0; top: 60%; text-align: center; }
+.intro-title .tagline { margin-top: 30px; font-family: var(--display); font-weight: 700; font-size: 64px; letter-spacing: -0.03em; }
+.intro-title .tagline .unit {
+  background: linear-gradient(180deg, #fff 0%, #ececec 45%, #9c9c9c 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ---------- scene 2 ---------- */
+.reveal-text { position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; text-align: center; z-index: 20; }
+.reveal-text .mono-label { margin-bottom: 30px; }
+.floor-glow {
+  position: absolute; left: 50%; top: 80%; width: 1700px; height: 340px; margin-left: -850px;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.075), transparent 66%);
+}
+
+/* ---------- scene 3 ---------- */
+.feature { position: absolute; inset: 0; }
+.feature-rig { scale: 0.84; margin-left: -360px; }
+.feature.mirrored .feature-rig { margin-left: -1010px; }
+.feature-text { position: absolute; left: 128px; top: 50%; translate: 0 -50%; width: 680px; z-index: 20; }
+.feature.mirrored .feature-text { left: auto; right: 96px; width: 600px; }
+.feature .counter i { display: inline-block; width: 44px; height: 1px; background: #4a4a4a; vertical-align: middle; margin: 0 14px; }
+.feature-label { margin: 30px 0 22px; color: var(--silver); }
+.feature .rule { margin-top: 38px; }
+.feature .chip { translate: 0 0; margin: 130px 0 0 -200px; }
+.feature.mirrored .chip { translate: -100% 0; margin: 130px 0 0 200px; }
+.feature .chip.wide { margin: 250px 0 0 -330px; }
+
+/* ---------- scene 4 ---------- */
+.shot { position: absolute; inset: 0; perspective: 1500px; }
+.macro {
+  position: absolute; left: 50%; top: 50%; width: 244px; height: 826px; margin: -413px 0 0 -122px;
+  border-radius: 14px; overflow: hidden; background: #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 50px 120px rgba(0, 0, 0, 0.9);
+}
+.macro-img { width: 100%; height: 100%; display: block; }
+.shot .headline { position: absolute; top: 50%; translate: 0 -50%; z-index: 10; filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.85)); }
+.shot .headline.left { left: 130px; }
+.shot .headline.right { right: 130px; text-align: right; }
+.shot .headline.xxl { left: 0; right: 0; text-align: center; }
+.wall {
+  position: absolute; left: 50%; top: 50%; width: 1820px; height: 1139px; margin: -570px 0 0 -910px;
+  display: grid; grid-template-columns: repeat(3, 588px); gap: 28px; transform-style: preserve-3d;
+}
+.wall-tile { position: relative; width: 588px; height: 361px; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 30px 70px rgba(0, 0, 0, 0.85); }
+.wall-img { width: 100%; height: 100%; display: block; }
+.rig.blurred .screen { filter: blur(14px); }
+.rule.center { position: absolute; left: 50%; top: 61%; width: 560px; margin-left: -280px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent); transform-origin: center; }
+
+/* ---------- scene 5 ---------- */
+.finale-logo { top: calc(37% - 153px); }
+.finale .logo-halo { top: calc(37% - 320px); }
+.finale-text { position: absolute; left: 0; right: 0; top: 59%; text-align: center; }
+.finale-text .wordmark { margin-bottom: 28px; }
+.finale-text .call { margin-top: 36px; color: var(--silver); font-size: 18px; letter-spacing: 0.5em; text-indent: 0.5em; }
+.discord {
+  display: inline-flex; align-items: center; gap: 14px; margin-top: 30px; padding: 14px 28px 14px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 999px; background: rgba(255, 255, 255, 0.03);
+  font-family: var(--mono); font-weight: 500; font-size: 24px; letter-spacing: 0.06em; color: var(--white);
+}
+.discord .dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 12px rgba(255, 255, 255, 0.8); }
+
+/* ---------- preview controls ---------- */
+.progress { position: fixed; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255, 255, 255, 0.08); cursor: pointer; z-index: 10; }
+.progress i { display: block; height: 100%; background: #fff; transform-origin: left; transform: scaleX(0); }
+.hint { position: fixed; left: 0; right: 0; bottom: 16px; text-align: center; z-index: 10;
+  font: 500 12px var(--mono); letter-spacing: 0.12em; color: #666; transition: opacity 0.6s; }
+.hint.hide { opacity: 0; }
+.render .progress, .render .hint { display: none; }
+.boot-error { position: fixed; inset: 20px; color: #fff; font: 13px var(--mono); white-space: pre-wrap; z-index: 100; }
