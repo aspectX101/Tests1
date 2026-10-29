@@ -2,7 +2,7 @@
 
 The Optimierung / Optimization / Ottimizzazione tab contains 40 screenshot-derived entries plus the existing High performance plan. The full application catalog has 49 entries: 47 implemented settings/presets and two informational, disabled cards. Optional components may be unavailable on a particular PC. All names, descriptions and new error codes are provided in German, English and Italian.
 
-The user authorized our own definitions rather than a clone of the pictured utility. The UND.CC performance preset changes the active plan's AC minimum processor state to 100% and sleep timeout to Never; it does not install an Elux/Ultimate plan. Battery indices are preserved. The multimedia latency option uses documented SystemResponsiveness=10, not an unused custom task. The No-lazy-mode alternative enables the real MMCSS service. Consumer suggestions are disabled without suppressing WUDF driver logs. Prefetch configuration and SysMain service control are separate.
+All definitions are our own. Tweak texts never name other tools or products (enforced by tests/catalog-texts.test.cjs). The H1T.CC performance preset changes the active plan's AC minimum processor state to 100% and sleep timeout to Never; it does not install a separate power plan. Battery indices are preserved. The multimedia latency option uses documented SystemResponsiveness=10, not an unused custom task. The MMCSS option enables the real MMCSS service. Consumer suggestions are disabled without suppressing WUDF driver logs. Prefetch configuration and SysMain service control are separate.
 
 `Legacy Games FPS keys` and `IO realtime worker priority` remain visible but cannot be applied: these labels do not identify supported universal Windows controls. No fake FPS settings, ignored SFIO/GPU-priority fields, or arbitrary real-time process priorities are created. Microsoft documents some MMCSS fields as unused. Settings such as TDR, svchost grouping, service shutdowns and scheduling experiments are high risk and require individual confirmation. TDR is a driver-debug setting, not a performance fix; Microsoft advises end users not to manipulate it.
 
@@ -12,7 +12,7 @@ The authoritative field definitions are in `OptimizationCatalog.json` and the or
 
 | ID | Concrete behavior | Risk |
 |---|---|---|
-| `windows.power.profile` | Our alternative to Elux: sets minimum CPU performance to 100% and sleep to Never in the current plan, on AC power only. More heat, power and fan noise; no FPS promise. | medium |
+| `windows.power.profile` | Sets minimum CPU performance to 100% and sleep to Never in the current plan, on AC power only. More heat, power and fan noise; no FPS promise. | medium |
 | `windows.cpu.unpark` | Sets minimum unparked cores to 100% in the current AC power plan. Can increase heat and power use and hurt hybrid/X3D scheduling. | high |
 | `windows.sync.off` | Disables Windows settings synchronization by policy. Does not modify cloud files. Privacy option, not an FPS tweak. | medium |
 | `windows.explorer.startup` | Sets the classic Explorer startup delay to 0 ms. More simultaneous load at sign-in; behavior depends on Windows version and startup application. | medium |
@@ -37,7 +37,7 @@ The authoritative field definitions are in `OptimizationCatalog.json` and the or
 | `windows.legacy.fps` | No universal Windows feature has this name. No ineffective FPS keys are created. Specific games need individual compatibility settings. | high |
 | `windows.io.realtime` | No supported global Windows switch. Real-time priority can starve system work; this card therefore changes no settings. | high |
 | `windows.close.faster` | Sets HungAppTimeout to 3000 ms and WaitToKillAppTimeout to 5000 ms. May interrupt saving at sign-out. Does not force automatic termination; menu delay is separate. | high |
-| `windows.mmcss.on` | Our alternative to no-lazy-mode: sets MMCSS to Automatic and starts it. Does not alter undocumented scheduler keys. Usually already active. | medium |
+| `windows.mmcss.on` | Sets the MMCSS service to Automatic and starts it. Does not alter undocumented scheduler keys. Usually already active. | medium |
 | `windows.assistance.off` | Disables solicited Windows Remote Assistance. Remote Desktop and third-party remote tools are separate. Not an FPS tweak. | medium |
 | `windows.autoplay.off` | Disables AutoPlay for all drive types for this user. Drives remain accessible. | low |
 | `windows.tooltip.fast` | Sets MouseHoverTime to 100 ms for classic hover events. Apps with custom tooltips may ignore it. Does not reduce keyboard input latency. | low |

@@ -3,9 +3,9 @@
   const catalog = [
   {
     "description": {
-      "en": "Our alternative to Elux: sets minimum CPU performance to 100% and sleep to Never in the current plan, on AC power only. More heat, power and fan noise; no FPS promise.",
-      "de": "Eigenes Profil statt Elux: setzt im aktiven Energieplan die minimale CPU-Leistung auf 100% und Standby auf Nie, nur am Netzteil. Mehr Verbrauch, Hitze und Luefter; kein FPS-Versprechen.",
-      "it": "Alternativa a Elux: CPU minima al 100% e sospensione Mai nel piano attivo, solo con alimentazione di rete. Piu consumi, calore e rumore; nessuna promessa FPS."
+      "en": "Sets minimum CPU performance to 100% and sleep to Never in the current plan, on AC power only. More heat, power and fan noise; no FPS promise.",
+      "de": "Setzt im aktiven Energieplan die minimale CPU-Leistung auf 100% und Standby auf Nie, nur am Netzteil. Mehr Verbrauch, Hitze und Luefter; kein FPS-Versprechen.",
+      "it": "Imposta la CPU minima al 100% e sospensione Mai nel piano attivo, solo con alimentazione di rete. Piu consumi, calore e rumore; nessuna promessa FPS."
     },
     "bulkSafe": false,
     "id": "windows.power.profile",
@@ -530,9 +530,9 @@
   },
   {
     "description": {
-      "en": "Our alternative to no-lazy-mode: sets MMCSS to Automatic and starts it. Does not alter undocumented scheduler keys. Usually already active.",
-      "de": "Eigene Alternative zu No-lazy-mode: stellt MMCSS auf Automatisch und startet ihn. Veraendert keine undokumentierten Scheduler-Schluessel. Meist bereits aktiv.",
-      "it": "Alternativa a no-lazy-mode: imposta MMCSS su Automatico e lo avvia. Non modifica chiavi scheduler non documentate. Di solito gia attivo."
+      "en": "Sets the MMCSS service to Automatic and starts it. Does not alter undocumented scheduler keys. Usually already active.",
+      "de": "Stellt den MMCSS-Dienst auf Automatisch und startet ihn. Veraendert keine undokumentierten Scheduler-Schluessel. Meist bereits aktiv.",
+      "it": "Imposta il servizio MMCSS su Automatico e lo avvia. Non modifica chiavi scheduler non documentate. Di solito gia attivo."
     },
     "bulkSafe": false,
     "id": "windows.mmcss.on",
