@@ -59,3 +59,21 @@ test('display page renders truthful preferences and hardware limitations in ever
  }
  context.state.mode='mock';assert.doesNotMatch(context.renderDisplays(),/data-display="max"/);
 });
+
+test('display page never uses Get-ItemPropertyValue (throws on a missing value in Windows PowerShell 5.1)',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const src=fs.readFileSync(path.join(__dirname,'..','Displays.ps1'),'utf8');
+ assert.doesNotMatch(src,/^[^#\r\n]*Get-ItemPropertyValue/m); // comments may mention it
+ assert.match(src,/\$mpo=Get-DisplayRegistryValue 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Dwm' 'OverlayTestMode'/);
+});
+
+test('Windows PowerShell: missing display registry values read as not set instead of failing',{skip:process.platform!=='win32'},()=>{
+ const {execFileSync}=require('node:child_process'),path=require('node:path');
+ const script=`. '${path.join(__dirname,'..','Displays.ps1').replace(/'/g,"''")}'; $ErrorActionPreference='Stop'
+$missing=Get-DisplayRegistryValue 'HKEY_CURRENT_USER\\Software\\H1T-Test-Missing-Key' 'OverlayTestMode'
+$noValue=Get-DisplayRegistryValue 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion' 'H1T-No-Such-Value'
+$present=Get-DisplayRegistryValue 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion' 'CurrentBuild'
+"missing=$($null -eq $missing) novalue=$($null -eq $noValue) present=$([bool]$present)"`;
+ const out=execFileSync('powershell.exe',['-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command',script],{encoding:'utf8',windowsHide:true,timeout:60000}).trim();
+ assert.equal(out,'missing=True novalue=True present=True');
+});

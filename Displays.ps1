@@ -1,4 +1,10 @@
 # Display actions are separate from game resolution settings.
+# Registry value or $null when the key or value does not exist. Get-ItemPropertyValue throws on a missing value
+# even with -ErrorAction SilentlyContinue in Windows PowerShell 5.1, which broke the whole display page on PCs
+# where OverlayTestMode/HwSchMode were never set (the Windows default).
+function Get-DisplayRegistryValue([string]$Key,[string]$Name) {
+    try { return [Microsoft.Win32.Registry]::GetValue($Key,$Name,$null) } catch { return $null }
+}
 function Invoke-Displays {
     param([string]$Action,[string]$LayoutJson,[string]$Extra,[string]$Lang='de')
     Add-Type -AssemblyName System.Windows.Forms
@@ -74,7 +80,7 @@ function Invoke-Displays {
         return @{ok=$true;restartRequired=$true}
     }
     if($Action -ne 'display-list') {throw 'invalid_action'}
-    $mpo=Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\Dwm' -Name 'OverlayTestMode' -ErrorAction SilentlyContinue
-    $hags=Get-ItemPropertyValue -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' -Name 'HwSchMode' -ErrorAction SilentlyContinue
+    $mpo=Get-DisplayRegistryValue 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Dwm' 'OverlayTestMode'
+    $hags=Get-DisplayRegistryValue 'HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' 'HwSchMode'
     return @{ok=$true;displays=@($displays | ForEach-Object {@{id=$_.id;name=$_.name;primary=$_.primary;x=$_.x;y=$_.y;width=$_.width;height=$_.height;hz=$_.hz;maxHz=$_.maxHz}});mpoOff=($mpo -eq 5);mpoCanRestore=($mpoBackup.Count -gt 0);hagsPreference=if($hags -eq 2){'on'}elseif($hags -eq 1){'off'}else{'default'};hagsConfigurable=([Environment]::OSVersion.Version.Build -ge 19041);hagsCanRestore=($hagsBackup.Count -gt 0)}
 }
