@@ -260,7 +260,6 @@ ipcMain.handle('tweaker:create-shortcut', (e, where) => {
 ipcMain.handle('tweaker:update-state', (e) => (trusted(e) ? updater.getState() : null));
 ipcMain.on('tweaker:update-check', (e) => trusted(e) && updater.check());
 ipcMain.on('tweaker:update-install', (e) => trusted(e) && updater.install());
-ipcMain.on('tweaker:update-log', (e) => trusted(e) && updater.openLog());
 ipcMain.on('tweaker:update-page', (e) => trusted(e) && updater.openReleases());
 // Mod importieren: Datei oder Ordner im Windows-Dialog wählen, dann ans Backend geben.
 ipcMain.handle('tweaker:mod-import', async (e, category, kind) => {

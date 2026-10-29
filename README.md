@@ -36,7 +36,8 @@ Sie fordert beim Start Adminrechte an. Kein Installer: einfach die Exe irgendwo 
 
 `app/updater.js` fragt beim Start, beim Öffnen der Einstellungen und alle 2 Stunden die GitHub-API nach dem neuesten
 Release, lädt `UNDCC-Tweaker-<version>.exe` neben die laufende Exe, prüft Größe und SHA-256 und ersetzt die Exe beim
-Neustart („Jetzt neu starten“) oder beim Beenden. Protokoll: Einstellungen → Update-Hilfe → Protokoll öffnen.
+Neustart („Jetzt neu starten“) oder beim Beenden. Protokolle (`%APPDATA%\UND.CC Tweaker\logs`) sind in der App nicht
+erreichbar; für den Support stecken sie im Support-Bericht.
 
 **Rollback (ab Updates, die 1.0.18 installiert):** Beim Austausch bleibt die laufende Exe als
 `%APPDATA%\UND.CC Tweaker\previous\H1T.CC-Tweaker-previous.exe` erhalten (`previous.json`). Endet die neue Version zweimal,

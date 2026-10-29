@@ -22,7 +22,7 @@ const bridge = window.tweaker || {
   onSafeMode() {},
   version: async () => 'dev',
   updateState: async () => ({ status: 'unsupported' }),
-  onUpdate() {}, checkUpdate() {}, installUpdate() {}, openUpdateLog() {}, openReleasePage() {},
+  onUpdate() {}, checkUpdate() {}, installUpdate() {}, openReleasePage() {},
   appLocation: async () => ({ exe: 'C:\\Users\\Spieler\\Downloads\\UNDCC-Tweaker-0.6.0.exe' }),
   showExe: async () => ({ ok: true }),
   createShortcut: async (where) => ({ ok: true, path: where }),
@@ -812,7 +812,7 @@ function renderSettings() {
     ${card('account', s.account, esc(s.accountDesc), `<div class="set-actions"><button class="pill dark" data-go="account">${esc(s.details)}</button></div>`)}
     ${card('support', s.support, esc(s.supportDesc), `<div class="set-actions"><button class="pill dark" id="set-support">${esc(s.open)}</button><button class="pill dark" id="set-report">${esc(s.report)}</button></div>`)}
     ${card('sys', s.sys, '', `${row(s.cpu, info.cpu)}${row(s.gpu, info.gpu)}${row(s.ram, info.ramGB ? `${info.ramGB} GB` : '')}${row(s.os, info.os)}`)}
-    ${card('update', t().updates, `${esc(PRODUCT_VERSION)} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}${u.status === 'unsupported' ? '' : `<button class="pill dark" id="up-log">${t().upLog}</button>`}</div>`)}
+    ${card('update', t().updates, `${esc(PRODUCT_VERSION)} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}</div>`)}
     ${card('halloween', s.halloween, esc(season ? s.halloweenDesc : s.halloweenOff), `<div class="set-row"><span>${esc(hw?.isOn() ? s.on : s.off)}</span><label class="switch"><input type="checkbox" id="set-halloween" ${hw?.isOn() ? 'checked' : ''} ${season ? '' : 'disabled'} aria-label="${esc(s.halloween)}"><span></span></label></div>`)}
     ${card('spotify', s.spotify, esc(s.spotifyDesc), `<div class="set-row"><span>${esc(s.spotifyShow)}</span><label class="switch"><input type="checkbox" id="set-spotify" ${spotifyOn ? 'checked' : ''} aria-label="${esc(s.spotifyShow)}"><span></span></label></div><div class="set-actions"><button class="pill dark" id="set-spotify-open">${esc(s.spotifyOpen)}</button></div>`)}
     ${card('boot', s.boot, esc(s.bootDesc), `<div class="set-row"><span>${esc(s.bootSound)}</span><label class="switch"><input type="checkbox" id="set-bootsound" ${bootSound ? 'checked' : ''} aria-label="${esc(s.bootSound)}"><span></span></label></div>`)}
@@ -1418,7 +1418,6 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'res-reset') resApply(true);
   else if (el.id === 'up-check') bridge.checkUpdate();
   else if (el.id === 'up-install') bridge.installUpdate();
-  else if (el.id === 'up-log') bridge.openUpdateLog();
   else if (el.id === 'set-report') supportExport();
   else if (el.id === 'drift-apply') driftApply();
   else if (el.id === 'drift-hide') { store.set('driftHidden', window.H1tDrift.key(state.drift)); state.drift = []; render(); }

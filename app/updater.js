@@ -295,9 +295,7 @@ function install() {
   app.quit();
 }
 
-// Öffnet den Protokoll-Ordner: updater.log (Suche/Download) und updater-swap.log (Austausch der Exe).
-const openLog = () => logFile && shell.openPath(path.dirname(logFile));
 const openReleases = () => shell.openExternal(RELEASES_URL);
 
-module.exports = { start, check, install, rollback, openLog, openReleases, getState: () => state,
+module.exports = { start, check, install, rollback, openReleases, getState: () => state,
   _test: { newer, pickAsset, swapTarget, download, rateLimitText, SWAP_SCRIPT, useExe(file) { exePath = file; }, pending: () => pending } };

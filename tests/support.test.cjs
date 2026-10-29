@@ -118,3 +118,11 @@ test('the window error reporter loads before every other script', () => {
   const first = html.match(/<script src="([^"]+)"/)[1];
   assert.equal(first, 'error-report.js');
 });
+
+test('the app offers no way to open log files (only the support report carries them)', () => {
+  const read = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+  assert.doesNotMatch(read('app/renderer/app.js'), /up-log|openUpdateLog/);
+  assert.doesNotMatch(read('app/preload.js'), /update-log|openUpdateLog/);
+  assert.doesNotMatch(read('app/main.js'), /update-log|openLog\(/);
+  assert.doesNotMatch(read('app/updater.js'), /openLog/);
+});

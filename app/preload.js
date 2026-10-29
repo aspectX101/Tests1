@@ -40,7 +40,6 @@ contextBridge.exposeInMainWorld('tweaker', {
   onUpdate: (cb) => ipcRenderer.on('tweaker:update', (_e, st) => cb(st)),
   checkUpdate: () => ipcRenderer.send('tweaker:update-check'),
   installUpdate: () => ipcRenderer.send('tweaker:update-install'),
-  openUpdateLog: () => ipcRenderer.send('tweaker:update-log'),
   openReleasePage: () => ipcRenderer.send('tweaker:update-page'),
   // Portable Exe: Speicherort, im Explorer zeigen, Verknüpfung ('desktop' | 'startmenu')
   appLocation: () => ipcRenderer.invoke('tweaker:app-location'),
