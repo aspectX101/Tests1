@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('tweaker', {
   // what: 'safemode' | 'backup' (mit backupId) – speichert per Dialog als JSON
   exportJson: (what, backupId) => ipcRenderer.invoke('tweaker:export', what, backupId),
   uiReady: () => ipcRenderer.send('tweaker:ui-ready'),
+  reportError: (info) => ipcRenderer.send('tweaker:ui-error', info),
   // kind: 'file' | 'folder' – öffnet den Windows-Dialog im Hauptprozess
   importMod: (category, kind) => ipcRenderer.invoke('tweaker:mod-import', category, kind),
   openDebloatTarget: (id) => ipcRenderer.invoke('tweaker:debloat-target', id),

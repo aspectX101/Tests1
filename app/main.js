@@ -45,6 +45,13 @@ if (relaunched) {
 
 // Support log: every failed backend request lands in logs\backend.log (code, technical detail, where it happened).
 const support = require('./support').createSupport({ logDir: path.join(app.getPath('userData'), 'logs'), version: app.getVersion() });
+// Everything else that can go wrong lands in the same log: failed window requests of any channel, script errors
+// in the window, main-process exceptions (monitor only, Electron's own handling stays), crashed child processes.
+require('./support').wrapIpc(ipcMain, support);
+process.on('uncaughtExceptionMonitor', (err, origin) => support.event({ kind: 'main-exception', origin, error: err?.message || String(err), stack: err?.stack }));
+process.on('unhandledRejection', (reason) => support.event({ kind: 'main-rejection', error: reason?.message || String(reason), stack: reason?.stack }));
+app.on('render-process-gone', (_e, _wc, d) => support.event({ kind: 'renderer-gone', reason: d?.reason, exitCode: d?.exitCode }));
+app.on('child-process-gone', (_e, d) => { if (d?.reason !== 'clean-exit') support.event({ kind: 'process-gone', type: d?.type, reason: d?.reason, exitCode: d?.exitCode, name: d?.name }); });
 {
   const raw = backend;
   backend = async (req) => {
@@ -297,6 +304,10 @@ ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 const health = app.isPackaged && !useMock && !expiryCheckOnly && process.env.PORTABLE_EXECUTABLE_FILE
   ? require('./update-health').createUpdateHealth({ dir: app.getPath('userData'), version: app.getVersion() }) : null;
 ipcMain.on('tweaker:ui-ready', (e) => { if (trusted(e)) health?.healthy(); });
+ipcMain.on('tweaker:ui-error', (e, info) => {
+  if (!trusted(e) || !info || typeof info !== 'object') return;
+  support.event({ kind: 'ui-error', message: info.message, source: info.source, line: Number(info.line) || undefined, stack: info.stack });
+});
 app.on('will-quit', () => health?.closed());
 
 if (!relaunched) app.whenReady().then(async () => {

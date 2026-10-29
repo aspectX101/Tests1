@@ -1,6 +1,8 @@
 'use strict';
 // Support log and report. Every failed backend request (and every failed item of a batch, e.g. a restore) is
-// appended to logs\backend.log with its stable code, the technical detail and where it happened. "Export support
+// appended to logs\backend.log with its stable code, the technical detail and where it happened. The same log
+// takes app events (event()): failed requests of any other window channel (account, Spotify, colour, dialogs),
+// script errors in the window, main-process exceptions and crashed renderer/GPU processes. "Export support
 // report" writes one JSON file with system info, license/update state, the active backups and the recent logs,
 // so a customer can send a single file instead of screenshots. User names in paths are replaced with %USERNAME%.
 const os = require('node:os');
@@ -9,6 +11,9 @@ const fs = require('node:fs');
 
 const LOG_MAX = 512 * 1024;
 const LOG_KEEP = 400;
+// The same event is written at most this often, so a repeating error cannot flood the log.
+const EVENT_REPEAT = 10 * 60000;
+const cut = (v, n) => String(v ?? '').slice(0, n);
 
 function createRedactor({ home = os.homedir(), user = os.userInfo?.().username } = {}) {
   const rules = [];
@@ -27,6 +32,18 @@ function createSupport({ logDir, version = '0.0.0', now = () => new Date(), reda
       if (fs.existsSync(file) && fs.statSync(file).size > LOG_MAX) fs.renameSync(file, file + '.old');
       fs.appendFileSync(file, JSON.stringify({ t: now().toISOString(), v: version, ...entry }, (k, v) => (typeof v === 'string' ? redact(v) : v)) + '\n');
     } catch { /* the log only helps support, it never breaks a request */ }
+  }
+
+  const seen = new Map();
+  // App event: { kind, ...fields }. Long texts are cut, repeats within EVENT_REPEAT are dropped.
+  function event(entry = {}) {
+    const clean = {};
+    for (const [k, v] of Object.entries(entry)) if (v !== undefined && v !== null && v !== '') clean[k] = typeof v === 'number' ? v : cut(v, k === 'stack' ? 1200 : 400);
+    const key = [clean.kind, clean.channel, clean.error, clean.message, clean.reason].join('|');
+    const t = now().getTime(), last = seen.get(key);
+    if (last !== undefined && t - last < EVENT_REPEAT) return;
+    seen.set(key, t);
+    write(clean);
   }
 
   // Called with every backend request and its answer (or the thrown error).
@@ -67,7 +84,25 @@ function createSupport({ logDir, version = '0.0.0', now = () => new Date(), reda
     };
   }
 
-  return { record, report, entries, file };
+  return { record, event, report, entries, file };
 }
 
-module.exports = { createSupport, createRedactor };
+// Logs failed answers of every ipcMain.handle channel registered after this call. 'tweaker:call' is skipped
+// (the backend wrapper logs it with more detail); routine refusals are not errors.
+function wrapIpc(ipcMain, support, { skip = ['tweaker:call'], quiet = ['untrusted_sender', 'license_required'] } = {}) {
+  const original = ipcMain.handle.bind(ipcMain);
+  ipcMain.handle = (channel, fn) => original(channel, async (e, ...args) => {
+    try {
+      const res = await fn(e, ...args);
+      if (!skip.includes(channel) && res && typeof res === 'object' && res.ok === false && !quiet.includes(res.error)) {
+        support.event({ kind: 'ipc', channel, error: res.error || 'unknown', detail: res.detail });
+      }
+      return res;
+    } catch (err) {
+      if (!skip.includes(channel)) support.event({ kind: 'ipc', channel, error: err?.message || String(err), stack: err?.stack });
+      throw err;
+    }
+  });
+}
+
+module.exports = { createSupport, createRedactor, wrapIpc };

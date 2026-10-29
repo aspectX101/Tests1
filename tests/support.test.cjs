@@ -76,3 +76,45 @@ test('the log rotates instead of growing without limit', () => {
     assert.equal(t.s.entries().length, 1);
   } finally { t.done(); }
 });
+
+test('app events: long texts are cut, the same event is written once per 10 minutes', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'h1t-support-'));
+  let t = Date.parse('2026-10-29T10:00:00Z');
+  const s = createSupport({ logDir: dir, version: '1.0.20', now: () => new Date(t), redact });
+  try {
+    s.event({ kind: 'ui-error', message: 'x is not a function', source: 'app.js', line: 12, stack: 'S'.repeat(5000) });
+    s.event({ kind: 'ui-error', message: 'x is not a function', source: 'app.js', line: 12 });
+    t += 11 * 60000;
+    s.event({ kind: 'ui-error', message: 'x is not a function' });
+    s.event({ kind: 'renderer-gone', reason: 'crashed', exitCode: -1073741819 });
+    const e = s.entries();
+    assert.equal(e.length, 3);
+    assert.equal(e[0].stack.length, 1200);
+    assert.equal(e[0].line, 12);
+    assert.equal(e[2].exitCode, -1073741819);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('every window channel logs failed answers and exceptions; routine refusals and the backend channel are skipped', async () => {
+  const { wrapIpc } = require('../app/support');
+  const events = [], handlers = {};
+  const ipcMain = { handle: (ch, fn) => { handlers[ch] = fn; } };
+  wrapIpc(ipcMain, { event: (x) => events.push(x) });
+  ipcMain.handle('tweaker:h1t-login', async () => ({ ok: false, error: 'invalid_credentials' }));
+  ipcMain.handle('tweaker:spotify', async () => ({ ok: false, error: 'license_required' }));
+  ipcMain.handle('tweaker:call', async () => ({ ok: false, error: 'admin_required' }));
+  ipcMain.handle('tweaker:color', async () => { throw new Error('display_api_failed'); });
+  ipcMain.handle('tweaker:mode', async () => 'powershell');
+  assert.equal((await handlers['tweaker:h1t-login']()).error, 'invalid_credentials');
+  await handlers['tweaker:spotify']();
+  await handlers['tweaker:call']();
+  await assert.rejects(handlers['tweaker:color'](), /display_api_failed/);
+  assert.equal(await handlers['tweaker:mode'](), 'powershell');
+  assert.deepEqual(events.map((x) => `${x.channel}:${x.error}`), ['tweaker:h1t-login:invalid_credentials', 'tweaker:color:display_api_failed']);
+});
+
+test('the window error reporter loads before every other script', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../app/renderer/index.html'), 'utf8');
+  const first = html.match(/<script src="([^"]+)"/)[1];
+  assert.equal(first, 'error-report.js');
+});

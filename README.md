@@ -44,7 +44,7 @@ bevor ihre Oberfläche bereit ist (normales Schließen zählt nicht), tauscht `a
 gesicherte Exe zurück und markiert die Version als schlecht; der Updater bietet sie nicht mehr an, eine neuere schon.
 
 **Support-Bericht:** Jede fehlgeschlagene Backend-Anfrage landet mit Code, technischem Detail (`detail`, z. B. Windows-Fehlercode)
-und Fundstelle (`at`) in `logs\backend.log` (`app/support.js`, Benutzernamen werden ersetzt). Einstellungen → Support →
+und Fundstelle (`at`) in `logs\backend.log` (`app/support.js`, Benutzernamen werden ersetzt); ab 1.0.20 auch Skriptfehler im Fenster (`app/renderer/error-report.js`), fehlgeschlagene Anfragen aller anderen Kanäle (Account, Spotify, Farbe, Dialoge), Fehler im Hauptprozess und abgestürzte Renderer-/GPU-Prozesse – gleiche Fehler höchstens alle 10 Minuten. Einstellungen → Support →
 „Support-Bericht exportieren“ speichert Systeminfos, Lizenz-/Update-Stand, aktive Sicherungen und die letzten Protokolle als JSON.
 
 **Von Windows zurückgesetzte Tweaks:** Steht eine Sicherung auf „aktiv“, der Tweak ist aber nicht mehr angewendet (meist nach
