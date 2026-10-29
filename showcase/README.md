@@ -23,7 +23,7 @@ npm run showcase:render
 Frame-accurate export into `showcase/out/`:
 - `h1t-showcase-<lang>.mp4` — H.264 1080p60 with sound (AAC 320 kbps, −14 LUFS)
 - `h1t-showcase-<lang>-silent.mp4` — the same picture without sound
-- `h1t-sound-design.wav` — the synthesised sound on its own (48 kHz stereo)
+- `h1t-sound-design-<lang>.wav` — the synthesised sound on its own (48 kHz stereo)
 
 Options: `--lang en|de|it` (default en), `--music song.mp3` (the song plays from its first note under the cue effects
 instead of the synthesised score; leading silence is cut, it fades out with the logo), `--shutter 2` (motion-blur sub-frames per frame; 1 = off, 4 = smoother), `--from 12 --to 25` (a section),
@@ -62,7 +62,7 @@ so both always show the same thing.
 | 35–45 s | Final reveal | Logo out of darkness with light sweeps, UNLOCK YOUR SYSTEM'S POTENTIAL. / JOIN THE MOVEMENT. / discord.gg/h1tcc, fade to black |
 
 Sound cues (impacts, whooshes, UI clicks, shimmer on light sweeps) are registered by the scenes themselves, so the sound
-stays in sync when timing changes. The render writes them to `out/cues.json` — useful as a hit list for a sound designer.
+stays in sync when timing changes. The render writes them to `out/cues-<lang>.json` — useful as a hit list for a sound designer.
 
 ## Content rules
 

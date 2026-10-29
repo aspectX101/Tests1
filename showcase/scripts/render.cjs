@@ -3,8 +3,8 @@
 //
 // Seeks the GSAP timeline to every frame in headless Chromium and pipes the frames into ffmpeg.
 // Motion blur: each output frame averages --shutter sub-frames (default 2 = 180° shutter).
-// Sound: writes the animation's audio cues to out/cues.json, builds the original sound design
-// with scripts/make-audio.py (Python 3 + NumPy) into out/h1t-sound-design.wav and muxes it in at -14 LUFS.
+// Sound: writes the animation's audio cues to out/cues-<lang>.json, builds the original sound design
+// with scripts/make-audio.py (Python 3 + NumPy) into out/h1t-sound-design-<lang>.wav and muxes it in at -14 LUFS.
 // With --music <file>, the song plays from its first note under the cue effects (no synthesised bed).
 //
 // Usage: node showcase/scripts/render.cjs [--lang en|de|it] [--music song.mp3] [--shutter 2] [--from 0] [--to 45]
@@ -84,9 +84,9 @@ function run(cmd, cmdArgs) {
   console.log(`Video: ${path.relative(process.cwd(), silent)}`);
 
   if (!withAudio) return;
-  const cuesFile = path.join(outDir, 'cues.json');
+  const cuesFile = path.join(outDir, `cues-${lang}.json`);
   fs.writeFileSync(cuesFile, `${JSON.stringify({ duration: info.duration, cues: info.cues }, null, 2)}\n`);
-  const wav = path.join(outDir, music ? 'h1t-sfx-only.wav' : 'h1t-sound-design.wav');
+  const wav = path.join(outDir, `${music ? 'h1t-sfx-only' : 'h1t-sound-design'}-${lang}.wav`);
   const py = spawnSync('python3', [path.join(__dirname, 'make-audio.py'), cuesFile, wav, ...(music ? ['--sfx-only'] : [])], { stdio: 'inherit' });
   if (py.status !== 0) { console.warn('Sound design skipped (needs Python 3 with NumPy). The silent video is ready.'); return; }
   const final = path.join(outDir, `h1t-showcase-${lang}.mp4`);
