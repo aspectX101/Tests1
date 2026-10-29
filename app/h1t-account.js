@@ -2,6 +2,7 @@
 // H1T.CC Cloudflare desktop authentication. Token never reaches renderer.
 const path = require('node:path');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { safeStorage } = require('electron');
@@ -99,16 +100,33 @@ function createH1tAccount(app,{bypass=false,collect=diagnostics.collectSystem}={
       }
     }catch{}
   }
-  function proof() {
-    if(process.platform!=='win32')throw Error('windows_device_required');
+  function machineGuid() {
     let result;try{
       result=execFileSync('reg.exe',['query','HKLM\\SOFTWARE\\Microsoft\\Cryptography','/v','MachineGuid'],
         {encoding:'utf8',timeout:3000,windowsHide:true,maxBuffer:4096});
     }catch{throw Error('device_id_unavailable')}
     const raw=result.match(/MachineGuid\s+REG_SZ\s+(\S+)/i)?.[1];
     if(!raw||raw.length>128)throw Error('device_id_unavailable');
+    return raw.toLowerCase();
+  }
+  // The MachineGuid as first seen on this PC, kept encrypted for this Windows user (DPAPI via safeStorage).
+  // Temporary HWID spoofers change the MachineGuid on every boot; the license binding must not follow them.
+  // A copied file cannot be decrypted on another PC or Windows account, so it never moves a license.
+  // Same digest input as before, so existing bindings stay valid without a reset.
+  const seedFile=path.join(app.getPath('userData'),'h1t-device.bin');
+  function deviceSeed() {
+    const enc=safeStorage.isEncryptionAvailable();
+    if(enc){
+      try{const v=safeStorage.decryptString(fsSync.readFileSync(seedFile)).trim().toLowerCase();if(/^[0-9a-z{}-]{8,128}$/.test(v))return v;}catch{}
+    }
+    const live=machineGuid();
+    if(enc){try{fsSync.mkdirSync(path.dirname(seedFile),{recursive:true});fsSync.writeFileSync(seedFile,safeStorage.encryptString(live),{mode:0o600});}catch{}}
+    return live;
+  }
+  function proof() {
+    if(process.platform!=='win32')throw Error('windows_device_required');
     // Only a one-way digest crosses the network, after explicit consent.
-    return crypto.createHash('sha256').update('H1T.CC device binding v1\n'+raw.toLowerCase()).digest('hex');
+    return crypto.createHash('sha256').update('H1T.CC device binding v1\n'+deviceSeed()).digest('hex');
   }
   // Avatars are fetched here and handed to the renderer as a data URI (CSP: img-src 'self' data:).
   async function loadAvatar(url){

@@ -11,6 +11,7 @@ This branch integrates the Electron Windows Tweaker with the existing Cloudflare
 
 ## Device enrollment
 - Explicit consent is required before reading the Windows `MachineGuid` installation identifier.
+- Since 1.0.25 the `MachineGuid` is read once and kept in `%APPDATA%\UND.CC Tweaker\h1t-device.bin`, encrypted with safeStorage (DPAPI, this Windows user on this PC). The device proof stays `sha256('H1T.CC device binding v1\n' + guid)`, so existing bindings are unchanged, but tools that change the `MachineGuid` on every boot (temporary HWID spoofers) no longer change it. A copied file cannot be decrypted elsewhere and is replaced by that PC's own value. A Windows reinstall still needs a binding reset by support.
 - The Windows installation identifier is immediately hashed locally (SHA-256 with an application-specific domain prefix); the original value is never transmitted or stored by the Tweaker.
 - The server then HMACs the pseudonymous proof using its **private** `H1T_HWID_PEPPER`. It stores only that HMAC in `h1t_devices`.
 - This is an installation identifier, **not an immutable physical HWID**; reinstalling Windows can change it. Device resets must be handled in the admin console.
