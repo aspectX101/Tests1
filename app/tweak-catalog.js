@@ -213,9 +213,9 @@
   },
   {
     "description": {
-      "en": "Sets EnablePrefetcher to 0. Can slow application launches; no established gaming benefit on modern Windows. SysMain is a separate switch.",
-      "de": "Setzt EnablePrefetcher auf 0. Kann Programmstarts verlangsamen; auf modernen Windows-Versionen kein belegter Gaming-Vorteil. SysMain ist ein separater Schalter.",
-      "it": "Imposta EnablePrefetcher a 0. Puo rallentare avvio app; nessun beneficio gaming dimostrato su Windows moderno. SysMain ha un comando separato."
+      "en": "Sets EnablePrefetcher to 0. Can slow application launches; no established gaming benefit on modern Windows. SysMain is a separate switch. Some FiveM servers treat this as a bypass during screenshares.",
+      "de": "Setzt EnablePrefetcher auf 0. Kann Programmstarts verlangsamen; auf modernen Windows-Versionen kein belegter Gaming-Vorteil. SysMain ist ein separater Schalter. Manche FiveM-Server werten das beim Screenshare als Umgehung.",
+      "it": "Imposta EnablePrefetcher a 0. Puo rallentare avvio app; nessun beneficio gaming dimostrato su Windows moderno. SysMain ha un comando separato. Alcuni server FiveM lo considerano un tentativo di elusione durante gli screenshare."
     },
     "bulkSafe": false,
     "id": "windows.prefetch.off",
@@ -234,9 +234,9 @@
   },
   {
     "description": {
-      "en": "Stops and disables SysMain. For diagnosing high disk activity; app launches may slow down. SafeMode blocks service shutdowns.",
-      "de": "Stoppt und deaktiviert SysMain. Nur zur Diagnose hoher Datentraegerlast; Programmstarts koennen langsamer werden. SafeMode blockiert Dienstabschaltungen.",
-      "it": "Arresta e disabilita SysMain. Per diagnosticare attivita disco elevata; avvio app potenzialmente piu lento. SafeMode impedisce arresti dei servizi."
+      "en": "Stops and disables SysMain. For diagnosing high disk activity; app launches may slow down. SafeMode blocks service shutdowns. Some FiveM servers treat this as a bypass during screenshares.",
+      "de": "Stoppt und deaktiviert SysMain. Nur zur Diagnose hoher Datentraegerlast; Programmstarts koennen langsamer werden. SafeMode blockiert Dienstabschaltungen. Manche FiveM-Server werten das beim Screenshare als Umgehung.",
+      "it": "Arresta e disabilita SysMain. Per diagnosticare attivita disco elevata; avvio app potenzialmente piu lento. SafeMode impedisce arresti dei servizi. Alcuni server FiveM lo considerano un tentativo di elusione durante gli screenshare."
     },
     "bulkSafe": false,
     "id": "windows.service.sysmain.off",
@@ -255,9 +255,9 @@
   },
   {
     "description": {
-      "en": "Stops the Connected User Experiences and Telemetry service. Does not disable all telemetry or promise more FPS. Blocked by SafeMode.",
-      "de": "Stoppt den Dienst fuer verbundene Benutzererfahrungen und Diagnosedaten. Kein vollstaendiger Telemetrie-Stopp und kein FPS-Versprechen. SafeMode blockiert dies.",
-      "it": "Arresta il servizio esperienze utente connesse e telemetria. Non disattiva tutta la telemetria e non promette FPS. Bloccato da SafeMode."
+      "en": "Stops the Connected User Experiences and Telemetry service. Does not disable all telemetry or promise more FPS. Blocked by SafeMode. Some FiveM servers treat this as a bypass during screenshares.",
+      "de": "Stoppt den Dienst fuer verbundene Benutzererfahrungen und Diagnosedaten. Kein vollstaendiger Telemetrie-Stopp und kein FPS-Versprechen. SafeMode blockiert dies. Manche FiveM-Server werten das beim Screenshare als Umgehung.",
+      "it": "Arresta il servizio esperienze utente connesse e telemetria. Non disattiva tutta la telemetria e non promette FPS. Bloccato da SafeMode. Alcuni server FiveM lo considerano un tentativo di elusione durante gli screenshare."
     },
     "bulkSafe": false,
     "id": "windows.service.diagtrack.off",
@@ -614,9 +614,9 @@
   },
   {
     "description": {
-      "en": "Disables activity feed, collection and upload by policy. Does not delete existing history. Legacy Timeline features depend on Windows version.",
-      "de": "Deaktiviert Aktivitaetsfeed, Sammlung und Upload per Richtlinie. Loescht keine bestehende Historie. Veraltete Timeline-Funktionen sind versionsabhaengig.",
-      "it": "Disattiva feed, raccolta e invio attivita tramite criterio. Non elimina la cronologia esistente. Le funzioni Timeline dipendono da Windows."
+      "en": "Disables activity feed, collection and upload by policy. Does not delete existing history. Legacy Timeline features depend on Windows version. Some FiveM servers treat this as a bypass during screenshares.",
+      "de": "Deaktiviert Aktivitaetsfeed, Sammlung und Upload per Richtlinie. Loescht keine bestehende Historie. Veraltete Timeline-Funktionen sind versionsabhaengig. Manche FiveM-Server werten das beim Screenshare als Umgehung.",
+      "it": "Disattiva feed, raccolta e invio attivita tramite criterio. Non elimina la cronologia esistente. Le funzioni Timeline dipendono da Windows. Alcuni server FiveM lo considerano un tentativo di elusione durante gli screenshare."
     },
     "bulkSafe": false,
     "id": "windows.activity.off",

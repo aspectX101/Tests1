@@ -20,3 +20,15 @@ test('no tweak name or description mentions another tool, in any language', () =
     assert.doesNotMatch(fs.readFileSync(path.join(root, file), 'utf8'), /\belux\b|no-?lazy-?mode/i, file);
   }
 });
+
+test('tweaks that FiveM screenshares check carry the warning, and configs never include them', () => {
+  const ui = require('../app/tweak-catalog.js');
+  const notes = { de: /FiveM-Server.*Screenshare/, en: /FiveM servers.*screenshares/, it: /server FiveM.*screenshare/ };
+  for (const id of ['windows.service.sysmain.off', 'windows.service.diagtrack.off', 'windows.prefetch.off', 'windows.activity.off']) {
+    const tw = ui.find((x) => x.id === id);
+    for (const lang of ['de', 'en', 'it']) assert.match(tw.description[lang], notes[lang], `${id}.${lang}`);
+  }
+  const app = fs.readFileSync(path.join(root, 'app/renderer/app.js'), 'utf8');
+  assert.match(app, /const profileCandidates[\s\S]{0,400}!neverInConfig\(tw\)/);
+  assert.match(app, /neverInConfig = \(tw\) => NEVER_IN_CONFIG\.has\(tw\.id\) \|\| catOf\(tw\) === 'services'/);
+});

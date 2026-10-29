@@ -39,7 +39,11 @@ if (relaunched) {
   backend = require(helper).createBackendClient(app, {
     getLanguage: () => currentLang,
     onSafeModeReport: (report) => { lastSafeMode = { report }; sendToUi('tweaker:safemode', lastSafeMode); },
-    onSafeModeError: (err) => { lastSafeMode = { error: err.message }; sendToUi('tweaker:safemode', lastSafeMode); },
+    onSafeModeError: (err) => {
+      lastSafeMode = { error: err.message, ...(err.detail ? { detail: err.detail } : {}) };
+      sendToUi('tweaker:safemode', lastSafeMode);
+      support?.event({ kind: 'safemode-monitor', error: err.message, detail: err.detail });
+    },
   });
 }
 

@@ -172,10 +172,14 @@ const NAV_GROUPS = [
 ];
 // Nie automatisch im Paket ändern (Backend-Vorgabe): Bedienungshilfen, Aufnahme, Audio, Prozess-Priorität, Debloat.
 const NEVER_BULK = new Set(['keyboard.filterkeys.off', 'keyboard.stickykeys.off', 'keyboard.togglekeys.off', 'keyboard.mousekeys.off', 'windows.capture.off', 'windows.audio.ducking.off', 'fivem.priority.high']);
+// Never in a config: Windows services, Prefetch and activity history (FiveM screenshares check them; users switch
+// them one by one with the warning in the description).
+const NEVER_IN_CONFIG = new Set(['windows.prefetch.off', 'windows.activity.off']);
+const neverInConfig = (tw) => NEVER_IN_CONFIG.has(tw.id) || catOf(tw) === 'services';
 const PROFILE_TIERS = [['safe', ['low']], ['aggressive', ['low', 'medium']], ['hardcore', ['low', 'medium', 'high']]];
 const profileCandidates = (tier) => {
   const risks = PROFILE_TIERS.find(([k]) => k === tier)[1];
-  return state.tweaks.filter((tw) => tw.available !== false && risks.includes(tw.risk) && !NEVER_BULK.has(tw.id) && catOf(tw) !== 'debloat');
+  return state.tweaks.filter((tw) => tw.available !== false && risks.includes(tw.risk) && !NEVER_BULK.has(tw.id) && catOf(tw) !== 'debloat' && !neverInConfig(tw));
 };
 // Sammelaktion nur für Tweaks, die das Backend ausdrücklich freigibt (nie Bedienungshilfen).
 const bulkOk = (tw) => tw.available !== false && tw.risk === 'low' && tw.bulkSafe === true;
@@ -567,7 +571,7 @@ function renderSafeMode() {
         <div class="sm-title"><b>${esc(t().smHealth[r.health] || r.health)}</b>
           <span>${r.enabled ? t().smOn : t().smOff} · ${esc(t().smChecked(fmtDate(r.checkedUtc)))}</span></div>
       </div>
-      ${state.safeMonitorError ? `<div class="sm-alert">${t().smMonitorError}: ${esc(errorText(state.safeMonitorError))}</div>` : ''}
+      ${state.safeMonitorError ? `<div class="sm-alert">${t().smMonitorError}: ${esc(errorText(state.safeMonitorError, state.safeMonitorDetail))}</div>` : ''}
       ${unsupported ? `<div class="sm-alert">${t().smUnsupported}</div>` : ''}
       ${failed.length ? `<div class="sm-alert"><b>${t().smRepairFailed(failed.length)}</b>
         ${failed.map((x) => `<div>${esc(x.name)}: ${esc(errorText(x.error))}</div>`).join('')}</div>` : ''}
@@ -1519,7 +1523,7 @@ bridge.onUsage((u) => {
 function onSafeMode(msg) {
   if (!msg) return;
   if (msg.report) { state.safe = msg.report; state.safeMonitorError = null; }
-  if (msg.error) state.safeMonitorError = msg.error;
+  if (msg.error) { state.safeMonitorError = msg.error; state.safeMonitorDetail = msg.detail || ''; }
   if (state.route.page === 'safemode' && !state.safeBusy) render(); else renderStatus();
 }
 bridge.onSafeMode(onSafeMode);
