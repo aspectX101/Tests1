@@ -1550,7 +1550,8 @@ let splashDone = false;
 function hideSplash() {
   if (splashDone) return;
   splashDone = true;
-  const wait = Math.max(0, SPLASH_MIN - (performance.now() - splashStart));
+  // the canvas boots start after their warm-up frames: count from their real start so the end matches the animation
+  const wait = Math.max(0, SPLASH_MIN - (performance.now() - (window.H1T_BOOT_START ?? splashStart)));
   setTimeout(() => {
     const el = $('#splash');
     el?.classList.add('out');
@@ -1560,7 +1561,8 @@ function hideSplash() {
     // The UI is usable: tells the update health check this version starts fine (no rollback).
     try { bridge.uiReady?.(); } catch { /* browser preview */ }
     // the code eye (eye-boot.js) opens slowly onto the app through the splash, so it stays a little longer
-    setTimeout(() => el?.remove(), document.documentElement.classList.contains('eye-boot') ? 1900 : 800);
+    const cls = document.documentElement.classList;
+    setTimeout(() => el?.remove(), cls.contains('eye-boot') ? 1900 : cls.contains('hw-boot') ? 1000 : 800);
   }, wait);
 }
 setTimeout(hideSplash, Math.max(7000, SPLASH_MIN + 1500));

@@ -4,22 +4,27 @@
 //   2 Sheet      – the sheet is blown off, flutters towards the camera and wipes away to the next scene
 //   3 Pumpkin    – a carved jack-o'-lantern lights up in the dark, the camera rushes into its grin
 //   4 Witch      – a white flash bursts into smoke, a witch on her broom crosses the full moon with a swarm of bats
-//   5 Logo       – the Halloween H1T mark condenses out of purple fog: bats burst out, the drips run, lightning strikes,
-//                  "HAPPY HALLOWEEN, NAME"
+//   5 Logo       – a line of light opens on the Halloween H1T mark in grey fog: bats burst out, lightning strikes, a light
+//                  sweep runs over it, the drips run, "HAPPY HALLOWEEN, NAME"
+// Palette as in a classic Halloween intro: black, grey fog and cold white light; only the pumpkin, the embers and the
+// burning logo glow orange.
+// After 8 s the logo scene keeps living (embers, drips, fog, a light sweep every few seconds) until the tweaker has loaded; when the splash gets .out,
+// a ring of light opens from the logo and cuts the canvas away onto the app (exit, EXIT s).
 // Everything is drawn in code (no video); heavy parts are pre-rendered into sprites once and each frame only
 // composes them. A cheap two-step bloom gives the glow. Active only when <html> has .hw-boot.
 (() => {
   if (!document.documentElement.classList.contains('hw-boot')) return;
   const splash = document.getElementById('splash');
   if (!splash) return;
-  const W = 1280, H = 720, DUR = 8.0;
+  const W = 1280, H = 720, DUR = 8.0, EXIT = 0.85;
   const T_BLOW = 2.2, T_CUT = 2.5, T_COVER = 3.0, T_PUMPKIN = 3.12, T_RUSH = 4.25, T_FLASH = 4.62, T_WITCH = 4.95, T_LOGO = 6.15, T_BOLT = 7.0;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canvas = document.createElement('canvas');
   canvas.className = 'hw-boot-canvas';
   canvas.setAttribute('aria-hidden', 'true');
   splash.append(canvas);
-  const ctx = canvas.getContext('2d', { alpha: false });
+  // alpha: the exit cuts a hole through the canvas onto the app underneath
+  const ctx = canvas.getContext('2d', { alpha: true });
 
   // ---------- helpers ----------
   const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -58,17 +63,17 @@
     grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.8)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
   });
   const BAT_PATH = new Path2D('M32 11c-1.6-3.6-5-5.4-5-5.4s.9 3.4-.7 5.4c-2.8-2.6-8.3-3.6-12-1.8 2.8 1 4.6 2.9 4.6 5.6-3.7-1.8-8.3-.9-12 1.8 5.5 0 8.3 1.8 10.1 4.6 2.8-1.8 6.4-2.7 9.2-1.8 1.8.9 3.7 2.7 5.8 5.4 2.1-2.7 4-4.5 5.8-5.4 2.8-.9 6.4 0 9.2 1.8 1.8-2.8 4.6-4.6 10.1-4.6-3.7-2.7-8.3-3.6-12-1.8 0-2.7 1.8-4.6 4.6-5.6-3.7-1.8-9.2-.8-12 1.8-1.6-2-.7-5.4-.7-5.4S33.6 7.4 32 11Z');
-  // eight wing positions (one flap as a vertical squash), black with a faint violet rim and glowing eyes
+  // eight wing positions (one flap as a vertical squash), black with a faint silver rim and glowing eyes
   const bats = [1, .9, .72, .5, .34, .5, .72, .9].map((k) => sprite(140, 70, (g) => {
     g.translate(70, 35); g.scale(2, 2 * k); g.translate(-32, -15);
-    g.shadowColor = 'rgba(170,120,255,.7)'; g.shadowBlur = 5; g.fillStyle = '#040206'; g.fill(BAT_PATH);
+    g.shadowColor = 'rgba(210,215,225,.55)'; g.shadowBlur = 5; g.fillStyle = '#040206'; g.fill(BAT_PATH);
     g.shadowBlur = 0; g.fillStyle = '#ff8a2a'; g.beginPath(); g.arc(30.4, 12.4, .9, 0, TAU); g.arc(33.6, 12.4, .9, 0, TAU); g.fill();
   }));
   // a full moon with craters and a halo
   const MOON_R = 175;
   const moon = sprite(MOON_R * 4, MOON_R * 4, (g) => {
     const c = MOON_R * 2;
-    let grd = g.createRadialGradient(c, c, MOON_R * .9, c, c, MOON_R * 2); grd.addColorStop(0, 'rgba(255,214,160,.32)'); grd.addColorStop(1, 'rgba(180,120,255,0)');
+    let grd = g.createRadialGradient(c, c, MOON_R * .9, c, c, MOON_R * 2); grd.addColorStop(0, 'rgba(255,214,160,.32)'); grd.addColorStop(1, 'rgba(200,205,220,0)');
     g.fillStyle = grd; g.fillRect(0, 0, c * 2, c * 2);
     grd = g.createRadialGradient(c - MOON_R * .3, c - MOON_R * .35, MOON_R * .1, c, c, MOON_R); grd.addColorStop(0, '#fff6dc'); grd.addColorStop(.6, '#f1d9a2'); grd.addColorStop(1, '#c79a5c');
     g.fillStyle = grd; g.beginPath(); g.arc(c, c, MOON_R, 0, TAU); g.fill();
@@ -82,7 +87,7 @@
     const main = jag(820, -10, 700, 330, 18, 60), forks = [jag(...main[7], 900, 200, 7, 30), jag(...main[11], 610, 250, 6, 26)];
     const line = (pts, w) => { g.lineWidth = w; g.beginPath(); g.moveTo(...pts[0]); for (const q of pts.slice(1)) g.lineTo(...q); g.stroke(); };
     g.lineJoin = g.lineCap = 'round';
-    g.shadowColor = 'rgba(190,150,255,1)'; g.shadowBlur = 30; g.strokeStyle = 'rgba(200,170,255,.6)'; line(main, 10); forks.forEach((f) => line(f, 5));
+    g.shadowColor = 'rgba(210,220,255,1)'; g.shadowBlur = 30; g.strokeStyle = 'rgba(225,232,255,.6)'; line(main, 10); forks.forEach((f) => line(f, 5));
     g.shadowBlur = 8; g.strokeStyle = '#fbf7ff'; line(main, 2.8); forks.forEach((f) => line(f, 1.4));
   });
   // A cobweb anchored in the top-left corner; the other corners use mirrored copies.
@@ -170,7 +175,7 @@
 
   // ---------- logo: the Halloween edition of the H1T mark, cut out on transparency (build/cut-logos.cjs) ----------
   const logoImg = new Image();
-  let logo = null, logoSoft = null;
+  let logo = null, logoSoft = null, logoSheen = null;
   const SOFT_PAD = 60;
   // the drips hang below this row of the cut-out (letters end there); their tips drop droplets
   const DRIP_Y = 326;
@@ -184,11 +189,14 @@
       dripTips = dripTips.sort((p, q) => q[1] - p[1]).slice(0, 6);
     } catch { dripTips = []; }
     // the glow copy gets a margin so the blur is not clipped into a visible rectangle
-    logoSoft = sprite(logoImg.width + SOFT_PAD * 2, logoImg.height + SOFT_PAD * 2, (g) => { g.filter = 'blur(16px) brightness(1.4)'; g.drawImage(logoImg, SOFT_PAD, SOFT_PAD); });
+    logoSoft = sprite(logoImg.width + SOFT_PAD * 2, logoImg.height + SOFT_PAD * 2, (g) => { g.filter = 'blur(18px) brightness(1.4)'; g.drawImage(logoImg, SOFT_PAD, SOFT_PAD); });
+    // scratch canvas for the light sweep, masked to the logo every frame it runs
+    logoSheen = sprite(logoImg.width, logoImg.height, () => {});
     warm([logo, logoSoft]);
   };
   logoImg.src = 'assets/h1t-logo-halloween.png';
-  const purpleSmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'sepia(1) saturate(3) hue-rotate(225deg) brightness(.9)'; g.drawImage(c, 0, 0); }));
+  // cool grey night fog (scene 1–2 ground, scene 4–5)
+  const greySmoke = smoke.map((c) => sprite(c.width, c.height, (g) => { g.filter = 'grayscale(1) brightness(1.05)'; g.drawImage(c, 0, 0); }));
 
   // ---------- particles (state-free: position is a function of time) ----------
   const motes = Array.from({ length: 90 }, () => ({ x: rnd() * W, y: rnd() * H, v: 6 + rnd() * 16, d: (rnd() - .5) * 20, s: .2 + rnd() * .5, p: rnd() * TAU }));
@@ -219,9 +227,9 @@
     if (a <= 0) return;
     const R = 62, path = ghostPath(R, t * 3.2, flare);
     ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
-    ctx.shadowColor = 'rgba(215,195,255,.55)'; ctx.shadowBlur = 36;
+    ctx.shadowColor = 'rgba(235,240,250,.55)'; ctx.shadowBlur = 36;
     let grd = ctx.createRadialGradient(-R * .35, -R * .45, 4, 0, 90, 420);
-    grd.addColorStop(0, '#ffffff'); grd.addColorStop(.4, '#ebe8f2'); grd.addColorStop(1, '#9b93b4');
+    grd.addColorStop(0, '#ffffff'); grd.addColorStop(.4, '#ececef'); grd.addColorStop(1, '#9c9ea8');
     ctx.fillStyle = grd; ctx.fill(path); ctx.shadowBlur = 0;
     ctx.clip(path);
     // soft folds hanging from the head and shading towards the sides
@@ -234,7 +242,7 @@
       }
     }
     grd = ctx.createLinearGradient(-R * 1.6, 0, R * 1.6, 0);
-    grd.addColorStop(0, 'rgba(30,10,60,.34)'); grd.addColorStop(.3, 'rgba(30,10,60,0)'); grd.addColorStop(.7, 'rgba(30,10,60,0)'); grd.addColorStop(1, 'rgba(30,10,60,.38)');
+    grd.addColorStop(0, 'rgba(18,18,26,.34)'); grd.addColorStop(.3, 'rgba(18,18,26,0)'); grd.addColorStop(.7, 'rgba(18,18,26,0)'); grd.addColorStop(1, 'rgba(18,18,26,.38)');
     ctx.fillStyle = grd; ctx.fillRect(-R * 4, -R * 2, R * 8, 460);
     // the hem catches light from below
     grd = ctx.createLinearGradient(0, 200, 0, 290); grd.addColorStop(0, 'rgba(255,255,255,0)'); grd.addColorStop(1, 'rgba(255,255,255,.4)');
@@ -296,7 +304,7 @@
       const k0 = q.j * (NU + 1) + q.i, k1 = k0 + NU + 1;
       const cl = ((shade[k0] + shade[k1]) / 2) | 0, cr = ((shade[k0 + 1] + shade[k1 + 1]) / 2) | 0;
       const g = cc.createLinearGradient((p00[0] + p01[0]) / 2, (p00[1] + p01[1]) / 2, (p10[0] + p11[0]) / 2, (p10[1] + p11[1]) / 2);
-      g.addColorStop(0, `rgb(${cl * .95 | 0},${cl * .93 | 0},${cl})`); g.addColorStop(1, `rgb(${cr * .95 | 0},${cr * .93 | 0},${cr})`);
+      g.addColorStop(0, `rgb(${cl * .98 | 0},${cl * .98 | 0},${cl})`); g.addColorStop(1, `rgb(${cr * .98 | 0},${cr * .98 | 0},${cr})`);
       cc.fillStyle = cc.strokeStyle = g;
       cc.beginPath(); cc.moveTo(p00[0], p00[1]); cc.lineTo(p10[0], p10[1]); cc.lineTo(p11[0], p11[1]); cc.lineTo(p01[0], p01[1]); cc.closePath();
       cc.fill(); cc.stroke();
@@ -412,7 +420,7 @@
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
     for (const s of streaks) {
       const r0 = (s.r + u * 1.4) * 700, r1 = r0 + s.l * 700 * (.4 + u);
-      ctx.globalAlpha = u * .7; ctx.strokeStyle = '#ffc070'; ctx.lineWidth = s.w * (1 + u * 2);
+      ctx.globalAlpha = Math.min(1, u * 1.1); ctx.strokeStyle = s.w > 2.4 ? '#fff1c8' : '#ffb050'; ctx.lineWidth = s.w * (1.4 + u * 3.2);
       ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(s.a) * r0, H / 2 + Math.sin(s.a) * r0); ctx.lineTo(W / 2 + Math.cos(s.a) * r1, H / 2 + Math.sin(s.a) * r1); ctx.stroke();
     }
     ctx.restore();
@@ -420,12 +428,12 @@
 
   // ---------- scene 4: burst and skeleton ----------
   function drawFogBackdrop(t, a) {
-    const grd = ctx.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#120a20'); grd.addColorStop(1, '#06030b');
+    const grd = ctx.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#111113'); grd.addColorStop(1, '#050506');
     ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80);
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     for (const c of clouds) {
       const s = 320 * c.s, x = ((c.x + t * c.v + W + 600) % (W + 600)) - 300, y = c.y + Math.sin(t * .5 + c.p) * 14;
-      ctx.globalAlpha = c.a * a; ctx.drawImage(purpleSmoke[c.k], x - s / 2, y - s / 2, s, s * .7);
+      ctx.globalAlpha = c.a * a; ctx.drawImage(greySmoke[c.k], x - s / 2, y - s / 2, s, s * .7);
     }
     ctx.restore();
   }
@@ -433,15 +441,16 @@
     const u = t - T_FLASH; if (u < 0 || u > 1.6) return;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     // white core that tears apart into puffs
-    const core = (1 - lin(0, .4, u)) ** 2;
+    const core = (1 - lin(0, .32, u)) ** 2.4;
     if (core > 0) {
-      const r = 160 + 140 * easeOut(u / .4), grd = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, r);
-      grd.addColorStop(0, `rgba(255,255,255,${core})`); grd.addColorStop(.6, `rgba(255,255,255,${core * .9})`); grd.addColorStop(1, 'rgba(255,255,255,0)');
+      // soft and wide, no hard disc: it tears into the smoke puffs straight away
+      const r = 260 + 420 * easeOut(u / .32), grd = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, r);
+      grd.addColorStop(0, `rgba(255,255,255,${core * .7})`); grd.addColorStop(.3, `rgba(250,250,255,${core * .35})`); grd.addColorStop(1, 'rgba(240,242,250,0)');
       ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
     }
     for (const p of burstPuffs) {
       const k = easeOut(u / 1.2), d = p.d + p.v * k * 1.4, s = 200 * p.s * (1 + k);
-      ctx.globalAlpha = clamp(1 - u / .8, 0, 1) ** 1.5 * .4;
+      ctx.globalAlpha = clamp(1 - u / 1.1, 0, 1) ** 1.2 * .8;
       ctx.drawImage(whiteSmoke[p.k], W / 2 + Math.cos(p.a) * d - s / 2, H / 2 + Math.sin(p.a) * d * .7 - s / 2, s, s);
     }
     ctx.restore();
@@ -503,83 +512,122 @@
       const [bx, by] = witchPos(q), w = 70 * b.z, h = 35 * b.z;
       ctx.drawImage(bats[((t * 24 + b.f) | 0) % bats.length], bx + b.ox * (.4 + q) - w / 2, by + b.oy * (.4 + q) - h / 2 + Math.sin(t * 9 + b.f) * 6, w, h);
     }
-    // the witch: drawn into her own layer so the violet rim glow is a single blur
+    // the witch: drawn into her own layer so the rim glow is a single blur
     const [x, y] = witchPos(u), [nx, ny] = witchPos(u + .01), slope = -Math.atan2(ny - y, x - nx) * .8; // nose dips when she descends
     if (witchCanvas.width !== canvas.width || witchCanvas.height !== canvas.height) { witchCanvas.width = canvas.width; witchCanvas.height = canvas.height; }
     wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, witchCanvas.width, witchCanvas.height);
     wg.setTransform(fitS, 0, 0, fitS, fitX, fitY); wg.translate(x, y); wg.rotate(slope); wg.scale(1.35, 1.35);
     witchShape(wg, t);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (hq) { ctx.shadowColor = 'rgba(190,140,255,.75)'; ctx.shadowBlur = 10 * fitS; }
+    if (hq) { ctx.shadowColor = 'rgba(220,225,235,.6)'; ctx.shadowBlur = 10 * fitS; }
     ctx.drawImage(witchCanvas, 0, 0); ctx.restore();
   }
 
   // ---------- scene 5: logo ----------
+  // light sweep: a soft diagonal band, drawn into the logo shape only
+  function drawSheen(x0, y0, lw, lh, u, strength) {
+    if (!logoSheen || u <= 0 || u >= 1) return;
+    const g = logoSheen.getContext('2d'), w = logoSheen.width, h = logoSheen.height;
+    g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, w, h); g.drawImage(logo, 0, 0);
+    g.globalCompositeOperation = 'source-in';
+    const bx = -w * .4 + u * w * 1.8, band = g.createLinearGradient(bx - 140, 0, bx + 140, h * .35);
+    band.addColorStop(0, 'rgba(255,255,255,0)'); band.addColorStop(.5, `rgba(255,255,255,${strength})`); band.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = band; g.fillRect(0, 0, w, h);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(logoSheen, x0, y0, lw, lh); ctx.restore();
+  }
   function drawLogo(t) {
     if (!logo) return;
-    const a = ss(T_LOGO, T_LOGO + .8, t); if (a <= 0) return;
-    const sharp = ss(T_LOGO + .35, T_LOGO + 1.1, t), sc = 1.08 - .08 * easeOut(lin(T_LOGO, T_LOGO + 1.75, t));
-    const lw = 700 * sc, f = lw / logo.width, lh = logo.height * f, x0 = W / 2 - lw / 2, y0 = 345 - lh / 2;
+    const T_LINE = T_LOGO, T_OPEN = T_LOGO + .38, CY = 345;
+    const a = ss(T_LINE, T_LINE + .2, t); if (a <= 0) return;
+    const sc = 1.06 - .06 * easeOut(lin(T_OPEN, T_OPEN + 2.2, t));
+    const lw = 700 * sc, f = lw / logo.width, lh = logo.height * f, x0 = W / 2 - lw / 2, y0 = CY - lh / 2;
     ctx.save();
-    const grd = ctx.createRadialGradient(W / 2, 345, 40, W / 2, 345, 700); grd.addColorStop(0, `rgba(120,60,190,${.3 * a})`); grd.addColorStop(1, 'rgba(60,20,110,0)');
+    // warm fire-light behind the burning mark
+    const open = easeOut(lin(T_OPEN, T_OPEN + .5, t));
+    const grd = ctx.createRadialGradient(W / 2, CY, 40, W / 2, CY, 640); grd.addColorStop(0, `rgba(255,140,50,${.14 * open})`); grd.addColorStop(1, 'rgba(255,100,20,0)');
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-    // bats burst out from behind the logo
-    const bu = lin(T_LOGO + .2, T_LOGO + 1.7, t);
+    // bats burst out from behind the logo when it opens
+    const bu = lin(T_OPEN + .05, T_OPEN + 1.6, t);
     if (bu > 0 && bu < 1) for (const b of logoBats) {
       const q = Math.max(0, bu - b.d), d = 150 + q * b.v, w = 90 * b.z * (1 + q), h = 45 * b.z * (1 + q);
-      ctx.globalAlpha = clamp(q * 8, 0, 1) * (1 - ss(.7, 1, bu)); ctx.drawImage(bats[((t * 26 + b.f) | 0) % bats.length], W / 2 + Math.cos(b.a) * d - w / 2, 345 + Math.sin(b.a) * d * .7 - q * 80 - h / 2, w, h);
+      ctx.globalAlpha = clamp(q * 8, 0, 1) * (1 - ss(.7, 1, bu)); ctx.drawImage(bats[((t * 26 + b.f) | 0) % bats.length], W / 2 + Math.cos(b.a) * d - w / 2, CY + Math.sin(b.a) * d * .7 - q * 80 - h / 2, w, h);
     }
     ctx.globalAlpha = 1;
     // lightning behind the logo
     const flash = Math.exp(-(((t - T_BOLT) / .04) ** 2)) + .6 * Math.exp(-(((t - T_BOLT - .13) / .035) ** 2));
-    if (flash > .01) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = clamp(flash, 0, 1); ctx.drawImage(bolt, 0, 0); ctx.globalAlpha = clamp(flash, 0, 1) * .22; ctx.fillStyle = '#d8c8ff'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
-    // it condenses out of the smoke: a blurred copy first, then the sharp artwork
-    ctx.globalAlpha = a * (1 - sharp * .7); ctx.drawImage(logoSoft, x0 - SOFT_PAD * f, y0 - SOFT_PAD * f, logoSoft.width * f, logoSoft.height * f);
-    // the sharp mark; the drips below the letters run down slowly
-    const drip = .15 + .85 * ss(T_LOGO + .3, T_LOGO + 1.5, t) + .22 * ss(T_LOGO + 1.5, DUR, t);
-    const drawMark = () => {
-      ctx.drawImage(logo, 0, 0, logo.width, DRIP_Y, x0, y0, lw, DRIP_Y * f);
-      ctx.drawImage(logo, 0, DRIP_Y, logo.width, logo.height - DRIP_Y, x0, y0 + DRIP_Y * f, lw, (logo.height - DRIP_Y) * f * drip);
-    };
-    ctx.globalAlpha = sharp; drawMark();
-    // the glowing edges breathe, and flare up with the lightning
-    const pulse = ss(T_LOGO + 1, T_LOGO + 1.5, t) * (.12 + .08 * Math.sin(t * 5) + .04 * Math.sin(t * 13)) + .7 * clamp(flash, 0, 1);
-    if (pulse > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = clamp(pulse, 0, 1); drawMark(); }
+    if (flash > .01) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = clamp(flash, 0, 1); ctx.drawImage(bolt, 0, 0); ctx.globalAlpha = clamp(flash, 0, 1) * .18; ctx.fillStyle = '#eef2ff'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+
+    // a line of light draws across, then splits and opens the mark like a slit
+    const draw = easeOut(lin(T_LINE, T_OPEN, t)), split = open * lh * .5;
+    const lineA = a * (1 - ss(T_OPEN + .25, T_OPEN + .75, t));
+    if (lineA > 0) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = lineA;
+      const half = lw * .62 * draw;
+      for (const dy of open > 0 ? [-split - 8 * open, split + 8 * open] : [0]) {
+        const lg = ctx.createLinearGradient(W / 2 - half, 0, W / 2 + half, 0);
+        lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.3, 'rgba(255,255,255,.95)'); lg.addColorStop(.7, 'rgba(255,255,255,.95)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = lg; ctx.shadowColor = 'rgba(255,255,255,.9)'; ctx.shadowBlur = 18;
+        ctx.fillRect(W / 2 - half, CY + dy - 1.2, half * 2, 2.4);
+      }
+      ctx.restore();
+    }
+    if (open > 0) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x0 - 40, CY - split - 2, lw + 80, split * 2 + 4); ctx.clip();
+      // halo, the sharp chrome mark, and a white-hot first moment that cools down
+      ctx.globalAlpha = .45; ctx.drawImage(logoSoft, x0 - SOFT_PAD * f, y0 - SOFT_PAD * f, logoSoft.width * f, logoSoft.height * f);
+      // the drips below the letters run down slowly
+      const drip = .15 + .85 * ss(T_OPEN + .2, T_OPEN + 1.4, t) + .22 * ss(T_OPEN + 1.4, DUR, t);
+      const drawMark = () => {
+        ctx.drawImage(logo, 0, 0, logo.width, DRIP_Y, x0, y0, lw, DRIP_Y * f);
+        ctx.drawImage(logo, 0, DRIP_Y, logo.width, logo.height - DRIP_Y, x0, y0 + DRIP_Y * f, lw, (logo.height - DRIP_Y) * f * drip);
+      };
+      ctx.globalAlpha = 1; drawMark();
+      // white-hot first moment that cools down; afterwards the glowing edges breathe, and flare with the lightning
+      const hot = 1 - ss(T_OPEN, T_OPEN + 1.0, t) + .6 * clamp(flash, 0, 1)
+        + ss(T_OPEN + 1, T_OPEN + 1.5, t) * (.12 + .08 * Math.sin(t * 5) + .04 * Math.sin(t * 13));
+      if (hot > .01) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = clamp(hot, 0, 1) * .8; drawMark(); }
+      ctx.restore();
+      // droplets falling from the drip tips
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      dripTips.forEach(([dx, dy], i) => {
+        const t0 = T_OPEN + 1.2 + i * .23, period = 1.25 + i * .11, k = t < t0 ? -1 : ((t - t0) % period) / period; if (k < 0) return;
+        const px = x0 + dx * f, py = y0 + (DRIP_Y + (dy - DRIP_Y) * drip) * f + 4 + 260 * k * k, al = 1 - k;
+        const g2 = ctx.createRadialGradient(px, py, 0, px, py, 6); g2.addColorStop(0, `rgba(255,170,70,${al})`); g2.addColorStop(1, 'rgba(255,90,20,0)');
+        ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(px, py, 3.4, 5 + 6 * k, 0, 0, TAU); ctx.fill();
+      });
+      ctx.restore();
+      // light sweeps: one after the opening, then every 3.2 s while the tweaker loads
+      const first = lin(T_OPEN + .7, T_OPEN + 1.75, t);
+      drawSheen(x0, y0, lw, lh, first, .85);
+      if (t > T_OPEN + 1.75) drawSheen(x0, y0, lw, lh, ((t - T_OPEN - 1.75) % 3.2) / 1.2, .6);
+    }
     ctx.restore();
-    // droplets falling from the drip tips
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    dripTips.forEach(([dx, dy], i) => {
-      const t0 = T_LOGO + 1.45 + i * .23, period = 1.25 + i * .11, k = t < t0 ? -1 : ((t - t0) % period) / period; if (k < 0) return;
-      const px = x0 + dx * f, py = y0 + (DRIP_Y + (dy - DRIP_Y) * drip) * f + 4 + 260 * k * k, al = 1 - k;
-      const g2 = ctx.createRadialGradient(px, py, 0, px, py, 6); g2.addColorStop(0, `rgba(255,170,70,${al})`); g2.addColorStop(1, 'rgba(255,90,20,0)');
-      ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(px, py, 3.4, 5 + 6 * k, 0, 0, TAU); ctx.fill();
-    });
-    ctx.restore();
-    // HAPPY HALLOWEEN, NAME
-    const tx = ss(T_LOGO + .9, T_LOGO + 1.5, t);
+    // HAPPY HALLOWEEN, NAME — warm gold, wide tracking
+    const tx = ss(T_OPEN + .65, T_OPEN + 1.25, t);
     if (tx > 0) {
-      ctx.save(); ctx.globalAlpha = tx; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '800 18px "Segoe UI", system-ui, sans-serif';
-      ctx.shadowColor = 'rgba(255,120,20,.9)'; ctx.shadowBlur = 14; ctx.fillStyle = '#ffb35a';
-      const text = greeting(), sp = 7, widths = [...text].map((ch) => ctx.measureText(ch).width), total = widths.reduce((s2, w) => s2 + w + sp, -sp);
+      ctx.save(); ctx.globalAlpha = tx; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 17px "Segoe UI", system-ui, sans-serif';
+      ctx.shadowColor = 'rgba(255,130,30,.75)'; ctx.shadowBlur = 12; ctx.fillStyle = '#ffc27a';
+      const text = greeting(), sp = 8, widths = [...text].map((ch) => ctx.measureText(ch).width), total = widths.reduce((s2, w) => s2 + w + sp, -sp);
       let x = W / 2 - total / 2;
       [...text].forEach((ch, i) => { ctx.fillText(ch, x + widths[i] / 2, 612 + (1 - tx) * 8); x += widths[i] + sp; });
       ctx.restore();
     }
-    // purple fog drifting in front along the bottom
-    drawGroundFog(t, .5 * a);
+    // grey fog drifting in front along the bottom
+    drawGroundFog(t, .45 * a);
   }
   const logoBats = Array.from({ length: 16 }, () => ({ a: -Math.PI / 2 + (rnd() - .5) * 3.2, v: 260 + rnd() * 520, z: .45 + rnd() * .6, d: rnd() * .25, f: rnd() * 8 }));
   // "HAPPY HALLOWEEN, NAME": the signed-in account (cached from the last start, updated by the account UI)
   let bootName = '';
   try { bootName = localStorage.getItem('h1tBootName') || ''; } catch { /* no storage */ }
   const greeting = () => { const n = bootName.replace(/[^\p{L}\p{N} ._-]/gu, '').trim().slice(0, 18).toUpperCase(); return n ? `HAPPY HALLOWEEN, ${n}` : 'HAPPY HALLOWEEN'; };
-  // purple fog rolling along the ground
+  // grey fog rolling along the ground
   function drawGroundFog(t, a, lift = 0) {
     if (a <= 0) return;
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     for (const f of fog) {
       const s = 320 * f.s, x = ((f.x + t * f.v * 1.5) % (W + 500)) - 250;
-      ctx.globalAlpha = f.a * a; ctx.drawImage(purpleSmoke[f.k], x - s / 2, f.y + 40 - lift - s / 2 + Math.sin(t + f.p) * 8, s, s * .6);
+      ctx.globalAlpha = f.a * a; ctx.drawImage(greySmoke[f.k], x - s / 2, f.y + 40 - lift - s / 2 + Math.sin(t + f.p) * 8, s, s * .6);
     }
     ctx.restore();
   }
@@ -713,14 +761,14 @@
     if (t < T_PUMPKIN + .3) {
       // scene 1–2: spotlight, cobwebs, ghost, the sheet blowing at the camera
       const room = ss(.15, .9, t);
-      // purple moonlit night: dark violet sky, a cool moonbeam from above, light rising from below where the ghost comes up
-      let grd = ctx.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#0e0818'); grd.addColorStop(1, '#040208');
+      // cold moonlit night: near-black sky, a cool moonbeam from above, light rising from below where the ghost comes up
+      let grd = ctx.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#0d0d0f'); grd.addColorStop(1, '#030304');
       ctx.globalAlpha = room; ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.globalAlpha = 1;
       grd = ctx.createRadialGradient(W / 2, -60, 20, W / 2, 120, 640);
-      grd.addColorStop(0, `rgba(205,190,255,${.22 * room})`); grd.addColorStop(1, 'rgba(160,130,255,0)');
+      grd.addColorStop(0, `rgba(225,230,240,${.22 * room})`); grd.addColorStop(1, 'rgba(200,205,215,0)');
       ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
       grd = ctx.createRadialGradient(W / 2, H + 60, 10, W / 2, H, 420 * ss(.1, .6, t) + 1);
-      grd.addColorStop(0, `rgba(220,205,255,${.35 * (1 - ss(.9, 1.6, t))})`); grd.addColorStop(1, 'rgba(180,150,255,0)');
+      grd.addColorStop(0, `rgba(235,238,245,${.35 * (1 - ss(.9, 1.6, t))})`); grd.addColorStop(1, 'rgba(200,205,215,0)');
       ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
       drawGroundFog(t, room * .55);
       const webs = ss(.5, 1.4, t) * .55;
@@ -768,9 +816,9 @@
     if (t >= T_FLASH) {
       // scene 4–5: grey fog, dust, burst, skeleton, logo
       drawFogBackdrop(t, .55 + .45 * ss(T_FLASH, T_FLASH + 1, t));
-      // the grey fog turns into a purple Halloween night for the logo
+      // the fog darkens a little for the logo
       const night = ss(T_LOGO - .3, T_LOGO + .8, t) * .5;
-      if (night > 0) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = night; ctx.fillStyle = 'rgb(150,95,215)'; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.restore(); }
+      if (night > 0) { ctx.save(); ctx.globalAlpha = night; ctx.fillStyle = '#000'; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.restore(); }
       drawDust(t, (1 - .7 * ss(T_FLASH + .8, T_LOGO, t)) * ss(T_FLASH, T_FLASH + .08, t));
       drawBurst(t);
       drawMoon(t);
@@ -794,6 +842,41 @@
     const fadeIn = 1 - ss(0, .3, t);
     if (fadeIn > 0) { ctx.globalAlpha = fadeIn; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
   }
+  // Exit: a ring of light opens from the logo and the canvas is cut away behind it, revealing the tweaker.
+  let exitAt = -1;
+  function drawExit(t) {
+    if (exitAt < 0) return false;
+    const e = clamp((t - exitAt) / EXIT, 0, 1);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (e >= 1) { ctx.clearRect(0, 0, canvas.width, canvas.height); return true; }
+    const cx = fitX + W / 2 * fitS, cy = fitY + 345 * fitS, far = Math.hypot(Math.max(cx, canvas.width - cx), Math.max(cy, canvas.height - cy));
+    // a short flare on the logo first, then the opening accelerates
+    const flare = ss(0, .18, e) * (1 - ss(.25, .55, e));
+    if (flare > 0) {
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 420 * fitS);
+      g.addColorStop(0, `rgba(255,255,255,${.6 * flare})`); g.addColorStop(.4, `rgba(210,218,235,${.3 * flare})`); g.addColorStop(1, 'rgba(180,190,210,0)');
+      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    const open = ss(0, 1, lin(.14, 1, e));
+    const r = open * far * 1.12, soft = Math.max(1, 240 * fitS);
+    if (r > 1) {
+      // the bright rim travelling outwards
+      ctx.globalCompositeOperation = 'lighter';
+      const rim = ctx.createRadialGradient(cx, cy, Math.max(0, r - soft * 1.6), cx, cy, r + soft * .6);
+      rim.addColorStop(0, 'rgba(255,255,255,0)'); rim.addColorStop(.55, `rgba(255,255,255,${.6 * (1 - e)})`);
+      rim.addColorStop(.8, `rgba(205,215,235,${.7 * (1 - e)})`); rim.addColorStop(1, 'rgba(170,180,200,0)');
+      ctx.fillStyle = rim; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // the hole: inside the rim the night dissolves into the app (a grey veil that clears), soft towards the rim
+      ctx.globalCompositeOperation = 'destination-out';
+      const clear = (.75 + .25 * ss(.25, .7, e)) * ss(.14, .32, e);
+      const hole = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      hole.addColorStop(0, `rgba(0,0,0,${clear})`); hole.addColorStop(clamp(1 - soft / r, 0, .99), `rgba(0,0,0,${clear})`); hole.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = hole; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    return false;
+  }
+
   // Draw every sprite once into a hidden corner so the GPU uploads happen now, not mid-scene.
   function warm(list) {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -802,14 +885,21 @@
   }
 
   resize();
-  warm([...smoke, ...whiteSmoke, ...warmSmoke, ...purpleSmoke, ...bats, moon, bolt, ember, mote, vignette, web, pumpkinBody, pumpkinFace, pumpkinSpill]);
+  warm([...smoke, ...whiteSmoke, ...warmSmoke, ...greySmoke, ...bats, moon, bolt, ember, mote, vignette, web, pumpkinBody, pumpkinFace, pumpkinSpill]);
   // Render one frame of every scene up front (the screen is still black) so first-use costs never stall a scene.
   for (const t of [1.2, 2.7, 3.05, 3.4, 3.9, 4.5, 4.75, 5.4, 6.6, 7.0]) frame(t);
   window.addEventListener('resize', resize);
   const start = performance.now();
+  // app.js times the end of the splash from the moment the animation really starts (after the warm-up above)
+  window.H1T_BOOT_START = start;
   const STEP = 1000 / 60;
   startSound(start);
-  let raf = 0, last = -1e9, due = 0, slow = 0, frames = 0;
+  let raf = 0, last = -1e9, due = 0, slow = 0, frames = 0, soundEnd = false;
+  const timeAt = (now) => (reduced ? DUR : (now - start) / 1000);
+  // the tweaker is ready (app.js adds .out): start the exit from the frame on screen
+  new MutationObserver(() => {
+    if (exitAt < 0 && splash.classList.contains('out') && !reduced) exitAt = timeAt(performance.now());
+  }).observe(splash, { attributes: true, attributeFilter: ['class'] });
   function tick(now) {
     if (!canvas.isConnected) { stopSound(); return; }
     raf = requestAnimationFrame(tick);
@@ -817,15 +907,18 @@
     if (now < due - 3) return;
     due = now - due > STEP ? now + STEP : due + STEP;
     const gap = now - last; last = now;
-    const t = reduced ? DUR : Math.min(DUR, (now - start) / 1000);
+    // no clamp at DUR: the logo scene keeps moving instead of freezing while the tweaker is still loading
+    const t = timeAt(now);
     frame(t);
+    if (drawExit(t)) { cancelAnimationFrame(raf); stopSound(); return; }
     // more than a third of the last 30 frames late: switch to the lighter mode once
     if (hq && t > .5) { frames++; if (gap > 24) slow++; if (frames >= 30) { if (slow > 10) { hq = false; resize(); } frames = slow = 0; } }
-    if (t >= DUR) { cancelAnimationFrame(raf); setTimeout(stopSound, 2200); }
+    if (t >= DUR && !soundEnd) { soundEnd = true; setTimeout(stopSound, 2200); }
+    if (reduced && t >= DUR) cancelAnimationFrame(raf);
   }
   raf = requestAnimationFrame(tick);
   // Test/preview hook: render any moment (used by the frame captures).
-  window.H1tHalloweenBoot = { renderAt: (t) => { cancelAnimationFrame(raf); frame(t); }, duration: DUR, ready: () => !!logo, setName: (n) => { bootName = String(n || ''); },
+  window.H1tHalloweenBoot = { renderAt: (t, exit = -1) => { cancelAnimationFrame(raf); exitAt = exit; frame(t); drawExit(t); }, duration: DUR, exit: EXIT, ready: () => !!logo, setName: (n) => { bootName = String(n || ''); },
     // test hook: render the soundtrack offline (for listening checks)
     renderSound: async () => { const oc = new OfflineAudioContext(2, 44100 * 10, 44100); buildSound(oc, 0); return oc.startRendering(); } };
 })();

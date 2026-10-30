@@ -43,6 +43,14 @@ test('the H1T logos are used for the opening animations, sidebar, dashboard and 
   assert.match(read('app/renderer/eye-boot.js'), /splash\.classList\.contains\('out'\)/);
   assert.match(read('app/renderer/boot.css'), /html\.eye-boot \.splash\.boot\.out \{ background: transparent; opacity: 1;/);
   assert.match(read('app/renderer/halloween-boot.js'), /assets\/h1t-logo-halloween\.png/);
+  // the Halloween boot keeps moving until the tweaker is ready (no freeze at 8 s), then opens onto it with a ring of
+  // light; app.js times the end from the animation's real start
+  const hw = read('app/renderer/halloween-boot.js');
+  assert.match(hw, /splash\.classList\.contains\('out'\)/);
+  assert.match(hw, /window\.H1T_BOOT_START = start/);
+  assert.doesNotMatch(hw, /Math\.min\(DUR, \(now - start\) \/ 1000\)/, 'the boot clock is not clamped at the end of the animation');
+  assert.match(read('app/renderer/boot.css'), /html\.hw-boot \.splash\.boot\.out \{ background: transparent; opacity: 1;/);
+  assert.match(read('app/renderer/app.js'), /window\.H1T_BOOT_START \?\? splashStart/);
   assert.match(read('app/renderer/mono.css'), /\.h1t-dash-hero:after \{ display: none !important; \}/);
   const ico = fs.readFileSync(path.join(__dirname, '..', 'build/icon.ico'));
   assert.equal(ico.readUInt16LE(2), 1); assert.equal(ico.readUInt16LE(4), 7, 'icon has 7 sizes (16-256 px)');

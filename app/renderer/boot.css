@@ -107,6 +107,10 @@ body.booting #h1t-license-gate { visibility: hidden; }
 /* Canvas boot animations replace the CSS boot scene: halloween-boot.js in the season, eye-boot.js otherwise. */
 html.hw-boot .splash.boot > :not(.hw-boot-canvas), html.eye-boot .splash.boot > :not(.eye-boot-canvas) { display: none !important; }
 html.hw-boot .splash.boot, html.eye-boot .splash.boot { background: #000; }
+/* Halloween: the canvas itself opens onto the tweaker (a ring of light from the logo), so the splash stays put. */
+@media (prefers-reduced-motion: no-preference) {
+  html.hw-boot .splash.boot.out { background: transparent; opacity: 1; transform: none; filter: none; transition: none; }
+}
 .hw-boot-canvas, .eye-boot-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 /* The code eye ends by opening wide and showing the tweaker through it: the canvas cuts the hole, so the splash
    itself must stay put and see-through instead of fading. */
