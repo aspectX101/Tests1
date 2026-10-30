@@ -1,6 +1,6 @@
 'use strict';
 // H1T.CC boot animation for the dark design (about 5.8 s, canvas, steady 60 fps): an eye made of code.
-//   1 Wake       – lines of the tweaker's own code on a deep blue screen; a curved seam of code (the shut eye) draws itself
+//   1 Wake       – rows of the tweaker's own code stream across the tweaker's black (#050505); a curved seam of code (the shut eye) draws itself
 //   2 Open       – the upper lid lifts: the white is rows of code along the lids, the iris rings of glowing blue code
 //                  around a large dark pupil; it looks right, left, blinks, then looks at you (it follows the mouse)
 //   3 Close      – the camera pushes into the iris until it fills the screen, the lids shut into a thick band of code,
@@ -51,7 +51,7 @@
     const grd = g.createRadialGradient(W / 2, H / 2, 240, W / 2, H / 2, 820);
     grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.78)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
   });
-  // background: dim rows of code on deep blue, taller than the screen so it can drift
+  // background: dim grey rows of code on the tweaker's black, taller than the screen so it can drift
   const BG_H = H * 2;
   const bgCode = sprite(W, BG_H, (g) => {
     g.font = '10px Consolas, "Cascadia Mono", monospace'; g.textBaseline = 'middle';
@@ -59,17 +59,17 @@
       let x = -rnd() * 200;
       while (x < W) {
         const s = codeLine(8 + ((rnd() * 40) | 0)), a = .08 + rnd() * .22;
-        const c = 170 + rnd() * 60 | 0; g.fillStyle = `rgba(${c},${c},${c},${a})`; g.fillText(s, x, y);
+        const c = 170 + rnd() * 60 | 0; g.fillStyle = `rgba(${c},${c},${c + 6},${a})`; g.fillText(s, x, y);
         x += g.measureText(s).width + 20 + rnd() * 120;
       }
     }
   });
 
   // the eye: almond outline, half-width EW, half-height EH; lower lid a little flatter
-  const EW = 520, EH = 205, LOW = .82;
+  const EW = 580, EH = 205, LOW = .82;
   const lidH = (x) => { const u = clamp(Math.abs(x) / EW, 0, 1); return EH * Math.pow(1 - u * u, .95) * (1 + .1 * (x / EW)); };
   // the white: rows of code following the lids, brightest at the lid edges, gaps here and there
-  const SK = 1.5, SW = (EW * 2 + 80) * SK, SH = (EH * 2.3 + 40) * SK, SCX = SW / 2, SCY = SH / 2;
+  const SK = 1.5, SW = (EW * 2 + 300) * SK, SH = (EH * 2.3 + 40) * SK, SCX = SW / 2, SCY = SH / 2;
   const sclera = sprite(SW, SH, (g) => {
     g.translate(SCX, SCY); g.scale(SK, SK);
     g.textBaseline = 'middle';
@@ -85,21 +85,21 @@
         if (rnd() < (edge ? .03 : .1)) { x += w + 6; continue; } // gaps
         const xm = x + w / 2, ang = Math.atan2(rowY(x + w) - rowY(x), w), a = edge ? 1 : .62 + .38 * Math.pow(r, .8) * (.7 + .3 * rnd());
         g.save(); g.translate(xm, rowY(xm)); g.rotate(ang);
-        g.shadowColor = 'rgba(235,235,240,.7)'; g.shadowBlur = edge ? 7 : 2.5;
-        const c = 228 + rnd() * 27 | 0; g.fillStyle = `rgba(${c},${c},${c},${a})`; g.fillText(s, -w / 2, 0); g.restore();
+        g.shadowColor = 'rgba(190,225,255,.8)'; g.shadowBlur = edge ? 8 : 3;
+        const c = 228 + rnd() * 27 | 0; g.fillStyle = `rgba(${c - 18},${c - 4},255,${a})`; g.fillText(s, -w / 2, 0); g.restore();
         x += w + 2 + rnd() * 3;
       }
     }
     // the long tapered corners
     g.strokeStyle = 'rgba(240,240,240,.9)'; g.lineCap = 'round';
-    for (const [x0, x1, w] of [[-EW, -EW - 70, 2.2], [EW, EW + 34, 1.6]]) { g.lineWidth = w; g.beginPath(); g.moveTo(x0, 0); g.lineTo(x1, 2); g.stroke(); }
+    for (const [x0, x1, w] of [[-EW, -EW - 150, 2.2], [EW, EW + 110, 1.8]]) { g.lineWidth = w; g.beginPath(); g.moveTo(x0, 0); g.lineTo(x1, 2); g.stroke(); }
   });
   // the iris: rings of glowing blue code around a dark pupil, radial strands, a dark limbal ring (the only colour in the eye)
   const IR = 228, PR = 100, IK = 2, IS = IR * 2 * IK + 40;
   const iris = sprite(IS, IS, (g) => {
     g.translate(IS / 2, IS / 2); g.scale(IK, IK);
     let grd = g.createRadialGradient(0, 0, PR * .8, 0, 0, IR);
-    grd.addColorStop(0, '#0c5c8a'); grd.addColorStop(.4, '#0b3f9a'); grd.addColorStop(1, '#071a5c');
+    grd.addColorStop(0, '#1fb4e6'); grd.addColorStop(.45, '#0f7fd0'); grd.addColorStop(1, '#0a3595');
     g.fillStyle = grd; g.beginPath(); g.arc(0, 0, IR, 0, TAU); g.arc(0, 0, PR * .9, 0, TAU, true); g.fill();
     // radial strands
     for (let i = 0; i < 520; i++) {
@@ -118,8 +118,8 @@
         if (rnd() < .9) {
           g.save(); g.rotate(a + da / 2); g.translate(r, 0); g.rotate(Math.PI / 2);
           const lum = 1 - k * .55;
-          g.shadowColor = 'rgba(90,200,255,.8)'; g.shadowBlur = 3;
-          g.fillStyle = `rgba(${mix(40, 225, lum) | 0},${mix(150, 255, lum) | 0},255,${.65 + .35 * rnd()})`; g.fillText(s, -w / 2, 0); g.restore();
+          g.shadowColor = 'rgba(80,220,255,.95)'; g.shadowBlur = 4;
+          g.fillStyle = `rgba(${mix(70, 215, lum) | 0},${mix(205, 255, lum) | 0},255,${.7 + .3 * rnd()})`; g.fillText(s, -w / 2, 0); g.restore();
         }
         a += da + rnd() * .04;
       }
@@ -130,7 +130,7 @@
     grd = g.createRadialGradient(0, 0, IR - 16, 0, 0, IR + 2); grd.addColorStop(0, 'rgba(4,10,40,0)'); grd.addColorStop(1, 'rgba(4,10,40,.4)');
     g.fillStyle = grd; g.beginPath(); g.arc(0, 0, IR + 2, 0, TAU); g.fill();
   });
-  const irisGlow = sprite(IS, IS, (g) => { g.filter = 'blur(14px) brightness(1.3)'; g.drawImage(iris, 0, 0); });
+  const irisGlow = sprite(IS, IS, (g) => { g.filter = 'blur(18px) brightness(1.7) saturate(1.3)'; g.drawImage(iris, 0, 0); });
 
   // ---------- gaze: scripted looks, then it follows the mouse ----------
   let mouseX = W / 2, mouseY = H / 2, hasMouse = false;
@@ -173,11 +173,17 @@
   function drawBackground(t, a, tint = 1) {
     if (a <= 0) return;
     const grd = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 820);
-    grd.addColorStop(0, `rgb(${16 * tint | 0},${16 * tint | 0},${18 * tint | 0})`); grd.addColorStop(1, `rgb(${2 * tint | 0},${2 * tint | 0},${3 * tint | 0})`);
+    // the tweaker's own black (#050505), only a faint lift behind the eye
+    grd.addColorStop(0, `rgb(${14 * tint | 0},${14 * tint | 0},${15 * tint | 0})`); grd.addColorStop(.6, `rgb(${7 * tint | 0},${7 * tint | 0},${7 * tint | 0})`);
+    grd.addColorStop(1, `rgb(${5 * tint | 0},${5 * tint | 0},${5 * tint | 0})`);
     ctx.globalAlpha = a; ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80);
-    const off = (t * 14) % H;
-    ctx.globalAlpha = a * (.42 + .1 * Math.sin(t * 7)) * tint;
-    ctx.drawImage(bgCode, 0, -off); ctx.drawImage(bgCode, 0, BG_H - off);
+    // rows of code stream sideways: a far, slow layer and a near, faster one (wraps around the sprite width)
+    const flicker = .9 + .1 * Math.sin(t * 7);
+    for (const [speed, alpha, y0] of [[38, .55, 0], [95, .8, -H * .5]]) {
+      const off = (t * speed) % W;
+      ctx.globalAlpha = a * alpha * flicker * tint;
+      ctx.drawImage(bgCode, -off, y0); ctx.drawImage(bgCode, W - off, y0);
+    }
     ctx.globalAlpha = 1;
   }
   // The lids. Shut, the eye is a gently sagging line (‿) on the lower lid's curve; opening lifts the upper lid off it.
@@ -193,11 +199,11 @@
     p.closePath(); return p;
   }
   // the white: squashed with the lids and bent onto the shut line, drawn in vertical strips
-  const STRIPS = 44;
+  const STRIPS = 50;
   function drawSclera(cx, cy, s, open) {
-    const op = Math.max(open, .012), sw = (2 * EW + 80) / STRIPS;
+    const op = Math.max(open, .012), sw = (2 * EW + 300) / STRIPS;
     for (let i = 0; i < STRIPS; i++) {
-      const x0 = -EW - 40 + i * sw, xm = x0 + sw / 2, dy = shutY(clamp(xm, -EW, EW)) * (1 - op);
+      const x0 = -EW - 150 + i * sw, xm = x0 + sw / 2, dy = shutY(clamp(xm, -EW, EW)) * (1 - op);
       ctx.drawImage(sclera, (x0 + SCX / SK) * SK, 0, sw * SK + 1, SH, cx + x0 * s, cy + (dy - SCY / SK * op) * s, sw * s + .6, SH / SK * op * s);
     }
   }
@@ -209,7 +215,7 @@
       // iris and pupil, clipped by the lids
       const ix = cx + gx * s, iy = cy + gy * s + shutY(gx) * (1 - open) * s, ir = IR * s, pad = 20 * s;
       ctx.save(); ctx.clip(ap);
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5 * irisA; ctx.drawImage(irisGlow, ix - ir - pad, iy - ir - pad, (ir + pad) * 2, (ir + pad) * 2);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .9 * irisA; ctx.drawImage(irisGlow, ix - ir - pad, iy - ir - pad, (ir + pad) * 2, (ir + pad) * 2);
       ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = irisA;
       // looking sideways the round iris is seen at an angle: squash it along the gaze
       const fx = 1 - Math.min(.2, Math.abs(gx) / EW * .32), fy = 1 - Math.min(.12, Math.abs(gy) / EH * .2);
@@ -220,9 +226,20 @@
       ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(0, 0, pr * 1.06, 0, TAU); ctx.fill(); ctx.restore();
       ctx.restore();
     }
+    // data flowing through the white: soft pulses of light travel along the rows of code
+    if (open > .04) {
+      ctx.save(); ctx.clip(ap); ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 3; i++) {
+        const u = ((t * .55 + i / 3) % 1), px = cx + (-EW - 200 + u * (2 * EW + 400)) * s;
+        const pg = ctx.createLinearGradient(px - 160 * s, 0, px + 160 * s, 0);
+        pg.addColorStop(0, 'rgba(150,215,255,0)'); pg.addColorStop(.5, `rgba(170,225,255,${.22 * Math.min(1, open * 2)})`); pg.addColorStop(1, 'rgba(150,215,255,0)');
+        ctx.fillStyle = pg; ctx.fillRect(px - 160 * s, cy - EH * 1.2 * s, 320 * s, EH * 2.4 * s);
+      }
+      ctx.restore();
+    }
     // the lid edges: a glowing line of light along the aperture
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
-    ctx.strokeStyle = `rgba(230,230,235,${open < .1 ? .26 : .14})`; ctx.lineWidth = 8 * s; ctx.stroke(ap);
+    ctx.strokeStyle = `rgba(180,220,255,${open < .1 ? .3 : .18})`; ctx.lineWidth = 9 * s; ctx.stroke(ap);
     ctx.strokeStyle = 'rgba(250,250,250,.6)'; ctx.lineWidth = 1.6 * s; ctx.stroke(ap);
     ctx.restore();
   }
