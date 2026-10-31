@@ -111,22 +111,39 @@ function Assert-Administrator {
     } finally { $identity.Dispose() }
 }
 
+function Test-RecentRestorePoint($Points, [DateTime]$Now, [switch]$TweakerOnly) {
+    # A restore point created within the last 24 h (not in the future, readable creation time).
+    foreach ($point in @($Points)) {
+        if ($TweakerOnly -and $point.Description -notmatch '^Tweaker-[a-f0-9]{32}$') { continue }
+        try {
+            $created = if ($point.CreationTime -is [DateTime]) { $point.CreationTime.ToUniversalTime() }
+                else { [Management.ManagementDateTimeConverter]::ToDateTime($point.CreationTime).ToUniversalTime() }
+            if ($created -le $Now -and ($Now - $created).TotalHours -lt 24) { return $true }
+        } catch { continue }
+    }
+    return $false
+}
+
 function New-TweakerRestorePoint {
     # Reuse only a verified, recent Tweaker checkpoint. Windows normally limits
     # checkpoint creation to one per day; never change its frequency registry key.
     $now = [DateTime]::UtcNow
-    foreach ($point in @(Get-ComputerRestorePoint -ErrorAction Stop)) {
-        if ($point.Description -notmatch '^Tweaker-[a-f0-9]{32}$') { continue }
-        try {
-            $created = if ($point.CreationTime -is [DateTime]) { $point.CreationTime.ToUniversalTime() }
-                else { [Management.ManagementDateTimeConverter]::ToDateTime($point.CreationTime).ToUniversalTime() }
-            if ($created -le $now -and ($now - $created).TotalHours -lt 24) { return }
-        } catch { continue }
-    }
-    # Fail closed if neither a recent checkpoint nor a newly verified one exists.
+    if (Test-RecentRestorePoint @(Get-ComputerRestorePoint -ErrorAction Stop) $now -TweakerOnly) { return }
     $description = 'Tweaker-' + [guid]::NewGuid().ToString('N')
-    Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS -WarningAction Stop -ErrorAction Stop
-    if (-not (Get-ComputerRestorePoint | Where-Object { $_.Description -eq $description })) { throw 'restore_point_not_created' }
+    # The frequency warning must not reach stdout (the backend answers with exactly one JSON object), so it is
+    # collected instead of printed.
+    $warnings = $null
+    Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS -WarningAction SilentlyContinue -WarningVariable warnings -ErrorAction Stop
+    $points = @(Get-ComputerRestorePoint -ErrorAction Stop)
+    if ($points | Where-Object { $_.Description -eq $description }) { return }
+    # Windows declined because a restore point (from Windows or another program) was made in the last 24 h:
+    # that point already precedes this change, so use it instead of blocking every tweak for a day.
+    # Any other failure stays fail-closed.
+    $frequencyLimit = @($warnings | Where-Object { "$_" -match 'SystemRestorePointCreationFrequency|1440' }).Count -gt 0
+    if ($frequencyLimit -and (Test-RecentRestorePoint $points $now)) { return }
+    $failure = [Exception]::new('restore_point_not_created')
+    if ($warnings) { $failure.Data['detail'] = [string]$warnings[0] }
+    throw $failure
 }
 
 function Write-AtomicJson($State, [string]$Path) {

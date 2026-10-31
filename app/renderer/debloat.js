@@ -94,7 +94,7 @@ async function debloatStart() {
 async function debloatRevertAll() {
   if(state.db.busy||state.db.loading)return;state.db.busy=true;dbPaint();
   try {
-    const list=await call('backup-list');if(!list?.ok){toast(errorText(list?.error),'error');return;}
+    const list=await call('backup-list');if(!list?.ok){toast(errorText(list?.error, list?.detail),'error');return;}
     const relevant=list.backups.filter(b=>b.kind==='startup'||b.kind==='tweak'&&Object.values(DB_SETTINGS).includes(b.tweakId));
     const records=relevant.filter(b=>!['restored','superseded'].includes(b.status)&&!['already_restored','backup_superseded'].includes(b.reason));
     const evidence=list.backups.some(b=>b.kind==='debloat');
@@ -119,11 +119,11 @@ async function startupChange(id) {
   if(!await confirmDialog(entry.name,entry.managed?dbText().restorePrompt:dbText().disablePrompt,entry.managed?dbText().restore:dbText().disable))return;
   state.db.busy=true;dbPaint();
   const result=await call(entry.managed?'startup-restore':'startup-disable',id,{previewToken:entry.token});
-  if(!result?.ok)toast(errorText(result?.error),'error');
+  if(!result?.ok)toast(errorText(result?.error, result?.detail),'error');
   state.db.busy=false;await debloatLoad({force:true});
 }
 
 document.addEventListener('toggle',e=>{if(!e.target.isConnected)return;if(e.target.classList?.contains('db-startup'))state.db.startupOpen=e.target.open;const group=e.target.dataset?.dbGroup;if(group){state.db.openGroups??=new Set();if(e.target.open)state.db.openGroups.add(group);else state.db.openGroups.delete(group);}},true);
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='db-reload')debloatLoad({force:true,tweaks:true});if(b.id==='db-start')debloatStart();if(b.id==='db-revert')debloatRevertAll();if(b.dataset.startupId)startupChange(b.dataset.startupId);if(b.dataset.debloatOpen)bridge.openDebloatTarget(b.dataset.debloatOpen).then(r=>{if(!r?.ok)toast(errorText(r?.error),'error');});});
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='db-reload')debloatLoad({force:true,tweaks:true});if(b.id==='db-start')debloatStart();if(b.id==='db-revert')debloatRevertAll();if(b.dataset.startupId)startupChange(b.dataset.startupId);if(b.dataset.debloatOpen)bridge.openDebloatTarget(b.dataset.debloatOpen).then(r=>{if(!r?.ok)toast(errorText(r?.error, r?.detail),'error');});});
 
 document.addEventListener('click',e=>{if(state.db.busy&&!e.target.closest('#modal, #win-min, #win-close')){e.preventDefault();e.stopImmediatePropagation();}},true);

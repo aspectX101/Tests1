@@ -38,7 +38,7 @@
     const r = await bridge.h1tModsInstall(id);
     ui.busy = null; delete ui.progress[id];
     if (r?.ok) { m.installed = true; m.update = false; m.installedVersion = m.version; toast(r.enabled ? tx().done(m.name) : tx().doneOff(m.name)); state.mods = null; }
-    else toast(`${m.name}: ${errorText(r?.error)}`, 'error');
+    else toast(`${m.name}: ${errorText(r?.error, r?.detail)}`, 'error');
     render();
   }
 

@@ -34,3 +34,13 @@ test('normal backend errors and successes are unchanged', async () => {
   assert.equal(junk.message, 'invalid_backend_json');
   assert.equal(junk.detail, 'At line:1 char:1 + Import-Module');
 });
+
+test('the tweak, Gaming and other error toasts pass the Windows reason on (not only the code)', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const read = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+  const app = read('app/renderer/app.js');
+  assert.match(app, /toast\(`\$\{tw\.name\}: \$\{errorText\(res\?\.error, res\?\.detail\)\}`, 'error'\)/);
+  for (const f of ['app/renderer/app.js', 'app/renderer/debloat.js', 'app/renderer/h1t-mods.js']) {
+    assert.doesNotMatch(read(f), /errorText\((res|r|on|list|result)\?\.error\)/, `${f} drops the detail`);
+  }
+});

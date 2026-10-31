@@ -1028,8 +1028,8 @@ async function setTweak(id, apply, { quiet = false } = {}) {
       toast(extra ? `${tw.name}: ${extra}` : (tw.applied ? t().applied(tw.name) : t().reverted(tw.name)));
     }
   } else {
-    if (!quiet) toast(`${tw.name}: ${errorText(res?.error)}`, 'error');
-    logActivity('fail', `${tw.name}: ${errorText(res?.error)}`);
+    if (!quiet) toast(`${tw.name}: ${errorText(res?.error, res?.detail)}`, 'error');
+    logActivity('fail', `${tw.name}: ${errorText(res?.error, res?.detail)}`);
       // A failed native call may have rolled back or left a recoverable partial change.
       const refreshed = await call('list');
       if (refreshed?.ok) state.tweaks = refreshed.tweaks;
@@ -1062,7 +1062,7 @@ async function cacheOp(busyKey, action, extra, onOk) {
   const res = await call(action, undefined, extra);
   state.cacheBusy = null;
   if (res?.ok) onOk(res);
-  else toast(errorText(res?.error), 'error');
+  else toast(errorText(res?.error, res?.detail), 'error');
   await cacheInfo();
 }
 
@@ -1096,7 +1096,7 @@ async function safeAction(kind) {
     else if (fixed && kind !== 'scan') toast(t().smRepaired(fixed));
   } else {
     if (kind === 'scan') state.safeError = res?.error;
-    toast(errorText(res?.error), 'error');
+    toast(errorText(res?.error, res?.detail), 'error');
   }
   if (state.route.page === 'safemode') render();
 }
@@ -1106,7 +1106,7 @@ async function supportExport() {
   try { res = await bridge.exportJson('support'); } catch (err) { res = { ok: false, error: err.message }; }
   const s = SET_TEXT[state.lang] || SET_TEXT.de;
   if (res?.ok && !res.canceled) toast(s.reportDone);
-  else if (!res?.ok) toast(errorText(res?.error), 'error');
+  else if (!res?.ok) toast(errorText(res?.error, res?.detail), 'error');
 }
 
 async function safeExport() {
@@ -1116,7 +1116,7 @@ async function safeExport() {
   try { res = await bridge.exportJson('safemode'); } catch (err) { res = { ok: false, error: err.message }; }
   state.safeBusy = null;
   if (res?.ok && !res.canceled) toast(t().smExported);
-  else if (!res?.ok) toast(errorText(res?.error), 'error');
+  else if (!res?.ok) toast(errorText(res?.error, res?.detail), 'error');
   render();
 }
 
@@ -1163,7 +1163,7 @@ async function bkRestore(id, all) {
     state.bkResult = res;
     toast(res.ok ? t().bkDone : t().bkPartial, res.ok ? 'info' : 'error');
   } else {
-    toast(errorText(res?.error), 'error');
+    toast(errorText(res?.error, res?.detail), 'error');
   }
   state.bkOpen = null;
   await refreshTweaks();
@@ -1174,7 +1174,7 @@ async function bkExport(id) {
   let res;
   try { res = await bridge.exportJson('backup', id); } catch (err) { res = { ok: false, error: err.message }; }
   if (res?.ok && !res.canceled) toast(t().bkExported);
-  else if (!res?.ok) toast(errorText(res?.error), 'error');
+  else if (!res?.ok) toast(errorText(res?.error, res?.detail), 'error');
 }
 
 async function modsLoad() {
@@ -1205,7 +1205,7 @@ async function modImport(kind) {
   try { res = await bridge.importMod(category, kind); } catch (err) { res = { ok: false, error: err.message }; }
   state.modsBusy = null;
   if (res?.ok && !res.canceled) toast(t().modsImported(res.mod.name, res.mod.fileCount));
-  else if (!res?.ok) toast(errorText(res?.error), 'error');
+  else if (!res?.ok) toast(errorText(res?.error, res?.detail), 'error');
   await modsLoad();
 }
 
@@ -1217,7 +1217,7 @@ async function modToggle(id, enable) {
   const res = await call(enable ? 'mods-enable' : 'mods-disable', undefined, { modId: id });
   state.modsBusy = null;
   if (res?.ok) toast(enable ? t().modsEnabled(m.name) : t().modsDisabled(m.name));
-  else toast(`${m.name}: ${errorText(res?.error)}`, 'error');
+  else toast(`${m.name}: ${errorText(res?.error, res?.detail)}`, 'error');
   await modsLoad();
 }
 
@@ -1229,7 +1229,7 @@ async function modRemove(id) {
   const res = await call('mods-remove', undefined, { modId: id });
   state.modsBusy = null;
   if (res?.ok) { state.modsExpanded.delete(id); toast(t().modsRemoved(m.name)); }
-  else toast(errorText(res?.error), 'error');
+  else toast(errorText(res?.error, res?.detail), 'error');
   await modsLoad();
 }
 
@@ -1240,7 +1240,7 @@ async function resApply(reset) {
   const res = reset ? await call('res-reset') : await call('res-set', undefined, { width: f.width, height: f.height, windowed: f.windowed });
   state.resBusy = false;
   if (res?.ok) { setRes(res); toast(reset ? t().resResetDone : t().resApplied(res.width, res.height)); }
-  else toast(errorText(res?.error), 'error');
+  else toast(errorText(res?.error, res?.detail), 'error');
   render();
 }
 
@@ -1283,7 +1283,7 @@ async function runProfile(tier) {
 async function restartPc() {
   if (!(await confirmDialog(t().restartTitle, t().restartText, t().qaRestart))) return;
   const r = await bridge.restartPc();
-  toast(r?.ok ? t().restartSoon : errorText(r?.error), r?.ok ? 'info' : 'error');
+  toast(r?.ok ? t().restartSoon : errorText(r?.error, r?.detail), r?.ok ? 'info' : 'error');
 }
 
 // Tweaks reset by Windows (app/renderer/drift.js): shown on the dashboard with "Apply again".
@@ -1323,7 +1323,7 @@ async function driftApply() {
     const off = await call('revert', tw.id);
     const on = off?.ok ? await call('apply', tw.id) : off;
     if (on?.ok) { ok++; if (on.restartRequired) state.restartPending = true; logActivity('on', t().applied(tw.name)); }
-    else logActivity('fail', `${tw.name}: ${errorText(on?.error)}`);
+    else logActivity('fail', `${tw.name}: ${errorText(on?.error, on?.detail)}`);
   }
   const fresh = await call('list');
   if (fresh?.ok) state.tweaks = fresh.tweaks || [];
@@ -1414,7 +1414,7 @@ document.addEventListener('click', (e) => {
   else if (el.hasAttribute('data-mod-reload')) modsLoad();
   else if (el.dataset.modImport) modImport(el.dataset.modImport);
   else if (el.dataset.modRemove) modRemove(el.dataset.modRemove);
-  else if (el.id === 'mods-open') bridge.openModsFolder().then((r) => { if (!r?.ok) toast(errorText(r?.error), 'error'); });
+  else if (el.id === 'mods-open') bridge.openModsFolder().then((r) => { if (!r?.ok) toast(errorText(r?.error, r?.detail), 'error'); });
   else if (el.id === 'mods-reload' || el.id === 'res-reload') modsLoad();
   else if (el.dataset.res) { const [w, h] = el.dataset.res.split('x').map(Number); Object.assign(state.resForm, { width: w, height: h }); render(); }
   else if (el.dataset.resMode) { state.resForm.windowed = Number(el.dataset.resMode); render(); }
@@ -1425,10 +1425,10 @@ document.addEventListener('click', (e) => {
   else if (el.id === 'set-report') supportExport();
   else if (el.id === 'drift-apply') driftApply();
   else if (el.id === 'drift-hide') { store.set('driftHidden', window.H1tDrift.key(state.drift)); state.drift = []; render(); }
-  else if (el.id === 'app-show') bridge.showExe().then((r) => { if (!r?.ok) toast(errorText(r?.error), 'error'); });
+  else if (el.id === 'app-show') bridge.showExe().then((r) => { if (!r?.ok) toast(errorText(r?.error, r?.detail), 'error'); });
   else if (el.id === 'app-lnk-desktop' || el.id === 'app-lnk-start') {
     const where = el.id === 'app-lnk-start' ? 'startmenu' : 'desktop';
-    bridge.createShortcut(where).then((r) => toast(r?.ok ? t().appLnkDone(where) : errorText(r?.error), r?.ok ? 'info' : 'error'));
+    bridge.createShortcut(where).then((r) => toast(r?.ok ? t().appLnkDone(where) : errorText(r?.error, r?.detail), r?.ok ? 'info' : 'error'));
   }
   else if (el.id === 'up-page') bridge.openReleasePage();
   else if (el.id === 'bk-all') bkRestore(null, true);

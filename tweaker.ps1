@@ -4,6 +4,8 @@ param([string]$Action, [string]$Id, [string]$Lang='de', [string]$FiveMPath, [str
     [string]$LayoutBase64, [string]$Extra, [string]$AppIds, [string]$PreviewToken, [switch]$ConfirmDataLoss, [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+# stdout carries exactly one JSON object: a stray Windows warning in front of it breaks every answer.
+$WarningPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 try {
