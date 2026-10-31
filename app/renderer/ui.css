@@ -1,0 +1,184 @@
+/* H1T.CC UI 2 — Steam-concept look on the existing tweaker layout, loaded last.
+   True black & white: black surfaces, white text and accents, thin white hairlines for depth. No grey panels.
+   Semantic colours stay only for real states (risk light, SafeMode light, errors). */
+:root {
+  --k: #000; --k-card: #050505; --k-raise: #0b0b0b;
+  --w: #fff; --w-2: rgba(255, 255, 255, .72); --w-3: rgba(255, 255, 255, .5);
+  --hair: rgba(255, 255, 255, .12); --hair-2: rgba(255, 255, 255, .22); --hair-3: rgba(255, 255, 255, .4);
+  --r-xl: 22px; --r-lg: 18px; --r-md: 14px;
+  --t: 180ms; --ease-ui: cubic-bezier(.2, .7, .2, 1);
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  /* older layers read these */
+  --accent: #fff; --accent-text: #fff; --accent-glow: transparent; --bg: #000; --text: #fff; --muted: rgba(255, 255, 255, .72); --dim: rgba(255, 255, 255, .72);
+  --line: rgba(255, 255, 255, .12); --line-2: rgba(255, 255, 255, .22);
+}
+html body, html body .app, html body .main, html body .content { background: var(--k); color: var(--w); font-family: var(--font-ui); }
+
+/* ---------------- Sidebar (Steam concept: no highlight pill, white bar at the edge) ---------------- */
+html body .sidebar { background: var(--k); border-right: 1px solid var(--hair); box-shadow: none; padding: 22px 14px 16px; }
+html body .brand-sub { color: var(--w-3); }
+html body .nav-search { background: var(--k); border: 1px solid var(--hair-2); border-radius: 12px; color: var(--w-2); transition: border-color var(--t); }
+html body .nav-search:focus-within { border-color: var(--hair-3); }
+html body .nav-search input { color: var(--w); }
+html body .nav-search kbd { background: var(--k); border: 1px solid var(--hair-2); color: var(--w-3); border-radius: 6px; }
+html body .nav-head { color: var(--w-3); letter-spacing: .14em; }
+html body .nav-head i { border-color: var(--w-3); }
+html body .nav-item { position: relative; height: 42px; margin: 1px 0; padding: 0 14px; gap: 14px; border: 0 !important; border-radius: 0;
+  background: transparent !important; box-shadow: none !important; color: var(--w-2); font: 600 13.5px/1 var(--font-ui);
+  transition: color var(--t) var(--ease-ui); }
+html body .nav-item svg { width: 19px; height: 19px; color: var(--w-2); filter: none !important; transition: color var(--t); }
+html body .nav-item:hover, html body .nav-item:hover svg { color: var(--w); background: transparent !important; }
+html body .nav-item.active, html body .nav-item.active svg { color: var(--w); background: transparent !important; font-weight: 700; }
+html body .nav-item::before { content: ""; position: absolute; left: -14px; top: 11px; bottom: 11px; width: 3px; border-radius: 0 3px 3px 0;
+  background: var(--w) !important; box-shadow: none !important; opacity: 0; transform: scaleY(.4); transition: opacity var(--t), transform var(--t) var(--ease-ui); animation: none !important; }
+html body .nav-item.active::before { opacity: 1; transform: none; }
+html body .nav-tail { border-top: 1px solid var(--hair); padding-top: 10px; }
+html body .nav-tail .nav-item { height: 40px; background: transparent !important; color: var(--w-2); }
+/* Bottom box like Steam's "Friend chat and Groups". */
+.side-box { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 2px; padding: 14px 16px;
+  border: 1px solid var(--hair-2); border-radius: 16px; color: var(--w); font: 600 12.5px/1.35 var(--font-ui); cursor: pointer; transition: border-color var(--t), background var(--t); }
+.side-box:hover { border-color: var(--hair-3); background: var(--k-raise); }
+.side-box:focus-visible { outline: 2px solid var(--w); outline-offset: 2px; }
+.side-box small { display: block; font-weight: 500; color: var(--w-3); font-size: 11px; }
+.side-box svg { width: 18px; height: 18px; flex: none; color: var(--w); }
+html body .collapsed .side-box { display: none; }
+
+/* ---------------- Header ---------------- */
+html body .titlebar { background: var(--k); border-bottom: 1px solid var(--hair); height: 68px; }
+html body .crumbs { color: var(--w-3); }
+html body .crumbs .sep { color: var(--w-3); }
+html body .h1t-langpick-btn, html body .h1t-acc-btn { height: 40px; border-radius: 999px; background: var(--k); border: 1px solid var(--hair-2); }
+html body .h1t-langpick-btn:hover, html body .h1t-langpick.open .h1t-langpick-btn, html body .h1t-acc-btn:hover, html body .h1t-acc.open .h1t-acc-btn { background: var(--k-raise); border-color: var(--hair-3); }
+html body .h1t-acc-btn .h1t-avatar-sm { width: 30px; height: 30px; border-radius: 50%; }
+html body .h1t-topbar-meta .h1t-ambient { width: 40px; height: 40px; border-radius: 50%; background: var(--k); border: 1px solid var(--hair-2); color: var(--w); }
+html body .h1t-topbar-meta .h1t-ambient:hover { border-color: var(--hair-3); background: var(--k-raise); }
+html body .h1t-acc-menu, html body .h1t-langpick-menu { background: var(--k); border: 1px solid var(--hair-2); box-shadow: 0 24px 60px #000; }
+html body .h1t-acc-items, html body .h1t-acc-items.sep { border-color: var(--hair); }
+html body .h1t-acc-items button:hover, html body .h1t-langpick-menu button:hover { background: var(--k-raise); }
+html body .h1t-restart-pill { height: 40px; border-radius: 999px; }
+html body .win-btn { color: var(--w-2); }
+html body .win-btn:hover { background: var(--k-raise); color: var(--w); }
+html body .win-btn.close:hover { background: #c42b1c; color: #fff; }
+
+/* ---------------- Surfaces ---------------- */
+html body .content { padding-top: 22px; scrollbar-color: var(--hair-2) transparent; }
+html body .card { background: var(--k-card) !important; border: 1px solid var(--hair) !important; border-radius: var(--r-lg); box-shadow: none !important;
+  transition: border-color var(--t) var(--ease-ui), background var(--t) var(--ease-ui); }
+html body .tile2:hover, html body .tile:hover, html body .mod-card:hover, html body .opt-v2 .row:hover, html body .gt-card:hover, html body .card.h1t-metric:hover {
+  border-color: var(--hair-3) !important; background: var(--k-raise) !important; }
+html body .tile2.on { border-color: var(--hair-3) !important; }
+html body .detail-head, html body .cat-hero, html body .mod-hero, html body .h1t-dash-hero {
+  border-radius: var(--r-xl); border: 1px solid var(--hair-2) !important;
+  background: radial-gradient(700px 260px at 85% 0%, rgba(255, 255, 255, .09), transparent 60%), var(--k) !important; }
+html body .tile-icon, html body .h1t-metric-icon, html body .stat-icon, html body .mod-icon {
+  background: var(--k) !important; border: 1px solid var(--hair-2) !important; border-radius: 14px; color: var(--w) !important; box-shadow: none !important; }
+html body .tile-icon svg, html body .h1t-metric-icon svg, html body .mod-icon svg { color: var(--w) !important; }
+html body .muted, html body .row-desc, html body .tile2-desc, html body .cat-stats, html body .h1t-metric-note, html body .cache-note, html body .hint { color: var(--w-2) !important; }
+
+/* Text on the old layers that used grey tones */
+html body h1, html body h2, html body h3, html body .row-title, html body .tile2-name, html body .h1t-metric-label, html body .brand-name { color: var(--w); }
+
+/* ---------------- Controls ---------------- */
+html body .pill { height: 40px; border-radius: 999px; padding: 0 20px; font: 600 13px/1 var(--font-ui); letter-spacing: 0; transition: background var(--t), border-color var(--t), color var(--t), transform 120ms; }
+html body .pill:active:not(:disabled) { transform: scale(.98); }
+html body .pill.dark, html body .pill:not(.light):not(.danger):not(.h1t-amber):not(.h1t-restart-pill) { background: var(--k) !important; border: 1px solid var(--hair-2) !important; color: var(--w) !important; box-shadow: none !important; }
+html body .pill.dark:hover:not(:disabled), html body .pill:not(.light):not(.danger):not(.h1t-amber):not(.h1t-restart-pill):hover:not(:disabled) { border-color: var(--hair-3) !important; background: var(--k-raise) !important; }
+html body .pill.light, html body .opt-v2 #opt-start:not(:disabled), html body .opt-v2 .opt-go:not(:disabled), html body .db-v2 #db-start:not(:disabled), html body #color-save, html body .h1t-restart-pill {
+  background: var(--w) !important; color: var(--k) !important; border: 1px solid var(--w) !important; box-shadow: none !important; }
+html body .pill.light:hover:not(:disabled) { background: #e9e9e9 !important; }
+html body .pill:disabled { opacity: .4; }
+html body .opt-v2 #opt-start, html body .opt-v2 #opt-revert, html body .db-v2 #db-start { border-radius: 16px; }
+
+html body .seg { background: var(--k); border: 1px solid var(--hair-2); border-radius: 999px; padding: 4px; }
+html body .seg button { border-radius: 999px; color: var(--w-2); background: transparent; }
+html body .seg button:hover { color: var(--w); }
+html body .seg button.active { background: var(--w) !important; color: var(--k) !important; }
+html body .tag { border-radius: 999px; background: var(--k); border: 1px solid var(--hair-2); color: var(--w-2); }
+
+html body .switch span { background: var(--k) !important; border: 1.5px solid var(--hair-3) !important; }
+html body .switch span::after { background: var(--w-2); }
+html body .switch input:checked + span { background: var(--w) !important; border-color: var(--w) !important; }
+html body .switch input:checked + span::after { background: var(--k) !important; }
+
+html body input[type=search]:not(#nav-search), html body input[type=text], html body input[type=number], html body select:not(#h1t-language), html body textarea {
+  background: var(--k) !important; border: 1px solid var(--hair-2) !important; border-radius: 12px; color: var(--w) !important; }
+html body input[type=range] { accent-color: #fff; }
+
+html body .modal-backdrop { background: rgba(0, 0, 0, .78); }
+html body .modal { background: var(--k); border: 1px solid var(--hair-2); border-radius: 22px; box-shadow: 0 30px 80px #000; animation: ui-pop .2s var(--ease-ui) both; }
+html body .toast { background: var(--k); border: 1px solid var(--hair-2); border-radius: 14px; }
+html body .skeleton { background: linear-gradient(90deg, var(--k-card), var(--k-raise), var(--k-card)); background-size: 200% 100%; border-radius: var(--r-md); animation: ui-shimmer 1.2s linear infinite; }
+@keyframes ui-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes ui-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
+
+/* ---------------- Dashboard (same structure, Steam look) ---------------- */
+html body .h1t-dash-hero { height: 150px; padding: 22px 28px; }
+html body .h1t-dash-hero h1 { font-size: 40px; letter-spacing: -.03em; }
+html body .h1t-dash-eyebrow { color: var(--w-2) !important; letter-spacing: .18em; text-transform: uppercase; font-size: 10.5px; }
+html body .h1t-dash-hero p { color: var(--w-2); }
+html body .h1t-metric { border-radius: var(--r-lg); }
+html body .h1t-metric-value { color: var(--w); }
+html body .h1t-metric-meter, html body .h1t-metric-meter i { background: var(--hair) !important; }
+html body .h1t-metric-meter i { background: var(--w) !important; }
+html body .h1t-metric-trend i { background: var(--w-3) !important; }
+html body .h1t-metric.warn .h1t-metric-icon { border-color: var(--hair-2) !important; }
+html body .chart-card .line { stroke: var(--w) !important; filter: none !important; }
+html body .chart-card .grid { stroke: var(--hair) !important; }
+html body .chart-y span { color: var(--w-3); }
+html body .spotify-card .media-cover { background: var(--k); border: 1px solid var(--hair-2); }
+html body .spotify-card .media-play { background: var(--w) !important; color: var(--k) !important; }
+html body .spotify-card progress::-webkit-progress-bar { background: var(--hair); }
+html body .spotify-card progress::-webkit-progress-value { background: var(--w); }
+
+@media (prefers-reduced-motion: reduce) {
+  html body .nav-item, html body .nav-item::before, html body .modal, .side-box { transition: none !important; animation: none !important; }
+  html body .skeleton { animation: none; }
+}
+
+/* Mod manager filter chips: same pill style, active = white. */
+html body .mod-filter-cats button, html body .mod-sort button { border-radius: 999px; background: var(--k) !important; border: 1px solid var(--hair-2) !important; color: var(--w-2) !important; }
+html body .mod-filter-cats button:hover, html body .mod-sort button:hover { color: var(--w) !important; border-color: var(--hair-3) !important; }
+html body .mod-filter-cats button.active, html body .mod-sort button.active { background: var(--w) !important; color: var(--k) !important; border-color: var(--w) !important; }
+html body .mod-filter-cats button.active span { color: var(--k) !important; }
+
+/* ---------------- v1 launch fixes ---------------- */
+/* Title-bar controls must not sit in the window drag region (Electron swallows clicks there). */
+html body .h1t-topbar-meta, html body .h1t-topbar-meta *, html body #h1t-restart-slot, html body .win-controls { -webkit-app-region: no-drag; }
+
+/* Account page, Gaming Tweaks and Configs in the same black/white surface language. */
+html body .acc-hero, html body .acc-card, html body .acc-lic, html body .acc-diag-info > div, html body .acc-diag-preview, html body .acc-empty {
+  background: var(--k-card) !important; border: 1px solid var(--hair) !important; box-shadow: none !important; }
+html body .acc-hero { border-color: var(--hair-2) !important; background: radial-gradient(700px 260px at 85% 0%, rgba(255, 255, 255, .08), transparent 60%), var(--k) !important; }
+html body .acc-hero::after { border-color: var(--hair); box-shadow: none; }
+html body .acc-lic.mine { border-color: var(--hair-3) !important; }
+html body .acc-row { border-color: var(--hair); }
+html body .gt-card { background: var(--k-card) !important; border: 1px solid var(--hair) !important; border-radius: var(--r-lg); }
+html body .gt-card.is-on { border-color: var(--hair-3) !important; }
+html body .gt-icon svg { color: var(--w); }
+html body .gt-toggle { background: var(--k) !important; border: 1px solid var(--hair-2) !important; color: var(--w-2) !important; }
+html body .gt-toggle.on { background: var(--w) !important; border-color: var(--w) !important; color: var(--k) !important; }
+html body .gt-card p { color: var(--w-2); }
+html body .cfg-featured, html body .tiers > *, html body .cfg-group { background: var(--k-card) !important; border-color: var(--hair) !important; }
+html body .cfg-featured { border: 1px solid var(--hair-2) !important; border-radius: var(--r-xl); }
+
+/* ---------------- Settings as a card grid ---------------- */
+.set-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.set-card { display: flex; flex-direction: column; gap: 10px; min-height: 210px; padding: 22px !important; }
+.set-card > svg { width: 42px; height: 42px; color: var(--w); stroke-width: 1.4; margin-bottom: 6px; }
+.set-card h3 { margin: 0; font: 700 16px/1.2 var(--font-ui); color: var(--w); }
+.set-card p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--w-2); flex: 1; overflow-wrap: anywhere; }
+.set-card .set-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.set-card .set-actions .pill { flex: 1; min-width: 0; height: 36px; }
+.set-card .set-actions #set-report { flex-basis: 100%; }
+.set-card .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--w-2); }
+.set-card .set-row b { color: var(--w); font-weight: 600; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-card .mono { font-size: 11px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--hair); color: var(--w-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-card .seg { align-self: flex-start; }
+@media (max-width: 1100px) { .set-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+body.halloween .acc-hero, body.halloween .acc-card, body.halloween .acc-lic, body.halloween .gt-card, body.halloween .cfg-featured, body.halloween .set-card {
+  background: var(--hw-card) !important; border-color: var(--hw-line) !important; }
+body.halloween .gt-card.is-on, body.halloween .acc-lic.mine { border-color: var(--hw-line-2) !important; }
+body.halloween .gt-toggle.on { background: var(--hw-o) !important; border-color: var(--hw-o) !important; color: #140600 !important; box-shadow: 0 0 16px rgba(255, 122, 24, .4); }
+body.halloween .gt-icon svg, body.halloween .set-card > svg { color: var(--hw-o2) !important; }
+body.halloween .acc-hero { background: radial-gradient(700px 260px at 85% 0%, rgba(255, 122, 24, .16), transparent 60%), rgba(6, 3, 4, .85) !important; }
+html body .dashboard-home .home-row.no-media { grid-template-columns: minmax(0, 1fr) !important; }

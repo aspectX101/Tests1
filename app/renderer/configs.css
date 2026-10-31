@@ -1,0 +1,41 @@
+/* Configs page: Recommended as a wide card on top, the three configs below; every list sorted by area. */
+.cfg-featured { display: grid; grid-template-columns: minmax(250px, .85fr) minmax(0, 1.5fr); gap: 26px; padding: 22px 24px; margin: 0 0 14px; }
+.cfg-feat-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cfg-feat-info h2 { margin: 2px 0 0; font-size: 24px; font-weight: 900; letter-spacing: -.01em; }
+.cfg-feat-info > p { margin: 0; font-size: 12.5px; line-height: 1.5; color: #a3a3a7; }
+.cfg-feat-info .rec-facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.cfg-feat-info .rec-fact { max-width: 100%; }
+.cfg-feat-actions { margin-top: auto; padding-top: 6px; }
+.cfg-feat-picks { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cfg-feat-picks .cfg-list { max-height: 290px; }
+.cfg-feat-picks .tier-go { align-self: stretch; }
+.cfg-feat-empty { display: grid; place-items: center; min-height: 160px; border: 1px dashed #ffffff18; border-radius: 12px; }
+
+.tiers.cfg-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.cfg-list { display: flex; flex-direction: column; gap: 12px; overflow: auto; max-height: 300px; padding-right: 4px; min-width: 0; }
+.cfg-group { display: flex; flex-direction: column; gap: 2px; }
+.cfg-group-head { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 5px; margin-bottom: 3px; border-bottom: 1px solid #ffffff10;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #8e8e92; }
+.cfg-group-head b { font-weight: 700; color: #6e6e72; letter-spacing: 0; }
+.cfg-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: #ececee; font: 600 12px/1.35 var(--font, inherit); text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
+.cfg-item:hover:not(:disabled) { background: #ffffff08; border-color: #ffffff14; }
+.cfg-check { position: relative; width: 16px; height: 16px; flex: none; border-radius: 5px; background: #f2f2f3; border: 1.5px solid #f2f2f3; }
+.cfg-check::after { content: ""; position: absolute; left: 4.5px; top: 1.5px; width: 4px; height: 8px; border: solid #0b0b0c; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.cfg-item.off .cfg-check { background: transparent; border-color: #ffffff40; }
+.cfg-item.off .cfg-check::after { display: none; }
+.cfg-item.off .cfg-name { color: #7b7b7f; }
+.cfg-item.done { cursor: default; }
+.cfg-item.done .cfg-check { background: #3a3a3d; border-color: #3a3a3d; }
+.cfg-item.done .cfg-check::after { border-color: #cfcfd2; }
+.cfg-item.done .cfg-name { color: #9b9b9f; }
+.cfg-item.risk-medium .cfg-check { box-shadow: 0 0 0 2px rgba(240, 180, 80, .25); }
+.cfg-item.risk-high .cfg-check { box-shadow: 0 0 0 2px rgba(255, 92, 108, .35); }
+.cfg-name { min-width: 0; flex: 1; }
+.cfg-name small { display: block; margin-top: 2px; color: #8d8d91; font-size: 10.5px; font-weight: 500; }
+.cfg-item em { flex: none; font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; color: #a5a5a9; border: 1px solid #ffffff1c; border-radius: 999px; padding: 1px 7px; }
+.tiers > .tier .cfg-list { align-self: stretch; }
+
+@media (max-width: 1100px) { .cfg-featured { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .tiers.cfg-tiers { grid-template-columns: 1fr; } }

@@ -1,0 +1,86 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const read = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+
+test('H1T.CC rebrand is consistent across Electron UI and application metadata', () => {
+  const index = read('app/renderer/index.html');
+  const main = read('app/main.js');
+  const config = read('electron-builder.config.cjs');
+  const packaged = read('build/after-pack.cjs');
+  assert.match(index, /<title>H1T\.CC \| Tweak Utility<\/title>/);
+  assert.match(index, /class="brand-name">H1T<span>\.CC<\/span>/);
+  assert.match(index, /class="brand-sub">TWEAK UTILITY/);
+  assert.match(index, /<link rel="stylesheet" href="h1t\.css">/);
+  assert.match(main, /title: 'H1T\.CC Tweak Utility'/);
+  assert.match(config, /productName: 'H1T\.CC Tweak Utility'/);
+  assert.match(packaged, /ProductName: 'H1T\.CC Tweak Utility'/);
+});
+
+test('the H1T logos are used for the opening animations, sidebar, dashboard and app icon', () => {
+  const index = read('app/renderer/index.html');
+  const logo = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets/h1t-logo.png'));
+  assert.equal(logo.subarray(1, 4).toString(), 'PNG');
+  assert.equal(logo[25], 6, 'RGBA PNG with transparency');
+  assert.match(index, /class="splash boot"/);
+  assert.match(index, /<img src="assets\/h1t-logo\.png" alt="" class="boot-logo">/);
+  assert.match(index, /WELCOME BACK/);
+  assert.match(index, /href="boot\.css"/);
+  // The specular sweep is masked by the logo itself (CSP: img-src 'self').
+  assert.match(read('app/renderer/boot.css'), /mask: url\(assets\/h1t-logo\.png\)/);
+  assert.match(read('app/renderer/boot.css'), /prefers-reduced-motion: reduce/);
+  // sidebar: the H1T mark cut out of its artwork, the Halloween edition while Halloween mode is on (brand.css)
+  assert.match(index, /class="brand-logo" src="assets\/h1t-logo-main\.png"/);
+  assert.match(index, /class="brand-halloween-logo" src="assets\/h1t-logo-halloween\.png"/);
+  assert.match(index, /href="brand\.css"/);
+  for (const f of ['h1t-logo-main.png', 'h1t-logo-halloween.png']) {
+    const img = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets', f));
+    assert.equal(img.subarray(1, 4).toString(), 'PNG'); assert.equal(img[25], 6, `${f} is an RGBA PNG with a transparent background`);
+  }
+  // the dark design's boot (code eye) ends by opening onto the tweaker itself instead of showing a logo
+  assert.match(read('app/renderer/eye-boot.js'), /splash\.classList\.contains\('out'\)/);
+  assert.match(read('app/renderer/boot.css'), /html\.eye-boot \.splash\.boot\.out \{ background: transparent; opacity: 1;/);
+  assert.match(read('app/renderer/halloween-boot.js'), /assets\/h1t-logo-halloween\.png/);
+  // the Halloween boot keeps moving until the tweaker is ready (no freeze at 8 s), then opens onto it with a ring of
+  // light; app.js times the end from the animation's real start
+  const hw = read('app/renderer/halloween-boot.js');
+  assert.match(hw, /splash\.classList\.contains\('out'\)/);
+  assert.match(hw, /window\.H1T_BOOT_START = start/);
+  assert.doesNotMatch(hw, /Math\.min\(DUR, \(now - start\) \/ 1000\)/, 'the boot clock is not clamped at the end of the animation');
+  assert.match(read('app/renderer/boot.css'), /html\.hw-boot \.splash\.boot\.out \{ background: transparent; opacity: 1;/);
+  assert.match(read('app/renderer/app.js'), /window\.H1T_BOOT_START \?\? splashStart/);
+  assert.match(read('app/renderer/mono.css'), /\.h1t-dash-hero:after \{ display: none !important; \}/);
+  const ico = fs.readFileSync(path.join(__dirname, '..', 'build/icon.ico'));
+  assert.equal(ico.readUInt16LE(2), 1); assert.equal(ico.readUInt16LE(4), 7, 'icon has 7 sizes (16-256 px)');
+  assert.ok(fs.readFileSync(path.join(__dirname, '..', 'app/assets/icon.ico')).equals(ico), 'window/taskbar icon matches the exe icon');
+});
+
+test('all routes retain navigation while page transitions honor reduced motion', () => {
+  const app = read('app/renderer/app.js');
+  const css = read('app/renderer/h1t.css');
+  assert.match(app, /function go\(route\)/);
+  assert.match(app, /state\.enter = true/);
+  // Dashboard: live monitor with chart and Spotify instead of quick actions/activity (user request)
+  assert.match(app, /class="card chart-card"/);
+  assert.match(app, /window\.DashboardMedia\.html\(state\.lang\)/);
+  assert.doesNotMatch(app, /class="h1t-quick-grid"|h1t-activity-panel/);
+  assert.match(app, /data-go="backups"/);
+  assert.match(app, /data-cat="performance"/);
+  assert.match(app, /data-cat="network"/);
+  assert.match(css, /@keyframes h1t-enter/);
+  const referenceCss = read('app/renderer/h1t-dashboard.css');
+  assert.match(referenceCss, /\.h1t-metrics/);
+  assert.match(referenceCss, /\.h1t-activity-panel/);
+  assert.match(referenceCss, /\.h1t-quick\.primary/);
+  assert.match(css, /\.enter > \*/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+});
+
+test('old portable update filename remains compatible while only visible brand changes', () => {
+  const updater = read('app/updater.js');
+  const builder = read('electron-builder.config.cjs');
+  assert.match(updater, /UNDCC-Tweaker-/);
+  assert.match(builder, /artifactName: 'UNDCC-Tweaker-\$\{version\}\.exe'/);
+});

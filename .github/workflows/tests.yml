@@ -1,0 +1,35 @@
+name: Tests
+# Every push runs the full suite on Windows (Node tests plus the PowerShell backend suites).
+# Publishing stays in publish-update.yml, which runs the same tests before it builds a release.
+on:
+  push:
+    branches: ['codex/performance-backend']
+    paths-ignore: ['package.json', 'release-notes/**']
+  workflow_dispatch:
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      # Logs are not always reachable for whoever investigates; annotations are (checks API).
+      - name: Report failures as annotations
+        if: failure()
+        shell: pwsh
+        run: |
+          $suites = 'Backup','CacheCleaner','Checkpoint','Contract','Debloat','Keyboard','ModManager','Optimization','OptimizationAdapters','Performance','SafeMode'
+          foreach ($s in $suites) {
+            $out = & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "tests/$s.Tests.ps1" 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 0) {
+              $tail = ((($out.Trim() -replace '%','%25') -split "`r?`n") | Select-Object -Last 14) -join '%0A'
+              Write-Output "::error title=$s.Tests.ps1::$($tail -replace '::',': ')"
+            }
+          }
+          node --test --test-reporter=tap "tests/*.test.cjs" 2>&1 | Select-String '^not ok' | ForEach-Object { Write-Output "::error title=node test::$($_.Line)" }
