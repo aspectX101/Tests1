@@ -9,7 +9,13 @@ const { buildRulesMessage, VERIFY_ID } = require('./message');
 const { syncEmojis } = require('./emojis');
 
 const root = path.join(__dirname, '..');
-try { process.loadEnvFile(path.join(root, '.env')); } catch { /* .env is optional when the variables are set elsewhere */ }
+// .env (works on any Node version, e.g. on hosting panels); variables already set in the panel win
+try {
+  for (const line of fs.readFileSync(path.join(root, '.env'), 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$/i);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+  }
+} catch { /* .env is optional when the variables are set elsewhere */ }
 const loadConfig = () => JSON.parse(fs.readFileSync(path.join(root, 'config.json'), 'utf8'));
 const roleIdOf = (config) => process.env.VERIFIED_ROLE_ID || config.verify.roleId;
 

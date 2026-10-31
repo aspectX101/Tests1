@@ -18,7 +18,7 @@ Ein kleiner Discord-Bot, der den Regel-Post im H1T-Stil schickt: Banner, Regeln 
 4. **Kanäle:** `@everyone` sieht nur den Rules-Kanal (dort *Nachrichten senden* aus), `Verified` sieht den Rest.
 5. **IDs kopieren:** Discord *Einstellungen → Erweitert → Entwicklermodus* an. Rechtsklick auf den Server →
    *Server-ID kopieren*, Rechtsklick auf die Rolle → *Rollen-ID kopieren*.
-6. **Starten** (Node.js 20.12 oder neuer, <https://nodejs.org>): `.env.example` nach `.env` kopieren, Token,
+6. **Starten** (Node.js 18.17 oder neuer, <https://nodejs.org>): `.env.example` nach `.env` kopieren, Token,
    Server-ID und Rollen-ID eintragen, dann im Ordner `discord-bot`:
 
 ```bash
@@ -35,6 +35,21 @@ deinem Server) und registriert die Befehle.
 7. Im Rules-Kanal **`/post-rules`** eingeben. Fertig.
 
 Der Bot muss laufen, damit der Verify-Button funktioniert (eigener PC, VPS oder Bot-Hoster).
+
+## Auf Wispbyte (oder einem anderen Pterodactyl-Panel)
+
+1. `h1t-discord-bot.zip` im Panel unter **Files** hochladen → Rechtsklick → **Unarchive**. Die Dateien
+   (`index.js`, `package.json`, `src/` …) müssen direkt im Hauptordner liegen, nicht in einem Unterordner.
+2. Die Datei `.env` öffnen und `DISCORD_TOKEN`, `GUILD_ID` und `VERIFIED_ROLE_ID` eintragen. Falls das Panel die Datei
+   nicht anzeigt: versteckte Dateien einblenden, oder die drei Werte unter **Startup** als Variablen setzen, wenn es dort
+   Felder dafür gibt.
+3. Unter **Startup**: Startdatei `index.js`, Node.js 18 oder neuer (falls wählbar).
+4. **Start** drücken. Das Panel installiert discord.js beim Start selbst (`npm install`). In der Konsole muss
+   `Eingeloggt als …`, `14 Emojis bereit` und `Slash-Commands registriert` stehen.
+5. Im Rules-Kanal `/post-rules` eingeben.
+
+Wenn auf dem Server schon ein anderer Bot-Code von euch läuft, ersetzt dieser Upload ihn. Dann entweder einen zweiten
+Server im Panel nutzen oder die Dateien zusammenführen.
 
 ## Befehle (nur Admins)
 
