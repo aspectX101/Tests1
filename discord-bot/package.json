@@ -1,0 +1,16 @@
+{
+  "name": "h1t-discord-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "H1T.CC rules/verify post with custom emojis and buttons",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "design": "node design/render.cjs",
+    "check": "node scripts/check.js"
+  },
+  "engines": { "node": ">=20.12" },
+  "dependencies": {
+    "discord.js": "14.28.0"
+  }
+}

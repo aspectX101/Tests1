@@ -1,0 +1,19 @@
+{
+  "_info": "Eigene Emojis im H1T-Stil. name = Emoji-Name in Discord, icon = Datei in design/icons (Lucide, ISC) oder \"logo\", accent = Farbe des Leuchtens. Neue Icons: SVG aus https://lucide.dev in design/icons legen und hier eintragen, dann npm run design.",
+  "emojis": [
+    { "name": "h1t_logo", "icon": "logo", "accent": "#d4d4d8" },
+    { "name": "h1t_verify", "icon": "shield-check", "accent": "#34d399" },
+    { "name": "h1t_rules", "icon": "scroll-text", "accent": "#e4e4e7" },
+    { "name": "h1t_scale", "icon": "scale", "accent": "#fbbf24" },
+    { "name": "h1t_tos", "icon": "file-text", "accent": "#60a5fa" },
+    { "name": "h1t_guidelines", "icon": "book-open", "accent": "#60a5fa" },
+    { "name": "h1t_respect", "icon": "handshake", "accent": "#2dd4bf" },
+    { "name": "h1t_noads", "icon": "megaphone-off", "accent": "#f87171" },
+    { "name": "h1t_content", "icon": "copyright", "accent": "#a5b4fc" },
+    { "name": "h1t_warning", "icon": "triangle-alert", "accent": "#fb7185" },
+    { "name": "h1t_ban", "icon": "ban", "accent": "#ef4444" },
+    { "name": "h1t_gavel", "icon": "gavel", "accent": "#fbbf24" },
+    { "name": "h1t_users", "icon": "users", "accent": "#2dd4bf" },
+    { "name": "h1t_link", "icon": "link", "accent": "#cbd5e1" }
+  ]
+}
