@@ -5,5 +5,5 @@
 .rec-why summary { cursor: pointer; font-size: 12px; font-weight: 700; }
 .rec-why ul { margin: 8px 0 0; padding-left: 16px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
 .rec-why ul b { color: #f4f4f5; font-weight: 700; }
-.rec-why .rec-skips { opacity: .8; }
+.rec-why .rec-skips { opacity: .8; max-height: 260px; overflow: auto; padding-right: 6px; }
 .rec-actions { display: grid; grid-template-columns: auto 1fr; gap: 8px; }

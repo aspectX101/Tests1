@@ -41,3 +41,24 @@ test('Windows PowerShell: read-only system check returns facts', {skip:process.p
   console.log(out);const r=JSON.parse(out);assert.equal(r.ok,true);assert.ok(r.facts&&'laptop' in r.facts&&'systemDisk' in r.facts&&'customDns' in r.facts);
   assert.ok(r.facts.cpu&&r.facts.cpu.name);
 });
+test('a normal PC gets a broad selection of safe tweaks, never high-risk ones', () => {
+  const lap = {laptop:true, systemDisk:'SSD', wifi:true, customDns:false, xboxApp:true, cpu:{name:'Intel Core i7-12700H'}, gpu:['Intel UHD Graphics','NVIDIA GeForce RTX 3060 Laptop GPU']};
+  const desk = {...desktop, gpu:['NVIDIA GeForce RTX 3070']};
+  assert.ok(ids(recommendTweaks(desk, catalog)).length >= 35);
+  assert.ok(ids(recommendTweaks(lap, catalog)).length >= 25);
+  assert.ok(ids(recommendTweaks({}, catalog)).length >= 25);
+  for (const f of [desk, lap, {}]) for (const p of recommendTweaks(f, catalog).picks) {
+    assert.notEqual(p.tweak.risk, 'high', p.id);
+    assert.ok(!/^windows\.service\.|prefetch|activity|hvci|^debloat\./.test(p.id), p.id);
+  }
+});
+test('hardware GPU scheduling only for a known current graphics card', () => {
+  const pick = (gpu) => ids(recommendTweaks({...desktop, gpu}, catalog)).includes('gaming.gpu.hags');
+  assert.ok(pick(['NVIDIA GeForce RTX 4070'])); assert.ok(pick(['AMD Radeon RX 6700 XT'])); assert.ok(pick(['NVIDIA GeForce GTX 1660 SUPER']));
+  assert.ok(!pick(['NVIDIA GeForce GTX 970'])); assert.ok(!pick(['Intel(R) UHD Graphics 630'])); assert.ok(!pick([]));
+});
+test('every catalog tweak outside the rules is a service, debloat, accessibility or anti-cheat item', () => {
+  const covered = new Set(RULES.map(([id]) => id));
+  const rest = catalog.filter((t) => !covered.has(t.id)).map((t) => t.id);
+  assert.ok(rest.every((id) => /^windows\.service\.|^debloat\.|activity|ducking|filterkeys|stickykeys|togglekeys|mousekeys|hvci/.test(id)), rest.join(' '));
+});
