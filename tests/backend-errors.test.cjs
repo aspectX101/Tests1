@@ -44,3 +44,11 @@ test('the tweak, Gaming and other error toasts pass the Windows reason on (not o
     assert.doesNotMatch(read(f), /errorText\((res|r|on|list|result)\?\.error\)/, `${f} drops the detail`);
   }
 });
+
+test('script deleted while the app is open: own code that asks for a restart', async () => {
+  const call = createBackendClient({ isPackaged: false }, { windowsRoot: 'C:\\Windows', exists: () => false,
+    execFile: (exe, args, opts, cb) => process.nextTick(() => cb(Object.assign(new Error('Command failed'), { code: -196608 }), '', 'The argument ... does not exist.')) });
+  const err = await call({ action: 'list', lang: 'de' }).then(() => null, (e) => e);
+  assert.equal(err.message, 'backend_files_missing');
+  assert.match(err.detail, /tweaker\.ps1$/);
+});

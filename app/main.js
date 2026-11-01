@@ -10,12 +10,27 @@ const { relaunchElevated } = require('./elevate');
 const relaunched = app.isPackaged && relaunchElevated();
 if (relaunched) app.exit(0);
 
+// One instance: a second start brings the open window to the front. The invisible license check started by the
+// scheduled task ends at once when the app is open (the open app checks the license itself) and does not keep the
+// lock, so a start by the user during the check is not swallowed.
+const expiryRun = process.argv.includes('--h1t-expiry-check');
+const secondInstance = !relaunched && !app.requestSingleInstanceLock();
+if (secondInstance) app.exit(0);
+else if (!relaunched && expiryRun) app.releaseSingleInstanceLock();
+
 const INDEX = path.join(__dirname, 'renderer', 'index.html');
 const INDEX_URL = pathToFileURL(INDEX).href;
 const LANGS = new Set(['de', 'en', 'it']);
 
-const spotify = require('./spotify').createSpotify(app);
-const displayColor = require('./display-color').createDisplayColor(app);
+// Scripts run from a private copy, not from the portable exe's shared %TEMP% folder (see runtime-copy.js).
+const runtimeCopy = require('./runtime-copy');
+const runtime = app.isPackaged && !relaunched && !secondInstance && process.platform === 'win32'
+  ? runtimeCopy.prepareRuntime({ resources: process.resourcesPath, base: path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'H1T.CC Tweak Utility', 'runtime'), version: app.getVersion() })
+  : { root: process.resourcesPath, own: null };
+app.on('quit', () => runtimeCopy.removeRuntime(runtime.own));
+
+const spotify = require('./spotify').createSpotify(app, { resourcesPath: runtime.root });
+const displayColor = require('./display-color').createDisplayColor(app, { resourcesPath: runtime.root });
 let win;
 let currentLang = 'de';
 let lastSafeMode = null; // letzte Meldung des SafeMode-Monitors, für Fenster die später laden
@@ -27,16 +42,17 @@ const sendToUi = (channel, payload) => win && !win.isDestroyed() && win.webConte
 const useMock = (!app.isPackaged && process.argv.includes('--mock')) || process.platform !== 'win32';
 const h1tAccount = require('./h1t-account').createH1tAccount(app, { bypass: !app.isPackaged && useMock });
 let backend;
-if (relaunched) {
+if (relaunched || secondInstance) {
   backend = async () => ({ ok: false, error: 'relaunching' });
 } else if (useMock) {
   const mock = require('./mock');
   backend = (req) => mock.call(req);
 } else {
   const helper = app.isPackaged
-    ? path.join(process.resourcesPath, 'backend', 'electron', 'backend.cjs')
+    ? path.join(runtime.root, 'backend', 'electron', 'backend.cjs')
     : path.join(__dirname, '..', 'electron', 'backend.cjs');
   backend = require(helper).createBackendClient(app, {
+    resourcesPath: runtime.root,
     getLanguage: () => currentLang,
     onSafeModeReport: (report) => { lastSafeMode = { report }; sendToUi('tweaker:safemode', lastSafeMode); },
     onSafeModeError: (err) => {
@@ -52,6 +68,7 @@ const support = require('./support').createSupport({ logDir: path.join(app.getPa
 // Everything else that can go wrong lands in the same log: failed window requests of any channel, script errors
 // in the window, main-process exceptions (monitor only, Electron's own handling stays), crashed child processes.
 require('./support').wrapIpc(ipcMain, support);
+if (runtime.error) support.event({ kind: 'runtime-copy', error: runtime.error });
 process.on('uncaughtExceptionMonitor', (err, origin) => support.event({ kind: 'main-exception', origin, error: err?.message || String(err), stack: err?.stack }));
 process.on('unhandledRejection', (reason) => support.event({ kind: 'main-rejection', error: reason?.message || String(reason), stack: reason?.stack }));
 app.on('render-process-gone', (_e, _wc, d) => support.event({ kind: 'renderer-gone', reason: d?.reason, exitCode: d?.exitCode }));
@@ -307,7 +324,7 @@ ipcMain.on('window:close', (e) => trusted(e) && win?.close());
 
 // Update health (app/update-health.js): a new version that twice ends before its UI is ready goes back to the
 // exe it replaced. Only the real portable app counts, not the invisible license check or the mock.
-const health = app.isPackaged && !useMock && !expiryCheckOnly && process.env.PORTABLE_EXECUTABLE_FILE
+const health = app.isPackaged && !secondInstance && !useMock && !expiryCheckOnly && process.env.PORTABLE_EXECUTABLE_FILE
   ? require('./update-health').createUpdateHealth({ dir: app.getPath('userData'), version: app.getVersion() }) : null;
 ipcMain.on('tweaker:ui-ready', (e) => { if (trusted(e)) health?.healthy(); });
 ipcMain.on('tweaker:ui-error', (e, info) => {
@@ -316,7 +333,8 @@ ipcMain.on('tweaker:ui-error', (e, info) => {
 });
 app.on('will-quit', () => health?.closed());
 
-if (!relaunched) app.whenReady().then(async () => {
+app.on('second-instance', () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
+if (!relaunched && !secondInstance) app.whenReady().then(async () => {
   const back = health?.begin();
   if (back?.rollback && updater.rollback(back.rollback)) { app.exit(0); return; }
   await h1tAccount.load(); await licenseExpiry.load();

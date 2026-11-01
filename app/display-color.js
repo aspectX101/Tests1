@@ -25,7 +25,7 @@ function createDisplayColor(app, options = {}) {
   const spawnProcess = options.spawn || spawn;
   const fs = options.fs || fsp;
   const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
-  const script = app.isPackaged ? path.join(process.resourcesPath, 'media', 'display-color.ps1') : path.join(__dirname, 'display-color.ps1');
+  const script = app.isPackaged ? path.join(options.resourcesPath || process.resourcesPath, 'media', 'display-color.ps1') : path.join(__dirname, 'display-color.ps1');
   const file = () => path.join(app.getPath('userData'), 'color-look.json');
   let worker = null, current = { ...NEUTRAL }, saved = null, status = platform === 'win32' ? 'ready' : 'unsupported', listener = () => {};
   const state = () => ({ status, look: { ...current }, saved: saved ? { ...saved } : null });

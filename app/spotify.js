@@ -16,7 +16,7 @@ function createSpotify(app, options = {}) {
   const platform = options.platform || process.platform;
   const spawnProcess = options.spawn || spawn, execute = options.execFile || execFile;
   const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
-  const script = app.isPackaged ? path.join(process.resourcesPath, 'media', 'spotify-session.ps1') : path.join(__dirname, 'spotify-session.ps1');
+  const script = app.isPackaged ? path.join(options.resourcesPath || process.resourcesPath, 'media', 'spotify-session.ps1') : path.join(__dirname, 'spotify-session.ps1');
   const args = action => ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, '-Action', action];
   let worker = null, watchdog = null, wanted = false, state = empty(), listener = () => {}, busy = false;
   const emit = value => { state = clean(value); listener(state); };

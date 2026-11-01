@@ -12,6 +12,7 @@ const modCategories = new Set(['graphics', 'sound', 'weapons', 'minimap', 'other
 // Main-process code only. Do not give the renderer access to execFile or arbitrary paths.
 function createBackendClient(app, options = {}) {
   const run = options.execFile || execFile;
+  const exists = options.exists || require('node:fs').existsSync;
   const resources = options.resourcesPath || process.resourcesPath;
   const root = app.isPackaged ? path.join(resources, 'backend') : path.resolve(__dirname, '..');
   const script = path.join(root, 'tweaker.ps1');
@@ -95,6 +96,9 @@ function createBackendClient(app, options = {}) {
         const fail = (code, detail) => { const err = new Error(code); if (detail) err.detail = String(detail).slice(0, 400); return err; };
         const firstLines = (text) => String(text || '').trim().split(/\r?\n/).filter(Boolean).slice(0, 3).join(' | ');
         if (error && error.code !== 1) {
+          // The portable exe runs from a temp folder; a second start of the same build or a temp cleaner can delete
+          // it while the app is open. Then PowerShell finds no script: tell the user to restart instead of "PowerShell failed".
+          if (!exists(script)) return reject(fail('backend_files_missing', script));
           const how = typeof error.code === 'number' ? `exit ${error.code} (0x${(error.code >>> 0).toString(16)})` : `spawn ${error.code || error.errno || error.message}`;
           return reject(fail(error.killed ? 'backend_timeout_or_terminated' : 'backend_process_failed', [how, error.signal && `signal ${error.signal}`, firstLines(stderr)].filter(Boolean).join('; ')));
         }
