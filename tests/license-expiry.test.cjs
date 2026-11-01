@@ -262,7 +262,7 @@ test('development mock and in-progress checks are ignored', async () => {
 
 test('scheduled task: daily check for every license, plus the end date for time-limited ones', async () => {
   const runs = [];
-  const task = createLicenseTask({ exe: () => 'C:\\Tools\\UNDCC-Tweaker-0.9.28.exe', now: () => T0, run: async (env) => { runs.push(env); return 'ok'; } });
+  const task = createLicenseTask({ exe: () => 'C:\\Tools\\UNDCC-Tweaker-0.9.28.exe', now: () => T0, run: async (env) => { if (env.H1T_TASK_MODE === 'query') return 'none'; runs.push(env); return 'ok'; } });
   const end = Date.parse(week);
   await task.sync({ licensed: true, lifetime: false, expires_at: end });
   await task.sync({ licensed: true, lifetime: false, expires_at: end });
@@ -270,7 +270,7 @@ test('scheduled task: daily check for every license, plus the end date for time-
   assert.equal(runs[0].H1T_TASK_MODE, 'register');
   assert.equal(runs[0].H1T_TASK_EXE, 'C:\\Tools\\UNDCC-Tweaker-0.9.28.exe');
   assert.equal(runs[0].H1T_TASK_AT, new Date(end + 60000).toISOString());
-  assert.equal(runs[0].H1T_TASK_DAILY, new Date(T0 + 15 * 60000).toISOString());
+  assert.equal(runs[0].H1T_TASK_DAILY, new Date(T0 + 23 * 3600000).toISOString());
   await task.sync({ licensed: true, lifetime: true, expires_at: null });
   assert.equal(runs[1].H1T_TASK_MODE, 'register');
   assert.equal(runs[1].H1T_TASK_AT, '');
@@ -280,6 +280,19 @@ test('scheduled task: daily check for every license, plus the end date for time-
   const dev = createLicenseTask({ exe: () => null, run: async (env) => { runs.push(env); return 'ok'; } });
   await dev.sync({ licensed: true, lifetime: false, expires_at: end });
   assert.equal(runs.pop().H1T_TASK_MODE, 'remove');
+});
+
+test('an existing task with the same exe and end date is kept, so starting the app does not move the daily check', async () => {
+  const end = Date.parse(week), exe = 'C:\\Tools\\H1T.CC-Tweaker-1.0.37.exe', modes = [];
+  const existing = JSON.stringify({ execute: exe.toUpperCase(), arguments: '--h1t-expiry-check', at: new Date(end + 60000).toISOString(), daily: true });
+  const task = createLicenseTask({ exe: () => exe, run: async (env) => { modes.push(env.H1T_TASK_MODE); return env.H1T_TASK_MODE === 'query' ? existing : 'registered'; } });
+  assert.equal(await task.sync({ licensed: true, lifetime: false, expires_at: end }), 'unchanged');
+  assert.deepEqual(modes, ['query']);
+  // A different end date (license extended) registers again.
+  assert.equal(await task.sync({ licensed: true, lifetime: false, expires_at: end + DAY }), 'registered');
+  // A new exe (update) registers again, too.
+  const moved = createLicenseTask({ exe: () => 'C:\\Tools\\H1T.CC-Tweaker-1.0.38.exe', run: async (env) => (env.H1T_TASK_MODE === 'query' ? existing : 'registered') });
+  assert.equal(await moved.sync({ licensed: true, lifetime: false, expires_at: end }), 'registered');
 });
 
 test('Windows: the license check task is really registered with the expiry time and removed again', { skip: process.platform !== 'win32' }, async () => {

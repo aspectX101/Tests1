@@ -57,8 +57,17 @@ function createLicenseTask({ exe, name = TASK_NAME, run = runScript, now = Date.
       const at = !lifetime && Number.isFinite(expires_at) ? new Date(expires_at + 60000).toISOString() : '';
       const key = `${target}|${at}`;
       if (registered === key) return 'unchanged';
-      // The daily check starts 15 minutes from now and then repeats at that time of day.
-      const daily = new Date(now() + 15 * 60000).toISOString();
+      // Up to 1.0.36 every app start registered the task anew with the daily check 15 minutes later, so it nearly
+      // always started a second copy of the exe while the app was open. Now an existing task with the same exe and
+      // end date is kept, and a new daily check starts 23 hours from now (not during the current session).
+      if (registered === null) {
+        try {
+          const q = JSON.parse(await run({ name, H1T_TASK_MODE: 'query' }));
+          const sameAt = at ? Math.abs(Date.parse(q.at) - Date.parse(at)) < 2000 : !q.at;
+          if (q.daily && sameAt && q.arguments === '--h1t-expiry-check' && String(q.execute).toLowerCase() === target.toLowerCase()) { registered = key; return 'unchanged'; }
+        } catch { /* no task yet or not readable: register */ }
+      }
+      const daily = new Date(now() + 23 * 3600000).toISOString();
       const out = await run({ name, H1T_TASK_MODE: 'register', H1T_TASK_EXE: target, H1T_TASK_DAILY: daily, H1T_TASK_AT: at });
       registered = key;
       return out;
