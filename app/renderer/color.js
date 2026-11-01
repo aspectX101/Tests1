@@ -51,7 +51,7 @@
     lang = language; const t = w();
     const bar = (key) => `<div class="color-col">
         <span class="color-val" data-color-val="${key}">${look[key]}</span>
-        <div class="color-bar" data-color="${key}" role="slider" tabindex="0" aria-label="${t[key]}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${look[key]}" style="--v:${look[key] / 100}"><i></i></div>
+        <div class="color-bar" data-color="${key}" role="slider" tabindex="0" aria-label="${t[key]}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${look[key]}"><i></i></div>
         <b>${t[key]}</b>
       </div>`;
     return `<div class="card detail-head cat-hero"><div class="tile-icon">${palette}</div>

@@ -211,6 +211,8 @@ function errorText(code, detail) {
   if (detail && /^backend_(process_failed|timeout_or_terminated)$|^(invalid_backend_json|unexpected_backend_stderr)$/.test(code || '')) return `${e[code] || code} (${detail})`;
   if (e[code]) return e[code];
   if (/_verification_failed$/.test(code || '')) return e.verification;
+  // An internal code without a translation reads as "Unknown error (code)"; free text (e.g. a Windows message) stays.
+  if (/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(code || '')) return `${t().unknownError} (${code})`;
   return code || t().unknownError;
 }
 
