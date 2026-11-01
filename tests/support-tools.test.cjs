@@ -11,7 +11,7 @@ const bat = fs.readFileSync(path.join(dir, 'H1T-GPU-Hilfe.bat'), 'utf8');
 
 test('the .bat embeds the same script and elevates itself', () => {
   const body = bat.slice(bat.lastIndexOf('#PSSTART') + '#PSSTART'.length).replace(/\r\n/g, '\n').trim();
-  assert.equal(body, ps.replace("param([switch]$ReportOnly, [string]$OutFile)", "$ReportOnly = $false; $OutFile = ''").trim());
+  assert.equal(body, ps.replace(/\r\n/g, '\n').replace("param([switch]$ReportOnly, [string]$OutFile)", "$ReportOnly = $false; $OutFile = ''").trim());
   assert.match(bat, /net session >nul 2>&1 \|\| \(powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"/);
   assert.doesNotMatch(bat, /[^\x00-\x7f]/, 'plain ASCII so every console shows it correctly');
 });
