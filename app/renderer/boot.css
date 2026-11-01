@@ -1,0 +1,117 @@
+/* H1T.CC boot sequence (~4.3 s), inspired by console start-ups, in black / graphite / white:
+   1. eclipse: a giant chrome planet rises at the bottom edge, its rim catches a white light
+   2. breach: light bursts through the continent cracks, an anamorphic streak crosses the horizon
+   3. pull-back: the camera flies back until the planet is logo-sized in the centre
+   4. flash: white bloom + shock ring, the planet becomes the real H1T.CC logo
+   5. reveal: specular sweep over the chrome, "WELCOME BACK" */
+.splash.boot { --s: min(44vmin, 340px); --y: -34px; background: #000; display: block; overflow: hidden; cursor: pointer; }
+
+/* Floating dust, slowly drifting up for the whole sequence. */
+.boot-dust { position: absolute; inset: -20%; opacity: 0; animation: boot-dust 5s linear .3s both; background-image:
+  radial-gradient(1px 1px at 14% 26%, #ffffff70 50%, transparent 51%), radial-gradient(1px 1px at 72% 16%, #ffffff55 50%, transparent 51%),
+  radial-gradient(1.5px 1.5px at 38% 74%, #ffffff40 50%, transparent 51%), radial-gradient(1px 1px at 86% 62%, #ffffff60 50%, transparent 51%),
+  radial-gradient(1px 1px at 58% 90%, #ffffff35 50%, transparent 51%), radial-gradient(1.5px 1.5px at 24% 52%, #ffffff30 50%, transparent 51%),
+  radial-gradient(1px 1px at 46% 34%, #ffffff45 50%, transparent 51%), radial-gradient(1px 1px at 92% 40%, #ffffff38 50%, transparent 51%); }
+
+/* Everything is placed around the centre of the window. */
+.boot-stage { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+
+/* The planet (sphere + corona + cracks) flies as one body. */
+.boot-body { position: absolute; left: calc(var(--s) / -2); top: calc(var(--s) / -2); width: var(--s); height: var(--s);
+  transform-origin: 50% 50%; will-change: transform; animation: boot-pull 2.6s both; }
+.boot-corona { position: absolute; inset: -38%; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, .16) 36%, transparent 64%);
+  animation: boot-corona 2.6s ease-out both; }
+.boot-sphere { position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 38% 28%, #6b6b72 0%, #2a2a2f 26%, #0d0d10 58%, #020203 100%);
+  box-shadow: inset -18px -26px 60px rgba(0, 0, 0, .85), inset 10px 14px 40px rgba(255, 255, 255, .08);
+  animation: boot-sphere-out .32s ease 2.42s both; }
+/* Rim light: an outer shadow pulled upwards catches only the top edge, like an eclipse. */
+.boot-rim { position: absolute; inset: 0; border-radius: 50%; opacity: 0;
+  box-shadow: 0 -1.5px 1px 0 #fff, 0 -6px 18px -2px rgba(255, 255, 255, .9), 0 -24px 70px -8px rgba(255, 255, 255, .45);
+  animation: boot-rim 2.6s ease-out both; }
+.boot-cracks { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; mix-blend-mode: screen;
+  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 6px rgba(255, 255, 255, .7)) drop-shadow(0 0 16px rgba(255, 255, 255, .35));
+  animation: boot-cracks 2.6s ease-out both; }
+.boot-cracks path { fill: none; stroke: #fff; stroke-width: .42; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 140; stroke-dashoffset: 140; animation: boot-draw .9s cubic-bezier(.6, 0, .2, 1) .85s forwards; }
+.boot-cracks path:nth-child(2n) { animation-delay: .98s; }
+.boot-cracks path:nth-child(3n) { animation-delay: 1.1s; stroke-width: .28; }
+.boot-cracks path:nth-child(n+7) { stroke-width: .22; opacity: .75; }
+
+/* Anamorphic light streak across the horizon while the light breaks through. */
+.boot-flare { position: absolute; left: 50%; top: calc(50% + 20vh); width: 140vw; height: 2px; margin-left: -70vw; opacity: 0; transform: scaleX(.1);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .25) 22%, #fff 50%, rgba(255, 255, 255, .25) 78%, transparent);
+  box-shadow: 0 0 18px 2px rgba(255, 255, 255, .55); animation: boot-flare 1.4s cubic-bezier(.2, .8, .2, 1) .8s both; }
+
+/* Flash + shock ring when the planet turns into the logo. */
+.boot-flash { position: fixed; inset: 0; opacity: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% calc(50% - 34px), #fff 0%, rgba(255, 255, 255, .75) 22%, rgba(255, 255, 255, .12) 55%, transparent 75%);
+  animation: boot-flash .75s ease-out 2.42s both; }
+.boot-ring { position: absolute; left: calc(var(--s) * -0.55); top: calc(var(--s) * -0.55 + var(--y)); width: calc(var(--s) * 1.1); height: calc(var(--s) * 1.1);
+  border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .9); box-shadow: 0 0 24px rgba(255, 255, 255, .6), inset 0 0 24px rgba(255, 255, 255, .35);
+  opacity: 0; animation: boot-ring 1s cubic-bezier(.1, .7, .2, 1) 2.5s forwards; }
+.boot-ring.two { animation-delay: 2.66s; border-width: 1px; }
+
+/* The real logo, a halo behind it and a specular sweep across the chrome. */
+.boot-halo { position: absolute; left: calc(var(--s) * -1); top: calc(var(--s) * -1 + var(--y)); width: calc(var(--s) * 2); height: calc(var(--s) * 2);
+  border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, .16), rgba(255, 255, 255, .04) 40%, transparent 66%);
+  opacity: 0; animation: boot-halo 1.6s ease-out 2.5s both; }
+.boot-logo, .boot-shine { position: absolute; left: calc(var(--s) * -0.66); top: calc(var(--s) * -0.535 + var(--y)); width: calc(var(--s) * 1.32); height: calc(var(--s) * 1.07); }
+.boot-logo { object-fit: contain; opacity: 0; filter: drop-shadow(0 18px 40px rgba(0, 0, 0, .8)) drop-shadow(0 0 28px rgba(255, 255, 255, .14));
+  animation: boot-logo .9s cubic-bezier(.2, .8, .2, 1) 2.48s both; }
+.boot-shine { pointer-events: none; opacity: 0;
+  -webkit-mask: url(assets/h1t-logo.png) center / contain no-repeat; mask: url(assets/h1t-logo.png) center / contain no-repeat;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .0) 42%, rgba(255, 255, 255, .85) 50%, rgba(255, 255, 255, 0) 58%, transparent 62%) 0 0 / 300% 100% no-repeat;
+  mix-blend-mode: screen; animation: boot-shine 1.1s ease-in-out 3.05s forwards; }
+
+.boot-text { position: absolute; left: -50vw; width: 100vw; top: calc(var(--s) * 0.6 + var(--y)); text-align: center; color: #f4f4f5; }
+.boot-text small { display: block; font: 700 11px/1 'Segoe UI', system-ui, sans-serif; letter-spacing: .62em; color: #b9b9be; text-indent: .62em;
+  animation: boot-text .8s ease-out 3.15s both; }
+.boot-text i { display: block; width: 180px; height: 1px; margin: 14px auto 0; transform-origin: 50% 50%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .8), transparent); animation: boot-line .9s cubic-bezier(.2, .8, .2, 1) 3.25s both; }
+.boot-skip { position: absolute; right: 22px; bottom: 18px; font: 600 10px/1 'Segoe UI', system-ui, sans-serif; letter-spacing: .24em; color: #ffffff4a;
+  animation: boot-text .6s ease-out 1.2s both; }
+
+@keyframes boot-pull {
+  0% { transform: translateY(calc(26vh + var(--s) * 3.5)) scale(7); animation-timing-function: cubic-bezier(.3, .2, .4, 1); }
+  38% { transform: translateY(calc(20vh + var(--s) * 3.5)) scale(7); animation-timing-function: cubic-bezier(.7, 0, .18, 1); }
+  100% { transform: translateY(var(--y)) scale(1); }
+}
+@keyframes boot-corona { 0% { opacity: 0; } 30% { opacity: .35; } 52% { opacity: .95; } 80% { opacity: .55; } 100% { opacity: .3; } }
+@keyframes boot-rim { 0% { opacity: 0; } 24% { opacity: 1; } 70% { opacity: .9; } 100% { opacity: .55; } }
+@keyframes boot-cracks { 0%, 30% { opacity: 0; } 46% { opacity: .95; } 75% { opacity: .7; } 100% { opacity: .35; } }
+@keyframes boot-draw { to { stroke-dashoffset: 0; } }
+@keyframes boot-sphere-out { to { opacity: 0; } }
+@keyframes boot-flare { 0% { opacity: 0; transform: scaleX(.05); } 25% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1.25) translateY(-6vh); } }
+@keyframes boot-flash { 0% { opacity: 0; } 18% { opacity: .95; } 100% { opacity: 0; } }
+@keyframes boot-ring { 0% { opacity: .95; transform: scale(.35); } 100% { opacity: 0; transform: scale(3.2); } }
+@keyframes boot-halo { 0% { opacity: 0; transform: scale(.6); } 40% { opacity: 1; } 100% { opacity: .75; transform: scale(1); } }
+@keyframes boot-logo { 0% { opacity: 0; transform: scale(1.14); filter: brightness(3) blur(4px) drop-shadow(0 0 28px #fff); } 100% { opacity: 1; transform: none; } }
+@keyframes boot-shine { 0% { opacity: 1; background-position: 120% 0; } 100% { opacity: 1; background-position: -40% 0; } }
+@keyframes boot-text { from { opacity: 0; transform: translateY(8px); letter-spacing: .9em; } to { opacity: 1; transform: none; } }
+@keyframes boot-line { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
+@keyframes boot-dust { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: .7; } 100% { opacity: .4; transform: translateY(-40px); } }
+
+.splash.boot.out { opacity: 0; transform: scale(1.03); filter: blur(3px); transition: opacity .6s ease, transform .7s ease, filter .6s ease; }
+/* The sign-in window waits until the sequence has played. */
+body.booting #h1t-license-gate { visibility: hidden; }
+
+/* Reduced motion: just the finished logo, no flight, flash or sweep. */
+@media (prefers-reduced-motion: reduce) {
+  .splash.boot *, .splash.boot *::before, .splash.boot *::after { animation: none !important; }
+  .boot-body, .boot-flare, .boot-flash, .boot-ring, .boot-shine, .boot-dust, .boot-skip { display: none; }
+  .boot-logo, .boot-halo, .boot-text small, .boot-text i { opacity: 1; }
+}
+
+/* Canvas boot animations replace the CSS boot scene: halloween-boot.js in the season, eye-boot.js otherwise. */
+html.hw-boot .splash.boot > :not(.hw-boot-canvas), html.eye-boot .splash.boot > :not(.eye-boot-canvas) { display: none !important; }
+html.hw-boot .splash.boot, html.eye-boot .splash.boot { background: #000; }
+/* Halloween: the canvas itself opens onto the tweaker (a ring of light from the logo), so the splash stays put. */
+@media (prefers-reduced-motion: no-preference) {
+  html.hw-boot .splash.boot.out { background: transparent; opacity: 1; transform: none; filter: none; transition: none; }
+}
+.hw-boot-canvas, .eye-boot-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+/* The code eye ends by opening wide and showing the tweaker through it: the canvas cuts the hole, so the splash
+   itself must stay put and see-through instead of fading. */
+html.eye-boot .splash.boot.out { background: transparent; opacity: 1; transform: none; filter: none; transition: none; }

@@ -1,0 +1,18 @@
+/* FiveM > H1T Mods: preview cards in a calm grid. */
+.h1t-mods-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.h1t-mod { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.h1t-mod-preview { position: relative; aspect-ratio: 16 / 9; background: #0d0d0e; border-bottom: 1px solid #ffffff10; }
+.h1t-mod-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.h1t-mod-noprev { width: 100%; height: 100%; display: grid; place-items: center; color: #6f6f73; }
+.h1t-mod-noprev svg { width: 42px; height: 42px; }
+.h1t-mod-cat { position: absolute; left: 10px; top: 10px; padding: 3px 9px; border-radius: 999px; background: #000000b3; border: 1px solid #ffffff26;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #ececee; }
+.h1t-mod-body { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; flex: 1; }
+.h1t-mod-body h3 { margin: 0; font-size: 15px; font-weight: 800; }
+.h1t-mod-meta { margin: 0; font-size: 11px; color: #8d8d91; }
+.h1t-mod-desc { margin: 2px 0 6px; font-size: 12px; line-height: 1.45; color: #b3b3b7; flex: 1; }
+.h1t-mod-go { align-self: stretch; justify-content: center; height: 40px; display: inline-flex; align-items: center; gap: 8px; }
+.h1t-mod-go svg { width: 16px; height: 16px; }
+.h1t-mod .cat-meter { height: 4px; }
+.h1t-mod-skel { height: 300px; }
+.h1t-mods-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 34px; text-align: center; color: #a3a3a7; }
