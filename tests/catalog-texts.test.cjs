@@ -29,6 +29,7 @@ test('tweaks that FiveM screenshares check carry the warning, and configs never 
     for (const lang of ['de', 'en', 'it']) assert.match(tw.description[lang], notes[lang], `${id}.${lang}`);
   }
   const app = fs.readFileSync(path.join(root, 'app/renderer/app.js'), 'utf8');
-  assert.match(app, /const profileCandidates[\s\S]{0,400}!neverInConfig\(tw\)/);
+  assert.match(app, /const profileBase[\s\S]{0,400}!neverInConfig\(tw\)/);
+  assert.match(app, /const profileCandidates = \(tier\) => \{\s*return guarded\(profileBase\(tier\)\)\.allowed;/);
   assert.match(app, /neverInConfig = \(tw\) => NEVER_IN_CONFIG\.has\(tw\.id\) \|\| catOf\(tw\) === 'services'/);
 });

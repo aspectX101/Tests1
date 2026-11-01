@@ -101,7 +101,14 @@
   const tx = () => TEXT[(typeof state !== 'undefined' && state.lang) || 'de'] || TEXT.en;
   const result = () => recommendTweaks(rec.facts, typeof state !== 'undefined' ? state.tweaks : []);
   // Tweaks the "Recommended" profile applies: picks not active yet and not deselected.
-  const candidates = () => rec.facts ? result().picks.map((p) => p.tweak) : [];
+  // Picks the config guard leaves out for this PC (driver resets, power-offs, laptop, ...).
+  const guardOut = () => (rec.facts && root.ConfigGuard ? root.ConfigGuard.guard(rec.facts, result().picks.map((p) => p.tweak)).skipped : []);
+  const guardedOut = () => guardOut();
+  const candidates = () => {
+    if (!rec.facts) return [];
+    const out = new Set(guardOut().map((s) => s.tweak.id));
+    return result().picks.map((p) => p.tweak).filter((tw) => !out.has(tw.id));
+  };
   async function check() {
     if (rec.busy) return;
     rec.busy = true; rec.error = null; render();
@@ -129,11 +136,14 @@
       return `<section class="card cfg-featured">${info(`<div class="cfg-feat-actions">${checkBtn}</div>`)}
         <div class="cfg-feat-picks cfg-feat-empty"><p class="muted">${esc(rec.error ? `${w.failed} ${errorText(rec.error)}` : rec.busy ? w.checking : w.first)}</p></div></section>`;
     }
-    const { picks, skips } = result();
+    const all = result(), out = guardOut(), outIds = new Set(out.map((s) => s.tweak.id));
+    const picks = all.picks.filter((p) => !outIds.has(p.id));
+    const lang = (typeof state !== 'undefined' && state.lang) || 'de';
+    const skips = [...all.skips, ...out.map((s) => ({ id: s.tweak.id, tweak: s.tweak, text: s.reasons.map((r) => root.ConfigGuard.reasonText(lang, r)).join(' ') }))];
     const todo = picks.filter((p) => !p.tweak.applied && !state.profileOff.has(p.id));
     const done = picks.filter((p) => p.tweak.applied).length;
     const reasonOf = new Map(picks.map((p) => [p.id, w.reasons[p.reason] || '']));
-    const line = (x) => `<li><b>${esc(x.tweak.name)}</b> – ${esc(w.reasons[x.reason] || x.reason)}</li>`;
+    const line = (x) => `<li><b>${esc(x.tweak.name)}</b> – ${esc(x.text || w.reasons[x.reason] || x.reason)}</li>`;
     return `<section class="card cfg-featured${mine ? ' running' : ''}">
       ${info(`<div class="rec-facts">${summary(rec.facts)}</div>
         ${skips.length ? `<details class="rec-why"><summary>${esc(w.skipped)} (${skips.length})</summary><ul class="rec-skips">${skips.map(line).join('')}</ul></details>` : ''}
@@ -154,7 +164,7 @@
       if (tiers) tiers.recommended = [TEXT[lang].name, TEXT[lang].desc];
     }
   }
-  const api = { recommendTweaks, RULES, TEXT, card, candidates, check, state: rec };
+  const api = { recommendTweaks, RULES, TEXT, card, candidates, guardedOut, check, state: rec };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Recommend = api;
 })(this);

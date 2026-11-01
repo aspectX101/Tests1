@@ -68,5 +68,6 @@ document.addEventListener('click', async (e) => {
   if (!tw.applied && tw.risk === 'high' && tw.id === 'gaming.hvci.off') {
     if (!(await confirmDialog(gamingText().confirm, tw.description, gamingText().confirmGo))) return;
   }
+  if (!tw.applied && typeof guardConfirm === 'function' && !(await guardConfirm(tw))) return;
   await setTweak(tw.id, !tw.applied);
 });

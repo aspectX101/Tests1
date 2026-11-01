@@ -4,6 +4,15 @@ function Get-SystemCheckFact([scriptblock]$Read) {
     try { return & $Read } catch { return $null }
 }
 
+# Events matching the filter; none found is an empty list, an unreadable log throws (fact becomes $null).
+function Get-SystemCheckEvents([hashtable]$Filter) {
+    try { return @(Get-WinEvent -FilterHashtable $Filter -ErrorAction Stop) }
+    catch {
+        if ($_.FullyQualifiedErrorId -match 'NoMatchingEventsFound' -or $_.Exception.Message -match 'No events were found|Es wurden keine Ereignisse gefunden|Non sono stati trovati eventi') { return @() }
+        throw
+    }
+}
+
 function Get-TweakerSystemCheck {
     $laptop = Get-SystemCheckFact {
         # Portable chassis types (SMBIOS) or a battery.
@@ -43,7 +52,34 @@ function Get-TweakerSystemCheck {
     }
     $xboxApp = Get-SystemCheckFact { @(Get-AppxPackage -Name 'Microsoft.GamingApp' -ErrorAction Stop).Count -gt 0 }
     $build = Get-SystemCheckFact { [int][Environment]::OSVersion.Version.Build }
+    # Stability over the last 30 days from the Windows event logs (read only). These are the traces a weak or
+    # overloaded power supply, an unstable overclock or a struggling graphics driver leave; the configs leave out
+    # tweaks that would add to them. $null = the log could not be read.
+    $since = (Get-Date).AddDays(-30)
+    $gpuResets = Get-SystemCheckFact {
+        # Display 4101: "display driver stopped responding and has recovered" (TDR, DXGI_ERROR_DEVICE_HUNG/REMOVED).
+        $tdr = @(Get-SystemCheckEvents @{ LogName = 'System'; ProviderName = 'Display'; Id = 4101; StartTime = $since }).Count
+        # Windows Error Reporting: LiveKernelEvent 141/117/1a8 are GPU hangs and resets.
+        $lke = @(Get-SystemCheckEvents @{ LogName = 'Application'; ProviderName = 'Windows Error Reporting'; Id = 1001; StartTime = $since } |
+            Where-Object { $_.Message -match 'LiveKernelEvent' -and $_.Message -match '(?<![0-9a-f])(141|117|1a8)(?![0-9a-f])' }).Count
+        $tdr + $lke
+    }
+    # Kernel-Power 41: Windows went off without a clean shutdown (power loss, PSU limit, overheating, crash).
+    $unexpectedShutdowns = Get-SystemCheckFact { @(Get-SystemCheckEvents @{ LogName = 'System'; ProviderName = 'Microsoft-Windows-Kernel-Power'; Id = 41; StartTime = $since }).Count }
+    # WHEA machine-check errors (18/19/20/47): typical for an unstable overclock or too little voltage.
+    $hardwareErrors = Get-SystemCheckFact { @(Get-SystemCheckEvents @{ LogName = 'System'; ProviderName = 'Microsoft-Windows-WHEA-Logger'; Id = 18,19,20,47; StartTime = $since }).Count }
+    $gpuDriverAgeDays = Get-SystemCheckFact {
+        $cards = @(Get-CimInstance Win32_VideoController -ErrorAction Stop | Where-Object { $_.DriverDate })
+        $main = @($cards | Where-Object { $_.Name -match 'NVIDIA|AMD|Radeon|Arc' })[0]
+        if (-not $main) { $main = $cards[0] }
+        if (-not $main) { return $null }
+        [int]((Get-Date) - [datetime]$main.DriverDate).TotalDays
+    }
+    # Riot Vanguard and FACEIT need memory integrity (HVCI) on.
+    $antiCheatHvci = Get-SystemCheckFact { @(Get-Service -Name 'vgc','vgk','FACEIT','FACEITService' -ErrorAction SilentlyContinue).Count -gt 0 }
     [pscustomobject]@{ ok = $true; facts = [pscustomobject]@{
         laptop = $laptop; cpu = $cpu; gpu = $gpu; ramGB = $ramGB; systemDisk = $systemDisk
-        wifi = $wifi; ethernetUp = $ethernetUp; customDns = $customDns; xboxApp = $xboxApp; build = $build } }
+        wifi = $wifi; ethernetUp = $ethernetUp; customDns = $customDns; xboxApp = $xboxApp; build = $build
+        gpuResets = $gpuResets; unexpectedShutdowns = $unexpectedShutdowns; hardwareErrors = $hardwareErrors
+        gpuDriverAgeDays = $gpuDriverAgeDays; antiCheatHvci = $antiCheatHvci } }
 }

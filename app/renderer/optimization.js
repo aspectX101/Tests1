@@ -70,9 +70,17 @@ async function optimizationRun(restore=false,cat='performance') {
       records=list.backups.filter(b=>b.kind==='tweak'&&ids.has(b.tweakId)&&!['restored','superseded'].includes(b.status)&&!['already_restored','backup_superseded'].includes(b.reason));
       if(!records.length){opt.result={cat,ok:true,results,note:optText(cat).empty};return;}
       selected=records.map(b=>optTweaks(cat).find(x=>x.id===b.tweakId));
-    } else {selected=optSelection(cat);if(!selected.length)return;}
+    } else {
+      // System check first: tweaks this PC should not get are left out, with the reason (config-guard.js).
+      // The guard lives in app.js; without it (isolated tests) the tab applies its tweaks as before.
+      const withGuard=typeof ensureFacts==='function'&&typeof guarded==='function';
+      const facts=withGuard?await ensureFacts():null;
+      const g=withGuard?guarded(optSelection(cat)):{allowed:optSelection(cat),skipped:[]};selected=g.allowed;
+      var skippedInfo=!withGuard?'':!facts?'\n\n'+guardText().checkFailed:g.skipped.length?'\n\n'+guardText().title+':\n'+g.skipped.map(s=>`${s.tweak.name}: ${guardReasons(s)}`).join('\n'):'';
+      if(!selected.length){if(g.skipped.length)opt.result={cat,ok:true,results,note:guardText().skippedNote(g.skipped.length)};return;}
+    }
     const label=restore?'Revert All':OPT_TABS[cat].start;
-    const details=selected.map(x=>restore?x.name:`${x.name} [${t().risk[x.risk]||x.risk}]\n${x.description}`).join('\n\n');
+    const details=selected.map(x=>restore?x.name:`${x.name} [${t().risk[x.risk]||x.risk}]\n${x.description}`).join('\n\n')+(restore?'':skippedInfo||'');
     if(!await confirmDialog(label,`${restore?optText(cat).restore:optText(cat).confirm}\n\n${details}`,label))return;
     for(let i=0;i<selected.length;i++) {
       const tw=selected[i], b=records?.[i];

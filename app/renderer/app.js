@@ -177,9 +177,40 @@ const NEVER_BULK = new Set(['keyboard.filterkeys.off', 'keyboard.stickykeys.off'
 const NEVER_IN_CONFIG = new Set(['windows.prefetch.off', 'windows.activity.off']);
 const neverInConfig = (tw) => NEVER_IN_CONFIG.has(tw.id) || catOf(tw) === 'services';
 const PROFILE_TIERS = [['safe', ['low']], ['aggressive', ['low', 'medium']], ['hardcore', ['low', 'medium', 'high']]];
-const profileCandidates = (tier) => {
+// System check facts (recommend.js) decide what this PC should not get (config-guard.js).
+const sysFacts = () => window.Recommend?.state.facts || null;
+const guarded = (list) => window.ConfigGuard ? window.ConfigGuard.guard(sysFacts(), list) : { allowed: list, skipped: [] };
+const guardReasons = (s) => s.reasons.map((r) => window.ConfigGuard.reasonText(state.lang, r)).join(' ');
+const guardText = () => window.ConfigGuard.TEXT[state.lang] || window.ConfigGuard.TEXT.en;
+// Facts are read once in the background; configs and bulk starts wait for them.
+async function ensureFacts() {
+  if (!sysFacts() && window.Recommend) await window.Recommend.check();
+  return sysFacts();
+}
+const profileBase = (tier) => {
   const risks = PROFILE_TIERS.find(([k]) => k === tier)[1];
   return state.tweaks.filter((tw) => tw.available !== false && risks.includes(tw.risk) && !NEVER_BULK.has(tw.id) && catOf(tw) !== 'debloat' && !neverInConfig(tw));
+};
+const profileSkipped = (tier) => guarded(profileBase(tier)).skipped;
+// A single switch for a tweak the check advises against asks once more, with the reason.
+async function guardConfirm(tw) {
+  const s = guarded([tw]).skipped[0];
+  if (!s) return true;
+  return confirmDialog(guardText().confirmTitle, `${tw.name}\n\n${guardReasons(s)}`, guardText().confirmGo);
+}
+// Grouped by reason: the reason once, then the tweaks it leaves out.
+const skippedList = (skipped) => {
+  if (!skipped.length) return '';
+  const groups = new Map();
+  for (const s of skipped) for (const r of s.reasons) {
+    const text = window.ConfigGuard.reasonText(state.lang, r);
+    if (!groups.has(text)) groups.set(text, []);
+    groups.get(text).push(s.tweak.name);
+  }
+  return `<details class="rec-why"><summary>${esc(guardText().title)} (${skipped.length})</summary><ul class="rec-skips">${[...groups].map(([text, names]) => `<li>${esc(text)}<br><b>${esc(names.join(', '))}</b></li>`).join('')}</ul></details>`;
+};
+const profileCandidates = (tier) => {
+  return guarded(profileBase(tier)).allowed;
 };
 // Sammelaktion nur für Tweaks, die das Backend ausdrücklich freigibt (nie Bedienungshilfen).
 const bulkOk = (tw) => tw.available !== false && tw.risk === 'low' && tw.bulkSafe === true;
@@ -486,7 +517,7 @@ function renderProfiles() {
           <h2>${t().tiers[tier][0]}</h2>
           <p>${t().tiers[tier][1]}</p>
         </div>
-        <div class="tier-facts"></div>
+        <div class="tier-facts">${skippedList(profileSkipped(tier))}</div>
         <div class="tier-count"><b data-count="${todo.length}">${todo.length}</b><span>${t().tierTodo(done, cands.length)}</span></div>
         ${cfgList(cands, run)}
         <div class="tier-extra">${mine ? `<div class="tier-progress"><div class="cat-meter"><i data-pct="${Math.round((run.i / run.n) * 100)}"></i></div>
@@ -1256,10 +1287,13 @@ async function revertCategory() {
 
 // Profil ausführen: nacheinander anwenden, Fortschritt zeigen; bei Rechte-/Wiederherstellungspunkt-Fehler abbrechen.
 async function runProfile(tier) {
+  // Systemprüfung zuerst: Tweaks, die für diesen PC riskant sind, bleiben weg (config-guard.js).
+  const facts = await ensureFacts();
   // "Recommended": Auswahl aus der Systemprüfung (recommend.js), sonst nach Risikostufe
   const list = (tier === 'recommended' ? window.Recommend.candidates() : profileCandidates(tier)).filter((tw) => !tw.applied && !state.profileOff.has(tw.id));
   if (!list.length) return;
-  const warn = tier === 'hardcore' ? ' ' + t().tierHardWarn : '';
+  const skippedN = tier === 'recommended' ? window.Recommend.guardedOut().length : profileSkipped(tier).length;
+  const warn = (tier === 'hardcore' ? ' ' + t().tierHardWarn : '') + (!facts ? '\n\n' + guardText().checkFailed : skippedN ? '\n\n' + guardText().skippedNote(skippedN) : '');
   if (!(await confirmDialog(t().tierConfirmTitle(t().tiers[tier][0]), t().tierConfirmText(list.length) + warn, t().tierGo(list.length)))) return;
   state.profileResult = null;
   state.profileRun = { tier, i: 0, n: list.length, current: '' };
@@ -1348,6 +1382,8 @@ async function load() {
   render();
   hideSplash();
   if (list?.ok) setTimeout(() => driftCheck(), 4000);
+  // System check in the background, so single switches can warn without waiting (read only, local).
+  if (list?.ok) setTimeout(() => { if (!sysFacts()) window.Recommend?.check(); }, 9000);
   // Debloat-Inventar (Apps, Autostart) vorab im Hintergrund laden, damit der Tab sofort fertig ist
   setTimeout(() => debloatLoad(), 2500);
 }
@@ -1488,6 +1524,7 @@ document.addEventListener('change', async (e) => {
   if (!id) return;
   const tw = state.tweaks.find((x) => x.id === id);
   const apply = e.target.checked;
+  if (apply && !(await guardConfirm(tw))) { e.target.checked = false; return; }
   if (apply && tw.risk === 'high' && !(await confirmRisk(tw))) { e.target.checked = false; return; }
   setTweak(id, apply);
 });
