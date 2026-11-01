@@ -238,6 +238,7 @@ const fmtDate = (iso) => { try { return new Date(iso).toLocaleString(state.lang,
 
 function errorText(code, detail) {
   const e = t().errors;
+  detail = detail || lastErrorDetail.get(code);
   // When PowerShell itself fails, the Windows reason helps support more than any translation.
   if (detail && /^backend_(process_failed|timeout_or_terminated)$|^(invalid_backend_json|unexpected_backend_stderr)$/.test(code || '')) return `${e[code] || code} (${detail})`;
   if (e[code]) return e[code];
@@ -1035,9 +1036,12 @@ function confirmDialog(title, text, okLabel) {
 const HIDDEN_CATS = new Set(['gaming']);
 // Tweaks, die auf diesem PC nicht anwendbar sind (Bestandteil fehlt), werden ausgeblendet statt ausgegraut.
 const NOT_APPLICABLE = new Set(['optional_component_missing', 'legacy_feature_unavailable', 'recall_policy_unavailable', 'network_adapter_missing']);
+// Windows reason of the last failure per code, so every page can show it without passing it along.
+const lastErrorDetail = new Map();
 async function call(action, id, extra = {}) {
   try {
     const res = await bridge.call({ action, id, lang: state.lang, ...extra });
+    if (res && res.ok === false && res.error) { if (res.detail) lastErrorDetail.set(res.error, res.detail); else lastErrorDetail.delete(res.error); }
     if (action === 'list' && res?.ok && Array.isArray(res.tweaks)) res.tweaks = res.tweaks.filter((tw) => (!HIDDEN_CATS.has(catOf(tw)) || GAMING_IDS.includes(tw.id)) && !(tw.available === false && NOT_APPLICABLE.has(tw.stateError)));
     return res;
   } catch (err) {

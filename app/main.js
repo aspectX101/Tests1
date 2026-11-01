@@ -196,7 +196,10 @@ async function supportReport() {
     const list = await backend({ action: 'backup-list' });
     if (list?.ok) backups = list.backups.map((b) => ({ kind: b.kind, id: b.tweakId, status: b.status, created: b.createdUtc, canRestore: b.canRestore, reason: b.reason || undefined }));
   } catch { /* report without backups */ }
-  return support.report({ mode: useMock ? 'mock' : 'powershell', license: licenseExpiry.state(), update: updater.getState(), backups });
+  // Stability facts (GPU resets, power-offs, WHEA, driver age) from the read-only system check.
+  let system = null;
+  try { const sc = await backend({ action: 'system-check' }); if (sc?.ok) system = sc.facts; } catch { /* report without them */ }
+  return support.report({ mode: useMock ? 'mock' : 'powershell', license: licenseExpiry.state(), update: updater.getState(), backups, systemCheck: system });
 }
 
 // SafeMode-Bericht, Wiederherstellungs-Nachweis oder Support-Bericht als JSON speichern; den Ort wählt der Nutzer im Windows-Dialog.

@@ -126,3 +126,13 @@ test('the app offers no way to open log files (only the support report carries t
   assert.doesNotMatch(read('app/main.js'), /update-log|openLog\(/);
   assert.doesNotMatch(read('app/updater.js'), /openLog/);
 });
+
+test('the support report carries the stability facts of the system check', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'h1t-support-'));
+  try {
+    const s = createSupport({ logDir: dir, version: '1.0.33', redact });
+    const r = s.report({ systemCheck: { gpuResets: 3, unexpectedShutdowns: 1, hardwareErrors: 0, gpuDriverAgeDays: 400 } });
+    assert.equal(r.systemCheck.gpuResets, 3);
+    assert.match(fs.readFileSync(path.join(__dirname, '../app/main.js'), 'utf8'), /backend\(\{ action: 'system-check' \}\)[\s\S]{0,500}systemCheck: system/);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

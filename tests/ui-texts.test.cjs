@@ -27,7 +27,10 @@ test('the displays page shows translated errors and headings', () => {
 test('unknown internal codes read as "Unknown error (code)", free text stays as it is', () => {
   const app = read('app/renderer/app.js');
   const fn = app.match(/function errorText\(code, detail\) \{[\s\S]*?\n\}/)[0];
-  const errorText = new Function('t', fn + '; return errorText;')(() => window.I18N.en);
+  const details = new Map([['backend_process_failed', 'exit -196608 (0xfffd0000)']]);
+  const errorText = new Function('t', 'lastErrorDetail', fn + '; return errorText;')(() => window.I18N.en, details);
+  // A page that passes only the code (e.g. Backups) still shows the Windows reason of the last failure.
+  assert.equal(errorText('backend_process_failed'), `${window.I18N.en.errors.backend_process_failed} (exit -196608 (0xfffd0000))`);
   assert.equal(errorText('some_new_code'), 'Unknown error (some_new_code)');
   assert.equal(errorText('display_busy'), window.I18N.en.errors.display_busy);
   assert.equal(errorText('Die Eigenschaft X ist nicht vorhanden.'), 'Die Eigenschaft X ist nicht vorhanden.');

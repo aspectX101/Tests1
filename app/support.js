@@ -78,6 +78,7 @@ function createSupport({ logDir, version = '0.0.0', now = () => new Date(), reda
       license: extra.license || null,
       update: extra.update || null,
       backups: extra.backups || null,
+      systemCheck: extra.systemCheck || null,
       backendLog: entries(),
       updaterLog: tail('updater.log', 150),
       swapLog: tail('updater-swap.log', 80),
