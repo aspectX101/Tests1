@@ -227,6 +227,38 @@
     return { ok: true, mod: m, message };
   }
 
+  // Extra > Energie (Power.ps1): plans, timeouts, battery; originals saved on the first change, power-reset restores.
+  const SECONDS = [0, 60, 120, 180, 300, 600, 900, 1200, 1800, 2700, 3600, 7200, 10800, 18000];
+  const power = { active: '381b4222-f694-41f0-9685-ff5bb260df2e', plans: [
+    ['381b4222-f694-41f0-9685-ff5bb260df2e', { de: 'Ausbalanciert', en: 'Balanced', it: 'Bilanciato' }],
+    ['8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', { de: 'Höchstleistung', en: 'High performance', it: 'Prestazioni elevate' }],
+    ['a1841308-3541-4fab-bc81-f71556f20b4a', { de: 'Energiesparmodus', en: 'Power saver', it: 'Risparmio di energia' }]],
+    values: { monitor: { ac: 600, dc: 300 }, sleep: { ac: 1800, dc: 900 } }, original: null };
+  const owned = (ids) => ids.filter((x) => catalog.find((t) => t.id === x)?.applied);
+  function powerOut(lang) {
+    return { ok: true, active: power.active, plans: power.plans.map(([guid, n]) => ({ guid, name: n[lang] || n.en, active: guid === power.active })),
+      timeouts: JSON.parse(JSON.stringify(power.values)), choices: SECONDS, battery: { present: false, onAc: true, percent: null },
+      hasBackup: !!power.original, owners: { plan: owned(['windows.power.high']), sleepAc: owned(['windows.power.profile', 'windows.power.extras']) } };
+  }
+  function powerAction(req, lang) {
+    const keep = () => { if (!power.original) power.original = { active: power.active, values: JSON.parse(JSON.stringify(power.values)) }; };
+    const out = powerOut(lang);
+    if (req.action === 'power-plan') {
+      if (!power.plans.some(([g]) => g === req.id)) return { ok: false, error: 'invalid_power_plan' };
+      if (out.owners.plan.length) return { ok: false, error: 'power_owned_by_tweak' };
+      if (req.id !== power.active) { keep(); power.active = req.id; }
+    } else if (req.action === 'power-timeout') {
+      if (!['monitor', 'sleep'].includes(req.setting) || !['ac', 'dc'].includes(req.mode) || !SECONDS.includes(req.seconds)) return { ok: false, error: 'invalid_power_value' };
+      if (req.setting === 'sleep' && req.mode === 'ac' && out.owners.sleepAc.length) return { ok: false, error: 'power_owned_by_tweak' };
+      if (power.values[req.setting][req.mode] !== req.seconds) { keep(); power.values[req.setting][req.mode] = req.seconds; }
+    } else if (req.action === 'power-reset') {
+      if (!power.original) return { ok: false, error: 'power_backup_not_found' };
+      if (out.owners.plan.length || out.owners.sleepAc.length) return { ok: false, error: 'power_owned_by_tweak' };
+      power.active = power.original.active; power.values = power.original.values; power.original = null;
+    }
+    return powerOut(lang);
+  }
+
   async function call(req = {}) {
     if (/^(debloat|startup)-/.test(req.action)) {
       const result = debloat.call(req, register);
@@ -241,6 +273,7 @@
     if (String(action).startsWith('safemode-')) return safemode(action, lang);
     if (String(action).startsWith('backup-')) return backup(action, backupId, lang);
     if (/^(mods|res)-/.test(String(action))) return modsAction(action, req, lang);
+    if (String(action).startsWith('power-')) return powerAction(req, lang);
     if (action === 'system-check') {
       // Beispiel-PC für die Vorschau: Desktop mit SSD, WLAN-Karte, ohne eigenen DNS und ohne Xbox-App.
       // Stabilität: 2 Grafiktreiber-Resets und 1 plötzliches Ausgehen in 30 Tagen, damit die Config-Prüfung sichtbar wird.

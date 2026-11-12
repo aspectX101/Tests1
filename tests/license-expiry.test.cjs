@@ -14,7 +14,7 @@ const lic = (expires_at) => ({ id: 'l1', plan: '7 Days', expires_at });
 const snap = (status, licenses = [lic(week)], extra = {}) => ({ ok: true, signed_in: status !== 'signed_out', status, licenses, ...extra });
 
 // Fake backend with recovery records like Backup.ps1 returns them.
-function fakeBackend({ backups, failIds = [], resolution = false, mods = [], failMods = [], fivemFound = true } = {}) {
+function fakeBackend({ backups, failIds = [], resolution = false, power = false, mods = [], failMods = [], fivemFound = true } = {}) {
   const calls = [];
   const list = backups || [
     { backupId: 'a'.repeat(32), kind: 'tweak', tweakId: 'gaming.gpu.hags', canRestore: true },
@@ -35,6 +35,8 @@ function fakeBackend({ backups, failIds = [], resolution = false, mods = [], fai
     }
     if (req.action === 'res-get') return { ok: true, hasBackup: resolution };
     if (req.action === 'res-reset') return { ok: true };
+    if (req.action === 'power-get') return { ok: true, hasBackup: power };
+    if (req.action === 'power-reset') return { ok: true };
     if (req.action === 'mods-list') return { ok: true, fivemFound, mods: mods.map((m) => ({ ...m })) };
     if (req.action === 'mods-disable') {
       if (failMods.includes(req.modId)) return { ok: false, error: 'fivem_running' };
@@ -316,4 +318,22 @@ test('Windows: the license check task is really registered with the expiry time 
     await task.remove();
     assert.equal(await task.query(), 'none');
   }
+});
+
+test('license end also resets the power page (plan and timeouts) when it changed something', async () => {
+  const t = setup({ power: true });
+  try {
+    await t.guard.observe(snap('active'));
+    t.clock.t = T0 + 8 * DAY;
+    const r = await t.guard.observe(snap('license_required', []));
+    assert.ok(t.be.calls.some((c) => c.action === 'power-reset'));
+    assert.ok(r.result.items.some((x) => x.kind === 'power' && x.ok));
+  } finally { t.done(); }
+  const quiet = setup({ power: false });
+  try {
+    await quiet.guard.observe(snap('active'));
+    quiet.clock.t = T0 + 8 * DAY;
+    await quiet.guard.observe(snap('license_required', []));
+    assert.equal(quiet.be.calls.some((c) => c.action === 'power-reset'), false, 'nothing saved, nothing reset');
+  } finally { quiet.done(); }
 });

@@ -1,0 +1,33 @@
+/* Extra > Energie (power.js) */
+.pw-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, .9fr); gap: 14px; margin-top: 14px; }
+.pw-card { padding: 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.pw-card h3 { margin: 0; font-size: 15px; font-weight: 800; }
+.pw-card > p { margin: 0; font-size: 12.5px; line-height: 1.45; }
+.pw-plans { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.pw-plan { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--hair, #ffffff1f); background: transparent; color: #f4f4f5; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.pw-plan:hover:not(:disabled) { border-color: var(--hair-3, #ffffff66); }
+.pw-plan:disabled { cursor: default; }
+.pw-plan:not(.active):disabled { opacity: .5; }
+.pw-plan.active { border-color: var(--hair-3, #ffffff66); background: var(--k-raise, #0b0b0b); }
+.pw-radio { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #71717a; }
+.pw-plan.active .pw-radio { border-color: #fff; box-shadow: inset 0 0 0 3px var(--k, #000); background: #fff; }
+.pw-plan-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pw-plan em { flex: none; font-style: normal; font-size: 10.5px; font-weight: 700; color: #a1a1aa; }
+.pw-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: 10px; padding: 10px 0; border-top: 1px solid var(--hair, #ffffff1f); }
+.pw-row > span { font-size: 13px; font-weight: 650; align-self: center; }
+.pw-row label { display: flex; flex-direction: column; gap: 4px; }
+.pw-row small { font-size: 10.5px; color: #a1a1aa; }
+.pw-select { min-width: 132px; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--hair-2, #ffffff38); background: var(--k-raise, #0b0b0b); color: #fff; font: inherit; font-size: 12.5px; cursor: pointer; }
+.pw-select:disabled { opacity: .5; cursor: default; }
+.pw-select:focus-visible, .pw-plan:focus-visible { outline: 2px solid var(--hair-3, #ffffff66); outline-offset: 2px; }
+.pw-owned { margin: 2px 0 0; font-size: 12px; color: #d4d4d8; border-left: 2px solid var(--hair-3, #ffffff66); padding-left: 10px; }
+.pw-battery { margin: 0; font-size: 13px; }
+.pw-battery b { font-size: 22px; font-weight: 800; }
+.pw-reset { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.pw-reset p { margin: 0; font-size: 12px; line-height: 1.45; }
+.pw-reset .pill { align-self: flex-start; }
+.pw-hint { margin: -6px 0 12px; font-size: 12px; }
+.pw-empty { padding: 28px; margin-top: 14px; text-align: center; display: grid; gap: 12px; justify-items: center; }
+@media (max-width: 1150px) { .pw-grid { grid-template-columns: 1fr 1fr; } .pw-side { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .pw-grid { grid-template-columns: 1fr; } .pw-row { grid-template-columns: 1fr; } }
+.pw-grid + .section-title { margin-top: 26px; }

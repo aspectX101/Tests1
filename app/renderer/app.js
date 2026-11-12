@@ -451,6 +451,7 @@ function catHero(c, parent) {
 
 function renderCategory(c, parent) {
   if (c === 'display') return catHero(c, parent) + renderDisplays();
+  if (c === 'power') return catHero(c, parent) + window.PowerPage.html();
   if (c === 'performance') return catHero(c) + `<div class="opt-v2">${renderOptimization()}</div>`;
   if (c === 'debloat') return catHero(c) + `<div class="db-v2">${renderDebloat()}</div>`;
   // Netzwerk, Dienste, Privatsphäre, Oberfläche: Start/Enable All + Revert All und Status-Kästchen wie im Leistungs-Tab
@@ -1405,6 +1406,7 @@ function go(route) {
   if (route.page !== 'search') state.search = '';
   // Vor dem Zeichnen starten: Seite erscheint einmal fertig (Daten aus dem Zwischenspeicher oder Ladezustand), statt doppelt aufgebaut zu werden
   if (route.cat === 'debloat') debloatLoad();
+  if (route.cat === 'power') window.PowerPage.load();
   render();
   $('#content').scrollTop = 0;
   if (route.page === 'cleanup' && !state.cacheBusy) cacheInfo();

@@ -89,6 +89,14 @@ function createLicenseExpiry(app, { backend, resetColor = async () => null, task
           items.push({ kind: 'resolution', ok: r?.ok === true, ...(r?.ok ? {} : { error: String(r?.error || 'resolution_reset_failed') }) });
         }
       } catch {}
+      // Extra > Energie: power plan and timeouts changed on the power page go back to their saved originals.
+      try {
+        const pw = await backend({ action: 'power-get' });
+        if (pw?.ok && pw.hasBackup) {
+          const r = await backend({ action: 'power-reset' });
+          items.push({ kind: 'power', ok: r?.ok === true, ...(r?.ok ? {} : { error: String(r?.error || 'power_reset_failed') }) });
+        }
+      } catch {}
       try {
         const c = await resetColor();
         if (c !== null) items.push({ kind: 'color', ok: c === true, ...(c ? {} : { error: 'color_reset_failed' }) });

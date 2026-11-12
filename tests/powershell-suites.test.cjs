@@ -6,7 +6,7 @@ const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 
 const SUITES = ['Backup', 'CacheCleaner', 'Checkpoint', 'Contract', 'Debloat', 'Keyboard', 'ModManager',
-  'Optimization', 'OptimizationAdapters', 'Performance', 'SafeMode'];
+  'Optimization', 'OptimizationAdapters', 'Performance', 'Power', 'SafeMode'];
 
 for (const name of SUITES) {
   test(`Windows PowerShell: ${name}.Tests.ps1`, { skip: process.platform !== 'win32', timeout: 300000 }, () => {

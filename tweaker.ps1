@@ -1,7 +1,7 @@
 ﻿#requires -Version 5.1
 [CmdletBinding()]
 param([string]$Action, [string]$Id, [string]$Lang='de', [string]$FiveMPath, [string]$BackupId, [switch]$ConfirmPurge,
-    [string]$LayoutBase64, [string]$Extra, [string]$AppIds, [string]$PreviewToken, [switch]$ConfirmDataLoss, [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed)
+    [string]$LayoutBase64, [string]$Extra, [string]$AppIds, [string]$PreviewToken, [switch]$ConfirmDataLoss, [string]$ModId, [string]$ModPath, [string]$Category, [string]$Name, [int]$Width, [int]$Height, [int]$Windowed, [long]$Seconds = -1)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 # stdout carries exactly one JSON object: a stray Windows warning in front of it breaks every answer.
@@ -20,6 +20,14 @@ try {
             } catch {throw 'display_layout_invalid'}
         }
         Invoke-Displays -Action $Action -LayoutJson $LayoutJson -Extra $Extra -Lang $Lang | ConvertTo-Json -Depth 8 -Compress
+        exit 0
+    }
+
+    # Extra > Energie (Power.ps1): power plan, display/sleep timeouts, battery; needs no tweak module.
+    if ($Action -in @('power-get','power-plan','power-timeout','power-reset')) {
+        if ($Lang -notin @('de','en','it')) { throw 'invalid_language' }
+        . (Join-Path $PSScriptRoot 'Power.ps1')
+        Invoke-Power -Action $Action -Id $Id -Name $Name -Mode $Extra -Seconds $Seconds | ConvertTo-Json -Depth 6 -Compress
         exit 0
     }
 
@@ -121,10 +129,11 @@ try {
     exit 0
 } catch {
     # Stable error code for localization, technical detail for diagnostics.
-    $errorCode=if($Action.StartsWith('display-')){$_.Exception.GetBaseException().Message}else{$_.Exception.Message}
+    $errorCode=if($Action.StartsWith('display-') -or $Action.StartsWith('power-')){$_.Exception.GetBaseException().Message}else{$_.Exception.Message}
     $failure=@{ok=$false;error=$errorCode}
     try {
         $detail=[string]$_.Exception.Data['detail']
+        if (-not $detail) {$detail=[string]$_.Exception.GetBaseException().Data['detail']}
         if (-not $detail -and $_.Exception.InnerException) {$detail=$_.Exception.GetBaseException().Message}
         if ($detail) {$failure.detail=$detail.Substring(0,[Math]::Min(800,$detail.Length))}
         if ($_.InvocationInfo.ScriptName) {$failure.at=('{0}:{1}' -f (Split-Path -Leaf $_.InvocationInfo.ScriptName),$_.InvocationInfo.ScriptLineNumber)}

@@ -198,11 +198,11 @@ ipcMain.handle('tweaker:call', async (e, request) => {
   if (!await h1tAccount.checkAccess()) return { ok: false, error: 'license_required' };
   // Nur die bekannten Felder weiterreichen; Pfade und Skripte kann die Oberfläche nicht setzen.
   // modPath fehlt bewusst: Mod-Pfade kommen nur aus dem Datei-Dialog (tweaker:mod-import).
-  const { action, id, lang, backupId, confirmPurge, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss, layout, extra } = request;
+  const { action, id, lang, backupId, confirmPurge, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss, layout, extra, setting, mode, seconds } = request;
   if (action === 'mods-import') return { ok: false, error: 'invalid_action' };
   if (LANGS.has(lang)) currentLang = lang;
   try {
-    return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss: confirmDataLoss === true, layout, extra });
+    return await backend({ action, id, lang, backupId, confirmPurge: confirmPurge === true, modId, category, width, height, windowed, appIds, previewToken, confirmDataLoss: confirmDataLoss === true, layout, extra, setting, mode, seconds });
   } catch (err) {
     return { ok: false, error: err.message, ...(err.detail ? { detail: err.detail } : {}) };
   }
