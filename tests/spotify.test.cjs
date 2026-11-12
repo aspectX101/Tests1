@@ -70,7 +70,7 @@ test('a dashboard re-render waits while the volume slider is dragged', () => {
   const fs = require('node:fs'), path = require('node:path');
   const app = fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer', 'app.js'), 'utf8');
   const media = fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer', 'dashboard-media.js'), 'utf8');
-  assert.match(app, /function render\(\) \{\n[^\n]*\n  if \(state\.route\.page === 'home' && window\.DashboardMedia\?\.holdRender\?\.\(\)\) return;/);
+  assert.match(app, /function render\(\) \{\r?\n[^\n]*\n  if \(state\.route\.page === 'home' && window\.DashboardMedia\?\.holdRender\?\.\(\)\) return;/);
   assert.match(media, /addEventListener\('pointerup',release\)/);
   assert.match(media, /window\.DashboardMedia=\{html,bind,mount,holdRender\}/);
 });
