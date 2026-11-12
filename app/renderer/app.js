@@ -859,6 +859,8 @@ function renderSettings() {
 }
 
 function render() {
+  // the Spotify volume slider is being dragged: render right after it is released (dashboard-media.js)
+  if (state.route.page === 'home' && window.DashboardMedia?.holdRender?.()) return;
   document.documentElement.lang = state.lang;
   renderNav();
   renderCrumbs();

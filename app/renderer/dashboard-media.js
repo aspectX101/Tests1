@@ -16,6 +16,11 @@
   let bridge, current = {status:'empty'}, received = 0, active = false, timer, lang = 'de', busy = false;
   // Volume slider: the user's value wins while dragging and briefly after, until Windows reports it back.
   let local = null, localAt = 0, sendTimer = null, lastSent = null;
+  // A full dashboard re-render while the slider is held would drop the drag: app.js asks holdRender() first and
+  // the render follows on release.
+  let dragging = false, renderPending = false;
+  function holdRender() { if (!dragging) return false; renderPending = true; return true; }
+  function release() { if (!dragging) return; dragging = false; if (renderPending) { renderPending = false; window.render?.(); } }
   const text = () => words[lang] || words.de;
   const time = seconds => { const n=Math.floor(Math.max(0,Number(seconds)||0));return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`; };
   function paint() {
@@ -95,5 +100,7 @@
     const want=!(current.muted===true);current={...current,muted:want};const root=document.getElementById('spotify-card');if(root)paintVolume(root,current.status==='ready');
     try{const r=await bridge.spotifyMute?.(want);if(!r?.ok){current={...current,muted:!want};if(root)paintVolume(root,current.status==='ready');}}catch{}
   });
-  window.DashboardMedia={html,bind,mount};
+  document.addEventListener('pointerdown',event=>{if(event.target.closest?.('[data-volume]'))dragging=true;});
+  document.addEventListener('pointerup',release);document.addEventListener('pointercancel',release);window.addEventListener('blur',release);
+  window.DashboardMedia={html,bind,mount,holdRender};
 })();
