@@ -50,7 +50,7 @@ test('silver scheme: theme.css matches build/light-theme.src.css and lands on ex
     const want = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
     assert.ok(back.every((v, i) => Math.abs(v - want[i]) <= 2), `#${hex} -> ${toHex(back)}`);
   }
-  assert.match(css, /html\.light \{ background: #dfe3e8;/, 'the unfiltered html background is the final page colour');
+  assert.match(css, /html\.light \{ background: #e4e6ea;/, 'the unfiltered html background is the final page colour');
 });
 
 // Minimal decoder for 8-bit RGBA PNGs (the logos): returns the box of pixels with alpha > 10.
@@ -82,7 +82,7 @@ test('dark and white logo marks fill exactly the same box, so switching only cha
 test('start animation in the light design: drawn light itself and turned back, never shown as a negative', () => {
   const eye = fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer', 'eye-boot.js'), 'utf8');
   assert.match(eye, /const LIGHT = document\.documentElement\.classList\.contains\('light'\);/);
-  assert.match(eye, /const GROUND = LIGHT \? '#dfe3e8' : '#000';/);
+  assert.match(eye, /const GROUND = LIGHT \? '#e4e6ea' : '#000';/);
   assert.match(eye, /if \(hq && !reveal && !LIGHT\) \{/, 'no light-adding bloom on silver');
   assert.doesNotMatch(eye, /fillStyle = '#000'/, 'every ground fill follows the design');
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer', 'theme.css'), 'utf8'), /html\.light \.eye-boot-canvas \{ filter: invert\(1\) hue-rotate\(180deg\); \}/);

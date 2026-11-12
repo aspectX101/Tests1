@@ -26,7 +26,7 @@
   // silver ground, dark code, steel-blue white of the eye, the same blue iris and a dark pupil. Light-adding effects
   // (glow, bloom) only work on black, so on silver they become dark outlines.
   const LIGHT = document.documentElement.classList.contains('light');
-  const GROUND = LIGHT ? '#dfe3e8' : '#000';
+  const GROUND = LIGHT ? '#e4e6ea' : '#000';
   const ADD = LIGHT ? 'source-over' : 'lighter';
 
   // ---------- helpers ----------
@@ -182,7 +182,7 @@
     if (a <= 0) return;
     const grd = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 820);
     // the tweaker's own black (#050505), only a faint lift behind the eye
-    if (LIGHT) { grd.addColorStop(0, '#f3f5f8'); grd.addColorStop(.6, '#e7eaee'); grd.addColorStop(1, '#dfe3e8'); }
+    if (LIGHT) { grd.addColorStop(0, '#f6f7f9'); grd.addColorStop(.6, '#eaecef'); grd.addColorStop(1, '#e4e6ea'); }
     else {
       grd.addColorStop(0, `rgb(${14 * tint | 0},${14 * tint | 0},${15 * tint | 0})`); grd.addColorStop(.6, `rgb(${7 * tint | 0},${7 * tint | 0},${7 * tint | 0})`);
       grd.addColorStop(1, `rgb(${5 * tint | 0},${5 * tint | 0},${5 * tint | 0})`);
