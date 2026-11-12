@@ -1,5 +1,5 @@
-// Erzeugt das App- und Taskleisten-Icon aus dem freigestellten Standard-Logo app/renderer/assets/h1t-logo-main.png
-// (build/cut-logos.cjs): build/icon.ico (16–256 px), build/icon.png (256 px), app/assets/icon.ico (Fenster-Icon).
+// Erzeugt das App- und Taskleisten-Icon aus dem Logo des dunklen Designs app/renderer/assets/h1t-logo-main.png
+// (vom Designer, transparent; h1t-logo-white.png ist die Fassung fürs helle Design im selben 756×362-Format): build/icon.ico (16–256 px), build/icon.png (256 px), app/assets/icon.ico (Fenster-Icon).
 // Dunkle abgerundete Kachel, das H1T-Zeichen mittig (kleine Größen mit weniger Rand, damit es lesbar bleibt).
 // Ausführen mit Electron:  npx electron build/make-logo-icons.cjs
 const { app, BrowserWindow } = require('electron');

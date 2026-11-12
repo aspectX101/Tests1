@@ -52,3 +52,29 @@ test('silver scheme: theme.css matches build/light-theme.src.css and lands on ex
   }
   assert.match(css, /html\.light \{ background: #dfe3e8;/, 'the unfiltered html background is the final page colour');
 });
+
+// Minimal decoder for 8-bit RGBA PNGs (the logos): returns the box of pixels with alpha > 10.
+function alphaBox(file) {
+  const zlib = require('node:zlib');
+  const b = fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer', 'assets', file));
+  const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+  assert.equal(b[24], 8); assert.equal(b[25], 6); assert.equal(b[28], 0, 'not interlaced');
+  const idat = [];
+  for (let o = 8; o < b.length;) { const len = b.readUInt32BE(o), type = b.toString('ascii', o + 4, o + 8); if (type === 'IDAT') idat.push(b.subarray(o + 8, o + 8 + len)); o += 12 + len; }
+  const raw = zlib.inflateSync(Buffer.concat(idat)), stride = w * 4, img = Buffer.alloc(h * stride);
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (stride + 1)], line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
+    for (let x = 0; x < stride; x++) {
+      const a = x >= 4 ? img[y * stride + x - 4] : 0, up = y ? img[(y - 1) * stride + x] : 0, c = x >= 4 && y ? img[(y - 1) * stride + x - 4] : 0;
+      const p = a + up - c, pa = Math.abs(p - a), pb = Math.abs(p - up), pc = Math.abs(p - c);
+      const pred = [0, a, up, (a + up) >> 1, pa <= pb && pa <= pc ? a : pb <= pc ? up : c][f];
+      img[y * stride + x] = (line[x] + pred) & 255;
+    }
+  }
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (img[y * stride + x * 4 + 3] > 10) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  return [x0, y0, x1, y1];
+}
+test('dark and white logo marks fill exactly the same box, so switching only changes the colours', () => {
+  assert.deepEqual(alphaBox('h1t-logo-main.png'), alphaBox('h1t-logo-white.png'));
+});

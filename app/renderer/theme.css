@@ -10,7 +10,7 @@ html.light :is(img, video, .h1t-flag, .risk-dot, .twl-item .risk-dot) { filter: 
 /* the risk lights' glow is drawn for a black background; on white a plain dot reads better */
 html.light .risk-dot { box-shadow: none !important; }
 /* The H1T mark: its own white edition for the light design (h1t-logo-white.png). Same element, same 756x362 canvas
-   with the mark in the same place as h1t-logo-main.png, so switching the design changes only the colours, never
+   with the mark in exactly the same box as h1t-logo-main.png (6,8–750,354), so switching the design changes only the colours, never
    size or position. Turned back to its real colours; the light halo becomes a soft dark shadow after the turn. */
 html.light body .brand > .brand-logo, html.light .h1t-gate-brand img {
   content: url("assets/h1t-logo-white.png");
