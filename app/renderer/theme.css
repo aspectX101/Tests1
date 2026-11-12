@@ -7,6 +7,8 @@
 html.light { background: #dfe3e8; color-scheme: light; }
 html.light body { filter: invert(1) hue-rotate(180deg); }
 html.light :is(img, video, .h1t-flag, .risk-dot, .twl-item .risk-dot) { filter: invert(1) hue-rotate(180deg); }
+/* the start animation draws itself light (eye-boot.js): turned back so it shows its own colours, not a negative */
+html.light .eye-boot-canvas { filter: invert(1) hue-rotate(180deg); }
 /* the risk lights' glow is drawn for a black background; on white a plain dot reads better */
 html.light .risk-dot { box-shadow: none !important; }
 /* The H1T mark: its own white edition for the light design (h1t-logo-white.png). Same element, same 756x362 canvas

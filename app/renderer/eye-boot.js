@@ -22,6 +22,12 @@
   canvas.setAttribute('aria-hidden', 'true');
   splash.append(canvas);
   const ctx = canvas.getContext('2d');
+  // Light design: the canvas is turned back out of the page-wide invert filter (theme.css) and drawn light itself –
+  // silver ground, dark code, steel-blue white of the eye, the same blue iris and a dark pupil. Light-adding effects
+  // (glow, bloom) only work on black, so on silver they become dark outlines.
+  const LIGHT = document.documentElement.classList.contains('light');
+  const GROUND = LIGHT ? '#dfe3e8' : '#000';
+  const ADD = LIGHT ? 'source-over' : 'lighter';
 
   // ---------- helpers ----------
   const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -49,7 +55,7 @@
   // ---------- sprites ----------
   const vignette = sprite(W, H, (g) => {
     const grd = g.createRadialGradient(W / 2, H / 2, 240, W / 2, H / 2, 820);
-    grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.78)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    grd.addColorStop(0, LIGHT ? 'rgba(223,227,232,0)' : 'rgba(0,0,0,0)'); grd.addColorStop(1, LIGHT ? 'rgba(206,212,220,.7)' : 'rgba(0,0,0,.78)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
   });
   // background: dim grey rows of code on the tweaker's black, taller than the screen so it can drift
   const BG_H = H * 2;
@@ -59,7 +65,7 @@
       let x = -rnd() * 200;
       while (x < W) {
         const s = codeLine(8 + ((rnd() * 40) | 0)), a = .08 + rnd() * .22;
-        const c = 170 + rnd() * 60 | 0; g.fillStyle = `rgba(${c},${c},${c + 6},${a})`; g.fillText(s, x, y);
+        const c = (LIGHT ? 40 + rnd() * 50 : 170 + rnd() * 60) | 0; g.fillStyle = `rgba(${c},${c},${c + 6},${LIGHT ? a * .8 : a})`; g.fillText(s, x, y);
         x += g.measureText(s).width + 20 + rnd() * 120;
       }
     }
@@ -85,13 +91,15 @@
         if (rnd() < (edge ? .03 : .1)) { x += w + 6; continue; } // gaps
         const xm = x + w / 2, ang = Math.atan2(rowY(x + w) - rowY(x), w), a = edge ? 1 : .62 + .38 * Math.pow(r, .8) * (.7 + .3 * rnd());
         g.save(); g.translate(xm, rowY(xm)); g.rotate(ang);
-        g.shadowColor = 'rgba(190,225,255,.8)'; g.shadowBlur = edge ? 8 : 3;
-        const c = 228 + rnd() * 27 | 0; g.fillStyle = `rgba(${c - 18},${c - 4},255,${a})`; g.fillText(s, -w / 2, 0); g.restore();
+        g.shadowColor = LIGHT ? 'rgba(40,80,140,.35)' : 'rgba(190,225,255,.8)'; g.shadowBlur = edge ? 8 : 3;
+        if (LIGHT) { const c = rnd() * 40 | 0; g.fillStyle = `rgba(${22 + c},${40 + c},${78 + c},${a})`; }
+        else { const c = 228 + rnd() * 27 | 0; g.fillStyle = `rgba(${c - 18},${c - 4},255,${a})`; }
+        g.fillText(s, -w / 2, 0); g.restore();
         x += w + 2 + rnd() * 3;
       }
     }
     // the long tapered corners
-    g.strokeStyle = 'rgba(240,240,240,.9)'; g.lineCap = 'round';
+    g.strokeStyle = LIGHT ? 'rgba(30,42,62,.85)' : 'rgba(240,240,240,.9)'; g.lineCap = 'round';
     for (const [x0, x1, w] of [[-EW, -EW - 150, 2.2], [EW, EW + 110, 1.8]]) { g.lineWidth = w; g.beginPath(); g.moveTo(x0, 0); g.lineTo(x1, 2); g.stroke(); }
   });
   // the iris: rings of glowing blue code around a dark pupil, radial strands, a dark limbal ring (the only colour in the eye)
@@ -174,8 +182,11 @@
     if (a <= 0) return;
     const grd = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 820);
     // the tweaker's own black (#050505), only a faint lift behind the eye
-    grd.addColorStop(0, `rgb(${14 * tint | 0},${14 * tint | 0},${15 * tint | 0})`); grd.addColorStop(.6, `rgb(${7 * tint | 0},${7 * tint | 0},${7 * tint | 0})`);
-    grd.addColorStop(1, `rgb(${5 * tint | 0},${5 * tint | 0},${5 * tint | 0})`);
+    if (LIGHT) { grd.addColorStop(0, '#f3f5f8'); grd.addColorStop(.6, '#e7eaee'); grd.addColorStop(1, '#dfe3e8'); }
+    else {
+      grd.addColorStop(0, `rgb(${14 * tint | 0},${14 * tint | 0},${15 * tint | 0})`); grd.addColorStop(.6, `rgb(${7 * tint | 0},${7 * tint | 0},${7 * tint | 0})`);
+      grd.addColorStop(1, `rgb(${5 * tint | 0},${5 * tint | 0},${5 * tint | 0})`);
+    }
     ctx.globalAlpha = a; ctx.fillStyle = grd; ctx.fillRect(-40, -40, W + 80, H + 80);
     // rows of code stream sideways: a far, slow layer and a near, faster one (wraps around the sprite width)
     const flicker = .9 + .1 * Math.sin(t * 7);
@@ -215,7 +226,7 @@
       // iris and pupil, clipped by the lids
       const ix = cx + gx * s, iy = cy + gy * s + shutY(gx) * (1 - open) * s, ir = IR * s, pad = 20 * s;
       ctx.save(); ctx.clip(ap);
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .9 * irisA; ctx.drawImage(irisGlow, ix - ir - pad, iy - ir - pad, (ir + pad) * 2, (ir + pad) * 2);
+      ctx.globalCompositeOperation = ADD; ctx.globalAlpha = (LIGHT ? .35 : .9) * irisA; ctx.drawImage(irisGlow, ix - ir - pad, iy - ir - pad, (ir + pad) * 2, (ir + pad) * 2);
       ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = irisA;
       // looking sideways the round iris is seen at an angle: squash it along the gaze
       const fx = 1 - Math.min(.2, Math.abs(gx) / EW * .32), fy = 1 - Math.min(.12, Math.abs(gy) / EH * .2);
@@ -228,19 +239,20 @@
     }
     // data flowing through the white: soft pulses of light travel along the rows of code
     if (open > .04) {
-      ctx.save(); ctx.clip(ap); ctx.globalCompositeOperation = 'lighter';
+      ctx.save(); ctx.clip(ap); ctx.globalCompositeOperation = ADD;
       for (let i = 0; i < 3; i++) {
         const u = ((t * .55 + i / 3) % 1), px = cx + (-EW - 200 + u * (2 * EW + 400)) * s;
         const pg = ctx.createLinearGradient(px - 160 * s, 0, px + 160 * s, 0);
-        pg.addColorStop(0, 'rgba(150,215,255,0)'); pg.addColorStop(.5, `rgba(170,225,255,${.22 * Math.min(1, open * 2)})`); pg.addColorStop(1, 'rgba(150,215,255,0)');
+        const pc = LIGHT ? '40,120,220' : '170,225,255';
+        pg.addColorStop(0, `rgba(${pc},0)`); pg.addColorStop(.5, `rgba(${pc},${(LIGHT ? .1 : .22) * Math.min(1, open * 2)})`); pg.addColorStop(1, `rgba(${pc},0)`);
         ctx.fillStyle = pg; ctx.fillRect(px - 160 * s, cy - EH * 1.2 * s, 320 * s, EH * 2.4 * s);
       }
       ctx.restore();
     }
     // the lid edges: a glowing line of light along the aperture
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
-    ctx.strokeStyle = `rgba(180,220,255,${open < .1 ? .3 : .18})`; ctx.lineWidth = 9 * s; ctx.stroke(ap);
-    ctx.strokeStyle = 'rgba(250,250,250,.6)'; ctx.lineWidth = 1.6 * s; ctx.stroke(ap);
+    ctx.save(); ctx.globalCompositeOperation = ADD; ctx.lineJoin = 'round';
+    ctx.strokeStyle = LIGHT ? `rgba(40,70,120,${open < .1 ? .22 : .12})` : `rgba(180,220,255,${open < .1 ? .3 : .18})`; ctx.lineWidth = 9 * s; ctx.stroke(ap);
+    ctx.strokeStyle = LIGHT ? 'rgba(20,30,46,.6)' : 'rgba(250,250,250,.6)'; ctx.lineWidth = 1.6 * s; ctx.stroke(ap);
     ctx.restore();
   }
   // the shut eye drawing itself outwards from the centre, with a soft glow along its curve
@@ -249,10 +261,10 @@
     ctx.save(); ctx.beginPath(); ctx.rect(W / 2 - (EW + 90) * s * u, 0, (EW + 90) * 2 * s * u, H); ctx.clip();
     drawEye(t, W / 2, H / 2, s, open, 0, 0, { noIris: true });
     const line = new Path2D(); for (let i = 0; i <= 40; i++) { const x = -EW + (2 * EW * i) / 40; line[i ? 'lineTo' : 'moveTo'](W / 2 + x * s, H / 2 + shutY(x) * s); }
-    ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = ADD; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.globalAlpha = (1 - lin(t0 + .3, t0 + .9, t) * .5) * (t > t0 + .9 ? .85 + .15 * Math.sin((t - t0) * 5) : 1);
-    ctx.strokeStyle = 'rgba(220,220,225,.18)'; ctx.lineWidth = 26; ctx.stroke(line);
-    ctx.strokeStyle = 'rgba(245,245,245,.32)'; ctx.lineWidth = 8; ctx.stroke(line);
+    ctx.strokeStyle = LIGHT ? 'rgba(40,60,90,.1)' : 'rgba(220,220,225,.18)'; ctx.lineWidth = 26; ctx.stroke(line);
+    ctx.strokeStyle = LIGHT ? 'rgba(25,35,52,.28)' : 'rgba(245,245,245,.32)'; ctx.lineWidth = 8; ctx.stroke(line);
     ctx.restore();
   }
   // horizontal glitch: slices of the frame jump sideways for a moment
@@ -299,13 +311,13 @@
       const g = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, 760); g.addColorStop(0, `rgba(255,255,255,${flood})`); g.addColorStop(1, `rgba(210,225,240,${flood * .75})`);
       ctx.fillStyle = g; ctx.fillRect(-40, -40, W + 80, H + 80); ctx.restore();
     }
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
-    ctx.strokeStyle = 'rgba(235,235,240,.25)'; ctx.lineWidth = 12; ctx.stroke(hole); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2; ctx.stroke(hole);
+    ctx.save(); ctx.globalCompositeOperation = ADD; ctx.lineJoin = 'round';
+    ctx.strokeStyle = LIGHT ? 'rgba(40,60,90,.18)' : 'rgba(235,235,240,.25)'; ctx.lineWidth = 12; ctx.stroke(hole); ctx.strokeStyle = LIGHT ? 'rgba(20,30,46,.6)' : 'rgba(255,255,255,.75)'; ctx.lineWidth = 2; ctx.stroke(hole);
     ctx.restore();
   }
   function frame(t, reveal = 0) {
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = GROUND; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(fitS, 0, 0, fitS, fitX, fitY);
     if (reveal) drawReveal(t, reveal);
     else {
@@ -340,7 +352,7 @@
     const gl = Math.max(Math.exp(-(((t - T_OPEN) / .06) ** 2)), Math.exp(-(((t - T_BLINK - .12) / .05) ** 2)) * .6, Math.exp(-(((t - T_CLOSE - .3) / .07) ** 2)) * .8, reveal > 0 ? Math.exp(-(((reveal - .06) / .04) ** 2)) * .5 : 0);
     // bloom: brightest parts, blurred by down-scaling, added back on top
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (hq && !reveal) {
+    if (hq && !reveal && !LIGHT) {
       bA.clearRect(0, 0, bloomA.width, bloomA.height); bB.clearRect(0, 0, bloomB.width, bloomB.height);
       bA.filter = 'brightness(.55) contrast(4)'; bA.drawImage(canvas, 0, 0, bloomA.width, bloomA.height); bA.filter = 'none';
       bB.drawImage(bloomA, 0, 0, bloomB.width, bloomB.height);
@@ -354,13 +366,13 @@
     // the last frames of the reveal fade out whatever is left of the lids
     if (reveal > .82) { ctx.globalCompositeOperation = 'destination-out'; ctx.globalAlpha = ss(.82, 1, reveal); ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
     const fadeIn = 1 - ss(0, .3, t);
-    if (fadeIn > 0 && !reveal) { ctx.globalAlpha = fadeIn; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
+    if (fadeIn > 0 && !reveal) { ctx.globalAlpha = fadeIn; ctx.fillStyle = GROUND; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
   }
   // Draw every sprite once into a hidden corner so the GPU uploads happen now, not mid-scene.
   function warm(list) {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const c of list) ctx.drawImage(c, 0, 0, 1, 1);
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 2, 2); ctx.restore();
+    ctx.fillStyle = GROUND; ctx.fillRect(0, 0, 2, 2); ctx.restore();
   }
 
   // ---------- sound (synthesized, no audio files) ----------

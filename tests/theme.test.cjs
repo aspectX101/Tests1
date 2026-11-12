@@ -78,3 +78,12 @@ function alphaBox(file) {
 test('dark and white logo marks fill exactly the same box, so switching only changes the colours', () => {
   assert.deepEqual(alphaBox('h1t-logo-main.png'), alphaBox('h1t-logo-white.png'));
 });
+
+test('start animation in the light design: drawn light itself and turned back, never shown as a negative', () => {
+  const eye = fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer', 'eye-boot.js'), 'utf8');
+  assert.match(eye, /const LIGHT = document\.documentElement\.classList\.contains\('light'\);/);
+  assert.match(eye, /const GROUND = LIGHT \? '#dfe3e8' : '#000';/);
+  assert.match(eye, /if \(hq && !reveal && !LIGHT\) \{/, 'no light-adding bloom on silver');
+  assert.doesNotMatch(eye, /fillStyle = '#000'/, 'every ground fill follows the design');
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer', 'theme.css'), 'utf8'), /html\.light \.eye-boot-canvas \{ filter: invert\(1\) hue-rotate\(180deg\); \}/);
+});
