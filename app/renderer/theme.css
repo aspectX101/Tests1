@@ -1,0 +1,11 @@
+/* Light design: the whole black-and-white UI is turned to white with one filter (body), so every page, card,
+   dialog and the boot animation follow without a second set of colours. Things that carry real colour are turned
+   back: photos and covers, flags, the risk lights. The H1T mark stays turned (dark chrome on white).
+   boot-head.js sets html.light before the first paint, so the start animation is already white. */
+html.light { background: #fff; color-scheme: light; }
+html.light body { filter: invert(1) hue-rotate(180deg); }
+html.light :is(img, video, .h1t-flag, .risk-dot, .twl-item .risk-dot) { filter: invert(1) hue-rotate(180deg); }
+/* the risk lights' glow is drawn for a black background; on white a plain dot reads better */
+html.light .risk-dot { box-shadow: none !important; }
+/* the H1T mark and sign-in logo: keep them turned, a dark mark on white */
+html.light body .brand > .brand-logo, html.light .h1t-gate-brand img { filter: none; }

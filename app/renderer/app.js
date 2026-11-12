@@ -814,16 +814,19 @@ const SET_TEXT = {
     sys: 'Systeminfo', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows',
     spotify: 'Spotify', spotifyDesc: 'Zeigt den laufenden Song aus der Spotify-Desktop-App im Dashboard und steuert ihn (Windows-Medienwiedergabe, kein Login nötig).', spotifyShow: 'Im Dashboard anzeigen', spotifyOpen: 'Spotify öffnen',
     boot: 'Startanimation', bootDesc: 'Sound der Startanimation – komplett im Tweaker erzeugt.', bootSound: 'Sound',
+    design: 'Design', designDesc: 'Dunkel oder hell – gilt für die ganze Oberfläche und die Startanimation. Auch über die Sonne oben rechts umschaltbar.', dark: 'Dunkel', light: 'Hell', toLight: 'Helles Design', toDark: 'Dunkles Design',
     reloadTitle: 'Daten neu laden', on: 'An', off: 'Aus' },
   en: { account: 'H1T.CC account', accountDesc: 'License, linked PC, profile and privacy.', details: 'Details', support: 'Support', supportDesc: 'Help, tickets and Customer Area. The support report puts system info and error logs into one file for support.', report: 'Export support report', reportDone: 'Support report saved. Send the file to support.', open: 'Open',
     sys: 'System info', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows',
     spotify: 'Spotify', spotifyDesc: 'Shows and controls the song playing in the Spotify desktop app on the dashboard (Windows media session, no login needed).', spotifyShow: 'Show on dashboard', spotifyOpen: 'Open Spotify',
     boot: 'Startup animation', bootDesc: 'Sound for the startup animation – generated entirely inside the tweaker.', bootSound: 'Sound',
+    design: 'Design', designDesc: 'Dark or light – for the whole interface and the startup animation. Also switchable with the sun at the top right.', dark: 'Dark', light: 'Light', toLight: 'Light design', toDark: 'Dark design',
     reloadTitle: 'Reload data', on: 'On', off: 'Off' },
   it: { account: 'Account H1T.CC', accountDesc: 'Licenza, PC collegato, profilo e privacy.', details: 'Dettagli', support: 'Supporto', supportDesc: 'Aiuto, ticket e Customer Area. Il report di supporto raccoglie info di sistema e log degli errori in un unico file per il supporto.', report: 'Esporta report di supporto', reportDone: 'Report di supporto salvato. Invia il file al supporto.', open: 'Apri',
     sys: 'Info di sistema', cpu: 'CPU', gpu: 'GPU', ram: 'RAM', os: 'Windows',
     spotify: 'Spotify', spotifyDesc: 'Mostra e controlla nel dashboard il brano dell’app desktop di Spotify (sessione multimediale di Windows, nessun login).', spotifyShow: 'Mostra nel dashboard', spotifyOpen: 'Apri Spotify',
     boot: 'Animazione di avvio', bootDesc: 'Audio dell’animazione di avvio – generato interamente nel tweaker.', bootSound: 'Audio',
+    design: 'Design', designDesc: 'Scuro o chiaro – per tutta l’interfaccia e l’animazione di avvio. Si cambia anche con il sole in alto a destra.', dark: 'Scuro', light: 'Chiaro', toLight: 'Design chiaro', toDark: 'Design scuro',
     reloadTitle: 'Ricarica dati', on: 'On', off: 'Off' },
 };
 const SET_ICONS = {
@@ -833,6 +836,7 @@ const SET_ICONS = {
   update: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',
   spotify: '<circle cx="12" cy="12" r="10"/><path d="M7 9.5c3.5-1.2 7.4-.9 10.4.9M7.6 12.6c2.9-.9 6-.6 8.6.8M8.3 15.5c2.3-.6 4.6-.4 6.6.6"/>',
   boot: '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12"/>',
+  design: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor"/>',
   lang: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
   file: '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v5h5"/>',
   reload: '<path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"/>',
@@ -853,6 +857,7 @@ function renderSettings() {
     ${card('update', t().updates, `${esc(PRODUCT_VERSION)} · ${esc(updateText())}`, `<div class="set-actions">${upBtn}</div>`)}
     ${card('spotify', s.spotify, esc(s.spotifyDesc), `<div class="set-row"><span>${esc(s.spotifyShow)}</span><label class="switch"><input type="checkbox" id="set-spotify" ${spotifyOn ? 'checked' : ''} aria-label="${esc(s.spotifyShow)}"><span></span></label></div><div class="set-actions"><button class="pill dark" id="set-spotify-open">${esc(s.spotifyOpen)}</button></div>`)}
     ${card('boot', s.boot, esc(s.bootDesc), `<div class="set-row"><span>${esc(s.bootSound)}</span><label class="switch"><input type="checkbox" id="set-bootsound" ${bootSound ? 'checked' : ''} aria-label="${esc(s.bootSound)}"><span></span></label></div>`)}
+    ${card('design', s.design, esc(s.designDesc), `<div class="seg"><button data-theme="dark" class="${isLight() ? '' : 'active'}">${esc(s.dark)}</button><button data-theme="light" class="${isLight() ? 'active' : ''}">${esc(s.light)}</button></div>`)}
     ${card('lang', t().language, esc(t().languageDesc), `<div class="seg">${langBtn('de', 'Deutsch')}${langBtn('en', 'English')}${langBtn('it', 'Italiano')}</div>`)}
     ${state.exe ? card('file', t().appLocTitle, esc(t().appLocDesc), `<div class="mono" title="${esc(state.exe)}">${esc(state.exe)}</div><div class="set-actions"><button class="pill dark" id="app-show">${t().appShow}</button><button class="pill dark" id="app-lnk-desktop">${t().appLnkDesktop}</button></div>`) : ''}
     ${card('reload', s.reloadTitle, `${esc(t().backend)}: <b>${esc(t().modes[state.mode] || state.mode || '…')}</b>`, `<div class="set-actions"><button class="pill dark" id="reload">${t().reload}</button></div>`)}
@@ -1536,17 +1541,33 @@ document.addEventListener('change', async (e) => {
 document.addEventListener('change',(e)=>{
   if(e.target.id!=='h1t-language')return;
   if(!['de','en','it'].includes(e.target.value))return;
-  state.lang=e.target.value;store.set('lang',state.lang);state.cache=null;state.bk=null;state.mods=null;load();
+  state.lang=e.target.value;store.set('lang',state.lang);state.cache=null;state.bk=null;state.mods=null;load();paintThemeButton();
 });
-document.addEventListener('click',(e)=>{
-  const b=e.target.closest('#h1t-ambient');
-  if(!b)return;
-  const enabled=!document.body.classList.contains('h1t-ambient-on');
-  document.body.classList.toggle('h1t-ambient-on',enabled);
-  b.setAttribute('aria-pressed',String(enabled));
-  store.set('h1tAmbient',enabled?'1':'0');
+// Design: dark (default) or light (theme.css). The sun at the top and Settings > Design switch it; boot-head.js applies
+// it before the first paint. The former ambient-effects switch is gone; its subtle glow stays on.
+const isLight = () => document.documentElement.classList.contains('light');
+function setTheme(light) {
+  document.documentElement.classList.toggle('light', light);
+  store.set('h1tTheme', light ? 'light' : 'dark');
+  paintThemeButton();
+  if (state.route.page === 'settings') render();
+}
+function paintThemeButton() {
+  const b = $('#h1t-theme'); if (!b) return;
+  const s = SET_TEXT[state.lang] || SET_TEXT.en, light = isLight();
+  b.setAttribute('aria-pressed', String(light));
+  b.setAttribute('aria-label', light ? s.toDark : s.toLight); b.title = b.getAttribute('aria-label');
+  b.innerHTML = light
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M5 19l1.5-1.5"/></svg>';
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#h1t-theme')) { setTheme(!isLight()); return; }
+  const opt = e.target.closest('[data-theme]');
+  if (opt) setTheme(opt.dataset.theme === 'light');
 });
-document.body.classList.toggle('h1t-ambient-on',store.get('h1tAmbient','1')==='1');
+document.body.classList.add('h1t-ambient-on');
+paintThemeButton();
 
 $('#win-min').addEventListener('click', () => bridge.minimize());
 $('#win-max').addEventListener('click', () => bridge.maximize());

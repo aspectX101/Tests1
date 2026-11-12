@@ -4,6 +4,8 @@
 (() => {
   try {
     document.documentElement.classList.add('eye-boot');
+    // Light design (Settings > Design or the sun button): white UI and a white start animation from the first paint.
+    if (localStorage.getItem('h1tTheme') === 'light') document.documentElement.classList.add('light');
     window.H1T_BOOT_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1400 : 5800;
     // The Halloween mode (with its boot greeting) was removed in 1.0.39; its stored values are no longer needed.
     localStorage.removeItem('h1tHalloween'); localStorage.removeItem('h1tBootName');
