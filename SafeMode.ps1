@@ -14,10 +14,14 @@ function Get-SafeModePolicy {
     }
 }
 
+$script:SafeModePlatformCache = $null
 function Get-SafeModePlatform {
+    if ($null -ne $script:SafeModePlatformCache) { return $script:SafeModePlatformCache }
     $version = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-    [pscustomobject]@{build=[int]$version.CurrentBuildNumber;edition=$version.EditionID
+    $result = [pscustomobject]@{build=[int]$version.CurrentBuildNumber;edition=$version.EditionID
         supported=($version.InstallationType -eq 'Client' -and [int]$version.CurrentBuildNumber -ge 19041)}
+    $script:SafeModePlatformCache = $result
+    return $result
 }
 
 function Assert-SafeModePaths {

@@ -6,7 +6,10 @@ $script:NetworkTcpipKey='SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Inte
 $script:NetworkGuidPattern='\{[0-9A-F]{8}(?:-[0-9A-F]{4}){3}-[0-9A-F]{12}\}'
 $script:NetworkDnsProviders=[ordered]@{cloudflare='1.1.1.1,1.0.0.1';google='8.8.8.8,8.8.4.4'}
 
+# Get-NetAdapter is slow (CIM) and was called for every network field and every check: once per backend process.
+$script:NetworkAdapterCache = $null
 function Get-NetworkAdapters {
+    if ($null -ne $script:NetworkAdapterCache) { return $script:NetworkAdapterCache }
     # Physical Ethernet and Wi-Fi only (no Bluetooth, VPN, Hyper-V switches or loopback).
     $list=@(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { $_.MediaType -eq '802.3' -and $_.InterfaceDescription -notmatch 'Bluetooth' } | ForEach-Object {
         [pscustomobject]@{guid=([string]$_.InterfaceGuid).ToUpperInvariant();index=[int]$_.ifIndex;up=($_.Status -eq 'Up')}
@@ -14,7 +17,8 @@ function Get-NetworkAdapters {
     $list=@($list | Where-Object { $_.guid -cmatch ('^'+$script:NetworkGuidPattern+'$') })
     if ($list.Count -eq 0) {throw 'network_adapter_missing'}
     if ($list.Count -gt 16) {throw 'unsupported_optimization_value'}
-    return @($list | Sort-Object guid)
+    $script:NetworkAdapterCache = @($list | Sort-Object guid)
+    return $script:NetworkAdapterCache
 }
 
 function Get-NetworkClassSubkeys {

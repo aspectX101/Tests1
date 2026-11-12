@@ -2,6 +2,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
+$script:RestorePointReady = $false
 . (Join-Path $PSScriptRoot 'Keyboard.ps1')
 . (Join-Path $PSScriptRoot 'CacheCleaner.ps1')
 . (Join-Path $PSScriptRoot 'SafeMode.ps1')
@@ -11,7 +12,14 @@ $script:HighPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
 . (Join-Path $PSScriptRoot 'Debloat.ps1')
 . (Join-Path $PSScriptRoot 'SystemCheck.ps1')
 
+# The catalog is static: built once per backend process (restore-all asked for it several times per backup).
+$script:TweakerCatalogCache = $null
 function Get-TweakerCatalog {
+    if ($null -eq $script:TweakerCatalogCache) { $script:TweakerCatalogCache = @(Build-TweakerCatalog) }
+    return $script:TweakerCatalogCache
+}
+
+function Build-TweakerCatalog {
     Get-OptimizationCatalog
     @(
         [pscustomobject]@{ id='windows.power.high'; scope='system'; category='performance'; risk='low'; bulkSafe=$true; requiresAdmin=$true; restart=$false
@@ -128,19 +136,21 @@ function New-TweakerRestorePoint {
     # Reuse only a verified, recent Tweaker checkpoint. Windows normally limits
     # checkpoint creation to one per day; never change its frequency registry key.
     $now = [DateTime]::UtcNow
-    if (Test-RecentRestorePoint @(Get-ComputerRestorePoint -ErrorAction Stop) $now -TweakerOnly) { return }
+    # Checked once per backend process (a batch asked Windows for its restore points before every change).
+    if ($script:RestorePointReady) { return }
+    if (Test-RecentRestorePoint @(Get-ComputerRestorePoint -ErrorAction Stop) $now -TweakerOnly) { $script:RestorePointReady = $true; return }
     $description = 'Tweaker-' + [guid]::NewGuid().ToString('N')
     # The frequency warning must not reach stdout (the backend answers with exactly one JSON object), so it is
     # collected instead of printed.
     $warnings = $null
     Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS -WarningAction SilentlyContinue -WarningVariable warnings -ErrorAction Stop
     $points = @(Get-ComputerRestorePoint -ErrorAction Stop)
-    if ($points | Where-Object { $_.Description -eq $description }) { return }
+    if ($points | Where-Object { $_.Description -eq $description }) { $script:RestorePointReady = $true; return }
     # Windows declined because a restore point (from Windows or another program) was made in the last 24 h:
     # that point already precedes this change, so use it instead of blocking every tweak for a day.
     # Any other failure stays fail-closed.
     $frequencyLimit = @($warnings | Where-Object { "$_" -match 'SystemRestorePointCreationFrequency|1440' }).Count -gt 0
-    if ($frequencyLimit -and (Test-RecentRestorePoint $points $now)) { return }
+    if ($frequencyLimit -and (Test-RecentRestorePoint $points $now)) { $script:RestorePointReady = $true; return }
     $failure = [Exception]::new('restore_point_not_created')
     if ($warnings) { $failure.Data['detail'] = [string]$warnings[0] }
     throw $failure

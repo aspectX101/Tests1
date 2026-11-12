@@ -1,6 +1,12 @@
 ﻿# Allowlisted Windows settings with exact original-value recovery.
 . (Join-Path $PSScriptRoot 'OptimizationNative.ps1')
+$script:OptimizationCatalogCache = $null
 function Get-OptimizationCatalog {
+    if ($null -eq $script:OptimizationCatalogCache) { $script:OptimizationCatalogCache = @(Build-OptimizationCatalog) }
+    return $script:OptimizationCatalogCache
+}
+
+function Build-OptimizationCatalog {
     Get-ExtendedOptimizationCatalog
     @(
         [pscustomobject]@{id='windows.capture.off';category='performance';scope='user';risk='medium';bulkSafe=$false;requiresAdmin=$true;restart=$true
@@ -171,8 +177,9 @@ function Assert-OptimizationRestore($State) {
     }
 }
 
-function Restore-OptimizationEntries($State,[string]$Path) {
-    Assert-OptimizationRestore $State
+# -Checked: Assert-OptimizationRestore ran just before (restore path); the rollback after a failed apply checks here.
+function Restore-OptimizationEntries($State,[string]$Path,[switch]$Checked) {
+    if (-not $Checked) { Assert-OptimizationRestore $State }
     $entries=@($State.entries); [array]::Reverse($entries)
     # Restore startup configuration before attempting to resume a service.
     $entries=@($entries | Sort-Object {if ((Get-OptimizationDefinition $_.field).adapter -eq 'service' -and (Get-OptimizationDefinition $_.field).part -eq 'start') {0} else {1}})
@@ -285,7 +292,7 @@ function Invoke-TweakerOptimization([string]$Action,[string]$Id,[string]$StateDi
             Assert-OptimizationRestore $state
             if ($state.status -eq 'restored') { return [pscustomobject]@{id=$Id;status='restored'} }
             Register-TweakerBackup $state $path
-            Restore-OptimizationEntries $state $path
+            Restore-OptimizationEntries $state $path -Checked
             $state.status = 'restored'
         }
         Save-Journal $state $path

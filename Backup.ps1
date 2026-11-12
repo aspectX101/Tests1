@@ -249,9 +249,12 @@ function Get-RecoveryInventory([string]$FiveMPath) {
     [pscustomobject]@{items=$items;warnings=$warnings}
 }
 
-function Restore-RecoveryRecord($Record) {
-    $reason = Test-RecoveryReady $Record
-    if ($reason) { throw $reason }
+# -Checked: the caller has just run Test-RecoveryReady (restore-all) and the domain restore validates again itself.
+function Restore-RecoveryRecord($Record, [switch]$Checked) {
+    if (-not $Checked) {
+        $reason = Test-RecoveryReady $Record
+        if ($reason) { throw $reason }
+    }
     if ($Record.kind -eq 'startup') {return Invoke-TweakerStartup 'startup-restore' $Record.payload.id '' $Record.backupId}
     if ($Record.kind -eq 'tweak') {
         return Invoke-TweakerPerformance -Action restore -Id $Record.payload.id -StateDirectory $script:PerformanceStateDirectory -ExpectedRecoveryId $Record.backupId -Confirm:$false
@@ -283,20 +286,27 @@ function Invoke-TweakerBackup {
     $null=Assert-CachePath $lockPath $script:BackupDirectory
     $lock=[IO.File]::Open($lockPath,'OpenOrCreate','ReadWrite','None')
     try {
-        $results=@(); $restartRequired=$false
+        $results=@(); $restartRequired=$false; $conflicts=0
+        $terminalReasons=@('already_restored','backup_superseded','service_evidence_only','cache_backup_purged','app_reinstall_required')
+        $optimizationIds=@((Get-OptimizationCatalog).id)
         foreach ($item in $items) {
-            $terminal = $item.reason -in @('already_restored','backup_superseded','service_evidence_only','cache_backup_purged','app_reinstall_required')
-            if ($Action -eq 'backup-restore-all' -and $terminal) {
+            # Restore all: a backup the inventory found not restorable is skipped with its reason instead of being tried
+            # again (same check, same result, only slower). Final states (already restored, superseded, ...) are fine;
+            # a conflict (changed outside the tweaker, FiveM open, ...) still makes the run "partial", honestly.
+            if ($Action -eq 'backup-restore-all' -and $item.reason) {
                 $results += [pscustomobject]@{backupId=$item.backupId;status='skipped';reason=$item.reason}
+                if ($item.reason -notin $terminalReasons) { $conflicts++ }
                 continue
             }
             try {
-                $null = Restore-RecoveryRecord $item.record
-                if ($item.kind -eq 'tweak' -and @((Get-TweakerCatalog | Where-Object id -eq $item.tweakId) | Where-Object restart).Count) { $restartRequired=$true }
+                # Tweak settings validate themselves again in Invoke-TweakerOptimization: no third check here.
+                $checked = $Action -eq 'backup-restore-all' -and $item.kind -eq 'tweak' -and $item.tweakId -in $optimizationIds
+                $null = Restore-RecoveryRecord $item.record -Checked:$checked
+                if ($item.kind -eq 'tweak' -and @(Get-TweakerCatalog | Where-Object { $_.id -eq $item.tweakId -and $_.restart }).Count) { $restartRequired=$true }
                 $results += [pscustomobject]@{backupId=$item.backupId;status='restored';reason=''}
             } catch { $results += [pscustomobject]@{backupId=$item.backupId;status='failed';reason=$_.Exception.Message} }
         }
-        $failed=@($results | Where-Object status -eq 'failed').Count
+        $failed=@($results | Where-Object status -eq 'failed').Count + $conflicts
         $result=[pscustomobject]@{ok=($failed -eq 0 -and @($inventory.warnings).Count -eq 0);status=$(if ($failed -or @($inventory.warnings).Count) {'partial'} else {'completed'})
             results=$results;warnings=$inventory.warnings;restartRequired=$restartRequired}
         if (-not $result.ok) { $result | Add-Member -NotePropertyName error -NotePropertyValue 'restore_incomplete' }

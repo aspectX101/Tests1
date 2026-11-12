@@ -17,6 +17,13 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
     Assert ($script:created -eq 1) 'Initial checkpoint created and verified'
     New-TweakerRestorePoint
     Assert ($script:created -eq 1) 'Subsequent tweaks reuse recent verified point'
+    # Within one backend process Windows is asked only once (restore all, batches).
+    $queries=0; $script:points=@(); function Get-ComputerRestorePoint { [CmdletBinding()]param(); $script:queries++; $script:points }
+    $script:queries=0; New-TweakerRestorePoint; New-TweakerRestorePoint
+    Assert ($script:queries -eq 0 -and $script:created -eq 1) 'A verified point is not looked up again in the same process'
+    function Get-ComputerRestorePoint { [CmdletBinding()]param(); $script:points }
+    # Every following scenario stands for a new backend process.
+    $script:RestorePointReady=$false
     $script:points=@([pscustomobject]@{Description=('Tweaker-' + 'a'*32);CreationTime=[DateTime]::UtcNow.AddHours(-25)})
     New-TweakerRestorePoint
     Assert ($script:created -eq 2) 'Expired checkpoint not reused'
@@ -25,24 +32,25 @@ Import-Module (Join-Path $PSScriptRoot '../Tweaker.psm1') -Force
         [pscustomobject]@{Description=('Tweaker-' + 'a'*32);CreationTime=[DateTime]::UtcNow.AddDays(1)},
         [pscustomobject]@{Description=('Tweaker-' + 'a'*32);CreationTime='corrupt'}
     )) {
-        $script:points=@($point); $script:failCreate=$true; $failed=$false
+        $script:points=@($point); $script:failCreate=$true; $failed=$false; $script:RestorePointReady=$false
         try {New-TweakerRestorePoint} catch {$failed=$_.Exception.Message -eq 'restore_point_not_created'}
         Assert $failed 'Do not use foreign, future or malformed checkpoints as fallback'
     }
     # Windows' 24 h limit with a recent restore point of another program: that point already covers the change
     $script:failCreate=$false; $script:frequency=$true
     $script:points=@([pscustomobject]@{Description='Windows Update';CreationTime=[DateTime]::UtcNow.AddHours(-3)})
+    $script:RestorePointReady=$false
     $out=@(New-TweakerRestorePoint 3>&1)
     Assert ($out.Count -eq 0) 'The frequency warning is collected, not written to the output'
     # ...but never without any recent point, nor with a future or malformed one
     foreach ($point in @('none', [pscustomobject]@{Description='Windows Update';CreationTime=[DateTime]::UtcNow.AddHours(-30)},
         [pscustomobject]@{Description='Windows Update';CreationTime=[DateTime]::UtcNow.AddDays(1)}, [pscustomobject]@{Description='Windows Update';CreationTime='corrupt'})) {
-        $script:points=if ($point -eq 'none') {@()} else {@($point)}; $failed=$false
+        $script:points=if ($point -eq 'none') {@()} else {@($point)}; $failed=$false; $script:RestorePointReady=$false
         try {New-TweakerRestorePoint} catch {$failed=$_.Exception.Message -eq 'restore_point_not_created' -and $_.Exception.Data['detail'] -match '1440'}
         Assert $failed 'Without a recent valid restore point the limit still blocks, with the Windows reason as detail'
     }
     $script:frequency=$false
-    $script:points=@(); $script:failCreate=$false; $script:invisible=$true; $failed=$false
+    $script:points=@(); $script:failCreate=$false; $script:invisible=$true; $failed=$false; $script:RestorePointReady=$false
     try {New-TweakerRestorePoint} catch {$failed=$_.Exception.Message -eq 'restore_point_not_created'}
     Assert $failed 'Creation must be verified in Windows provider'
     Write-Output 'Checkpoint tests passed'

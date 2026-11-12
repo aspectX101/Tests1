@@ -699,6 +699,7 @@ function renderBackups() {
         <button class="pill light" id="bk-all" ${busy || !restorable ? 'disabled' : ''}>${busy === 'all' ? '…' : t().bkRestoreAll}</button>
         <button class="pill dark" id="bk-reload" ${busy ? 'disabled' : ''}>${t().bkReload}</button>
       </div>
+      ${busy === 'all' ? `<p class="cache-note bk-working" role="status">${esc(t().bkWorking)}</p>` : ''}
     </div>
     ${resItems.length ? `
       <h3 class="section-title">${t().bkResult}</h3>
