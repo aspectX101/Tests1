@@ -67,3 +67,17 @@
 @media(max-width:1050px) { .dashboard-home .home-row { grid-template-columns:minmax(0,1fr) 245px; }.dashboard-home .ring-card { gap:14px; }.dashboard-home .stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:760px) { .dashboard-home .home-row,.dashboard-lower { grid-template-columns:1fr; }.dashboard-home .rings { grid-template-columns:1fr; } }
 @media(prefers-reduced-motion:reduce) { .media-equalizer i { animation:none; } }
+/* Spotify volume (Windows volume mixer, only Spotify): speaker button, slider, value. */
+.media-volume { width:100%; display:flex; align-items:center; gap:9px; margin-top:12px; }
+.media-volume[hidden] { display:none; }
+.media-volume .media-mute { flex:none; display:grid; place-items:center; width:26px; height:26px; border:0; border-radius:50%; background:transparent; color:#ddd; cursor:pointer; }
+.media-volume .media-mute svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.media-volume .media-mute:hover { color:#fff; }
+.media-volume .media-mute:focus-visible, .media-volume input:focus-visible { outline:2px solid var(--accent-hover); outline-offset:3px; }
+.media-volume input { --vol:0%; flex:1; min-width:0; height:16px; margin:0; background:transparent; appearance:none; -webkit-appearance:none; cursor:pointer; }
+.media-volume input::-webkit-slider-runnable-track { height:3px; border-radius:3px; background:linear-gradient(90deg,#f4f4f5 var(--vol),#ffffff1f var(--vol)); }
+.media-volume input::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; margin-top:-4.5px; border-radius:50%; background:#fff; border:0; box-shadow:0 0 0 3px #00000080; transition:transform .15s ease; }
+.media-volume input:hover::-webkit-slider-thumb { transform:scale(1.15); }
+.media-volume.muted input::-webkit-slider-runnable-track { background:linear-gradient(90deg,#ffffff55 var(--vol),#ffffff1f var(--vol)); }
+.media-volume span { flex:none; min-width:34px; text-align:right; font-size:9px; color:var(--dim); font-variant-numeric:tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .media-volume input::-webkit-slider-thumb { transition:none; } }

@@ -176,6 +176,8 @@ spotify.onChange((value) => sendToUi('tweaker:spotify', value));
 ipcMain.on('tweaker:spotify-active', (e, active) => { if (trusted(e)) spotify.setActive(active === true); });
 ipcMain.handle('tweaker:spotify-state', (e) => trusted(e) ? spotify.getState() : null);
 ipcMain.handle('tweaker:spotify-command', (e, action) => trusted(e) ? spotify.command(action) : {ok:false});
+ipcMain.handle('tweaker:spotify-volume', (e, level) => trusted(e) ? spotify.volume(level) : {ok:false});
+ipcMain.handle('tweaker:spotify-mute', (e, on) => trusted(e) ? spotify.mute(on) : {ok:false});
 ipcMain.handle('tweaker:spotify-open', async (e) => {
   if (!trusted(e)) return {ok:false};
   try { await shell.openExternal('spotify:'); return {ok:true}; } catch { return {ok:false}; }

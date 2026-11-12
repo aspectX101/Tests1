@@ -9,6 +9,8 @@ function clean(value) {
   const duration = number(value.duration);
   return { status: 'ready', title: String(value.title || '').slice(0, 512), artist: String(value.artist || '').slice(0, 512),
     playing: value.playing === true, duration, position: Math.min(number(value.position), duration || 604800),
+    // Spotify's volume in the Windows volume mixer (0-100), null when Spotify has no audio session.
+    volume: Number.isInteger(value.volume) && value.volume >= 0 && value.volume <= 100 ? value.volume : null, muted: value.muted === true,
     art: typeof value.art === 'string' && value.art.length <= 1400000 && /^data:image\/(jpeg|png);base64,[A-Za-z0-9+/]+=*$/.test(value.art) ? value.art : null,
     controls: Object.fromEntries([...ACTIONS].map(k => [k, value.controls?.[k] === true])) };
 }
@@ -27,9 +29,10 @@ function createSpotify(app, options = {}) {
     if (platform !== 'win32') { emit(empty('unavailable')); return; }
     if (worker) return;
     let child;
-    try { child = spawnProcess(ps, [...args('status'), '-Watch'], { windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'], shell: false }); }
+    try { child = spawnProcess(ps, [...args('status'), '-Watch'], { windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'], shell: false }); }
     catch { emit(empty('unavailable')); return; }
     worker = child;
+    child.stdin?.on?.('error', () => {});
     let buffer = '', last = Date.now();
     const fail = () => { if (worker !== child) return; stopWorker(); emit(empty('unavailable')); };
     child.stdout.setEncoding('utf8');
@@ -57,6 +60,13 @@ function createSpotify(app, options = {}) {
       });
     }); } finally { busy = false; }
   }
-  return { setActive, command, getState: () => state, onChange(cb) { listener = cb; }, stop() { wanted = false; stopWorker(); } };
+  // Volume and mute go to the running worker as one fixed line on stdin; it answers with a fresh status at once.
+  function send(line) {
+    if (platform !== 'win32' || !wanted || !worker?.stdin || state.status !== 'ready' || state.volume === null) return { ok: false };
+    try { worker.stdin.write(line + '\n'); return { ok: true }; } catch { return { ok: false }; }
+  }
+  const volume = (level) => (Number.isInteger(level) && level >= 0 && level <= 100 ? send(`volume ${level}`) : { ok: false });
+  const mute = (on) => (typeof on === 'boolean' ? send(`mute ${on ? 1 : 0}`) : { ok: false });
+  return { setActive, command, volume, mute, getState: () => state, onChange(cb) { listener = cb; }, stop() { wanted = false; stopWorker(); } };
 }
 module.exports = { createSpotify, clean };

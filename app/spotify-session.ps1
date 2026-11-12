@@ -1,7 +1,9 @@
 # Windows desktop Spotify media session. No account, network requests or tokens.
 # Output: one JSON line per poll (status, title, artist, art, playing, position, duration, controls).
 # Song changes are emitted immediately; the cover is loaded afterwards (short timeout, max 5 tries per song)
-# and sent as a second line once available. Cover failures are logged to %APPDATA%\UND.CC Tweaker\logs\spotify.log.
+# and sent as a second line once available. With -Watch also the Spotify volume of the Windows volume mixer
+# (volume 0-100, muted; only Spotify's own audio session, not the PC volume) and commands on stdin:
+# "volume <0-100>" and "mute <0|1>", answered at once with a fresh status line. Cover failures are logged to %APPDATA%\UND.CC Tweaker\logs\spotify.log.
 param([ValidateSet('status','playpause','next','previous')][string]$Action='status',[switch]$Watch)
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
@@ -95,6 +97,91 @@ try {
         throw ($reasons -join ' | ')
     }
 
+    # Spotify's audio session in the Windows volume mixer (Core Audio) and a stdin reader thread. Compiled only for the
+    # dashboard worker; if it cannot be compiled the card simply shows no volume control.
+    $script:mixer=$false
+    if ($Watch) {
+        try {
+            Add-Type -Language CSharp -TypeDefinition @'
+using System; using System.Diagnostics; using System.Runtime.InteropServices; using System.Threading; using System.Collections.Concurrent;
+namespace H1TSpotify {
+  [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class DeviceEnumeratorCo {}
+  [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IDeviceEnumerator { [PreserveSig] int EnumAudioEndpoints(int flow, int mask, out IDeviceCollection devices); }
+  [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IDeviceCollection { [PreserveSig] int GetCount(out int count); [PreserveSig] int Item(int index, out IDevice device); }
+  [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IDevice { [PreserveSig] int Activate(ref Guid iid, int ctx, IntPtr p, [MarshalAs(UnmanagedType.IUnknown)] out object o); }
+  [ComImport, Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface ISessionManager2 { [PreserveSig] int A(); [PreserveSig] int B(); [PreserveSig] int GetSessionEnumerator(out ISessionEnumerator e); }
+  [ComImport, Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface ISessionEnumerator { [PreserveSig] int GetCount(out int count); [PreserveSig] int GetSession(int i, out ISessionControl2 s); }
+  [ComImport, Guid("BFB7FF88-7239-4FC9-8FA2-07C950BE9C6D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface ISessionControl2 {
+    [PreserveSig] int GetState(out int state); [PreserveSig] int A2(); [PreserveSig] int A3(); [PreserveSig] int A4(); [PreserveSig] int A5();
+    [PreserveSig] int A6(); [PreserveSig] int A7(); [PreserveSig] int A8(); [PreserveSig] int A9(); [PreserveSig] int B1(); [PreserveSig] int B2();
+    [PreserveSig] int GetProcessId(out uint pid); }
+  [ComImport, Guid("87CE5498-68D6-44E5-9215-6DA47EF883D8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface ISimpleVolume { [PreserveSig] int SetMasterVolume(float v, ref Guid ctx); [PreserveSig] int GetMasterVolume(out float v);
+    [PreserveSig] int SetMute([MarshalAs(UnmanagedType.Bool)] bool m, ref Guid ctx); [PreserveSig] int GetMute([MarshalAs(UnmanagedType.Bool)] out bool m); }
+  public static class Mixer {
+    // Every audio session of a Spotify process on an active playback device; the playing one first.
+    static System.Collections.Generic.List<ISimpleVolume> Sessions() {
+      var found = new System.Collections.Generic.List<ISimpleVolume>(); var idle = new System.Collections.Generic.List<ISimpleVolume>();
+      var en = (IDeviceEnumerator)new DeviceEnumeratorCo(); IDeviceCollection list; int n;
+      if (en.EnumAudioEndpoints(0, 1, out list) != 0 || list.GetCount(out n) != 0) return found;
+      var iid = typeof(ISessionManager2).GUID;
+      for (int d = 0; d < n; d++) {
+        IDevice dev; object o; ISessionEnumerator se; int count;
+        if (list.Item(d, out dev) != 0 || dev.Activate(ref iid, 23, IntPtr.Zero, out o) != 0) continue;
+        if (((ISessionManager2)o).GetSessionEnumerator(out se) != 0 || se.GetCount(out count) != 0) continue;
+        for (int i = 0; i < count; i++) {
+          ISessionControl2 c; uint pid; int state;
+          if (se.GetSession(i, out c) != 0 || c.GetProcessId(out pid) != 0 || pid == 0) continue;
+          string name; try { name = Process.GetProcessById((int)pid).ProcessName; } catch { continue; }
+          if (!string.Equals(name, "Spotify", StringComparison.OrdinalIgnoreCase)) continue;
+          var v = c as ISimpleVolume; if (v == null) continue;
+          if (c.GetState(out state) == 0 && state == 1) found.Add(v); else idle.Add(v);
+        }
+      }
+      found.AddRange(idle); return found;
+    }
+    // -1: Spotify has no audio session (not started or nothing played yet)
+    public static int Volume() { foreach (var v in Sessions()) { float f; if (v.GetMasterVolume(out f) == 0) return (int)Math.Round(f * 100); } return -1; }
+    public static bool Muted() { foreach (var v in Sessions()) { bool m; if (v.GetMute(out m) == 0) return m; } return false; }
+    public static int SetVolume(int level) { var g = Guid.Empty; int ok = 0; float f = Math.Max(0, Math.Min(100, level)) / 100f;
+      foreach (var v in Sessions()) if (v.SetMasterVolume(f, ref g) == 0) ok++; return ok; }
+    public static int SetMute(bool on) { var g = Guid.Empty; int ok = 0; foreach (var v in Sessions()) if (v.SetMute(on, ref g) == 0) ok++; return ok; }
+  }
+  public static class Input {
+    static readonly BlockingCollection<string> lines = new BlockingCollection<string>(); static bool started;
+    public static void Start() { if (started) return; started = true;
+      var t = new Thread(() => { try { string l; while ((l = Console.In.ReadLine()) != null) lines.Add(l); } catch { } lines.Add("eof"); });
+      t.IsBackground = true; t.Start(); }
+    // Next command line, or null after the timeout.
+    public static string Next(int ms) { string l; return lines.TryTake(out l, ms) ? l : null; }
+  }
+}
+'@
+            [H1TSpotify.Input]::Start()
+            $script:mixer=$true
+        } catch { Log ('mixer unavailable: ' + $_.Exception.Message) }
+    }
+    function Get-Mixer {
+        if (-not $script:mixer) { return @{volume=$null;muted=$false} }
+        try { $v=[H1TSpotify.Mixer]::Volume(); if ($v -lt 0) { return @{volume=$null;muted=$false} }; return @{volume=$v;muted=[H1TSpotify.Mixer]::Muted()} }
+        catch { return @{volume=$null;muted=$false} }
+    }
+    # Waits up to $ms for a command from the app; applies "volume N" / "mute 0|1". $false when the app closed stdin.
+    function Wait-Command([int]$ms) {
+        if (-not $script:mixer) { Start-Sleep -Milliseconds $ms; return $true }
+        $line=[H1TSpotify.Input]::Next($ms)
+        if ($line -eq 'eof') { return $false }
+        if ($line -match '^volume (\d{1,3})$' -and [int]$Matches[1] -le 100) { try { $null=[H1TSpotify.Mixer]::SetVolume([int]$Matches[1]) } catch { Log ('volume: ' + $_.Exception.Message) } }
+        elseif ($line -match '^mute ([01])$') { try { $null=[H1TSpotify.Mixer]::SetMute($Matches[1] -eq '1') } catch { Log ('mute: ' + $_.Exception.Message) } }
+        return $true
+    }
+
     $manager=Await ($managerType::RequestAsync()) $managerType
     $artKey='';$art=$null;$artTries=0
     do {
@@ -122,6 +209,7 @@ try {
                 if ($playing) { $position+=[Math]::Max(0,([DateTimeOffset]::Now-$timeline.LastUpdatedTime).TotalSeconds) }
                 if ($duration -gt 0) {$position=[Math]::Min($position,$duration)}
                 $out=@{status='ready';title=[string]$properties.Title;artist=[string]$properties.Artist;art=$art;playing=$playing;position=$position;duration=$duration;controls=@{playpause=($playback.Controls.IsPlayEnabled -or $playback.Controls.IsPauseEnabled);next=$playback.Controls.IsNextEnabled;previous=$playback.Controls.IsPreviousEnabled}}
+                $mix=Get-Mixer;$out.volume=$mix.volume;$out.muted=$mix.muted
                 # 1) Song sofort melden
                 Emit $out
                 # 2) Cover nachladen (nur Status-Abfrage, nur solange es fehlt)
@@ -138,6 +226,7 @@ try {
                 }
             }
         } catch { Emit @{status='unavailable';ok=$false} }
-        if ($Watch) { Start-Sleep -Milliseconds 1500 }
-    } while ($Watch -and $Action -eq 'status')
+        $more=$true
+        if ($Watch) { $more=Wait-Command 1500 }
+    } while ($Watch -and $Action -eq 'status' -and $more)
 } catch { Log ('session error: ' + $_.Exception.Message); Emit @{status='unavailable';ok=$false} }

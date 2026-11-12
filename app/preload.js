@@ -48,6 +48,8 @@ contextBridge.exposeInMainWorld('tweaker', {
   spotifyActive: (active) => ipcRenderer.send('tweaker:spotify-active', active === true),
   spotifyState: () => ipcRenderer.invoke('tweaker:spotify-state'),
   spotifyCommand: (action) => ipcRenderer.invoke('tweaker:spotify-command', action),
+  spotifyVolume: (level) => ipcRenderer.invoke('tweaker:spotify-volume', level),
+  spotifyMute: (on) => ipcRenderer.invoke('tweaker:spotify-mute', on),
   openSpotify: () => ipcRenderer.invoke('tweaker:spotify-open'),
   onSpotify: (cb) => ipcRenderer.on('tweaker:spotify', (_e, value) => cb(value)),
   restartPc: () => ipcRenderer.invoke('tweaker:restart-pc'),

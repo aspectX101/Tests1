@@ -27,8 +27,42 @@ test('unsupported OS and invalid worker output produce a truthful unavailable st
   const child=new EventEmitter();child.stdout=new PassThrough();child.kill=()=>{};
   const service=createSpotify({isPackaged:false},{platform:'win32',spawn(){return child;}});service.setActive(true);child.stdout.write('not json\n');assert.equal(service.getState().status,'unavailable');service.stop();
 });
-test('Windows PowerShell adapter parses and returns one status object', {skip:process.platform!=='win32',timeout:25000}, () => {
+test('Windows PowerShell adapter parses and returns one status object', {skip:process.platform!=='win32',timeout:90000}, () => {
   const {execFileSync}=require('node:child_process');const path=require('node:path');
-  const output=execFileSync('powershell.exe',['-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'Spotify.Tests.ps1')],{encoding:'utf8',timeout:22000,windowsHide:true});
+  const output=execFileSync('powershell.exe',['-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'Spotify.Tests.ps1')],{encoding:'utf8',timeout:85000,windowsHide:true});
+  console.log(output);
   assert.match(output,/valid PowerShell/);
+  assert.match(output,/Spotify mixer: compiled, volume=-?\d+\./);
+  assert.match(output,/Spotify worker: status line/);
+});
+test('volume: only whole numbers 0-100 and true/false reach the worker, as one fixed stdin line', () => {
+  let child; const lines = [];
+  const service = createSpotify({ isPackaged: false }, { platform: 'win32', spawn(exe, args, options) {
+    assert.deepEqual(options.stdio, ['pipe', 'pipe', 'ignore']);
+    child = new EventEmitter(); child.stdout = new PassThrough(); child.stdin = { write: (l) => lines.push(l), on() {} }; child.kill = () => child.emit('exit'); return child; } });
+  assert.equal(service.volume(50).ok, false, 'not before the dashboard is open');
+  service.setActive(true);
+  child.stdout.write('{"status":"ready","title":"t","playing":true,"volume":40,"muted":false,"controls":{}}\n');
+  assert.equal(service.getState().volume, 40);
+  for (const bad of [-1, 101, 50.5, '50', '50\nnext', null, NaN]) assert.equal(service.volume(bad).ok, false, String(bad));
+  for (const bad of ['1', 1, null]) assert.equal(service.mute(bad).ok, false, String(bad));
+  assert.equal(service.volume(0).ok, true); assert.equal(service.volume(100).ok, true); assert.equal(service.mute(true).ok, true);
+  assert.deepEqual(lines, ['volume 0\n', 'volume 100\n', 'mute 1\n']);
+  // Spotify without an audio session: no volume, no commands
+  child.stdout.write('{"status":"ready","title":"t","controls":{}}\n');
+  assert.equal(service.getState().volume, null); assert.equal(service.volume(30).ok, false);
+  service.stop();
+});
+test('volume boundary: invalid values from the worker become null', () => {
+  for (const v of [-5, 101, 3.5, '40', null]) assert.equal(clean({ status: 'ready', volume: v }).volume, null, String(v));
+  assert.equal(clean({ status: 'ready', volume: 0 }).volume, 0);
+  assert.equal(clean({ status: 'ready', volume: 70, muted: 'yes' }).muted, false);
+  assert.equal(clean({ status: 'ready', volume: 70, muted: true }).muted, true);
+});
+test('script: only "volume N" (0-100) and "mute 0|1" are accepted on stdin; the mixer only touches Spotify sessions', () => {
+  const ps = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'app', 'spotify-session.ps1'), 'utf8');
+  assert.match(ps, /\$line -match '\^volume \(\\d\{1,3\}\)\$' -and \[int\]\$Matches\[1\] -le 100/);
+  assert.match(ps, /\$line -match '\^mute \(\[01\]\)\$'/);
+  assert.match(ps, /string\.Equals\(name, "Spotify", StringComparison\.OrdinalIgnoreCase\)/);
+  assert.doesNotMatch(ps, /IAudioEndpointVolume|SetMasterVolumeLevel/, 'never the PC master volume');
 });
