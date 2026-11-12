@@ -31,25 +31,25 @@ test('the H1T logos are used for the opening animations, sidebar, dashboard and 
   // The specular sweep is masked by the logo itself (CSP: img-src 'self').
   assert.match(read('app/renderer/boot.css'), /mask: url\(assets\/h1t-logo\.png\)/);
   assert.match(read('app/renderer/boot.css'), /prefers-reduced-motion: reduce/);
-  // sidebar: the H1T mark cut out of its artwork, the Halloween edition while Halloween mode is on (brand.css)
+  // sidebar: the H1T mark cut out of its artwork (brand.css)
   assert.match(index, /class="brand-logo" src="assets\/h1t-logo-main\.png"/);
-  assert.match(index, /class="brand-halloween-logo" src="assets\/h1t-logo-halloween\.png"/);
   assert.match(index, /href="brand\.css"/);
-  for (const f of ['h1t-logo-main.png', 'h1t-logo-halloween.png']) {
+  for (const f of ['h1t-logo-main.png']) {
     const img = fs.readFileSync(path.join(__dirname, '..', 'app/renderer/assets', f));
     assert.equal(img.subarray(1, 4).toString(), 'PNG'); assert.equal(img[25], 6, `${f} is an RGBA PNG with a transparent background`);
   }
   // the dark design's boot (code eye) ends by opening onto the tweaker itself instead of showing a logo
   assert.match(read('app/renderer/eye-boot.js'), /splash\.classList\.contains\('out'\)/);
   assert.match(read('app/renderer/boot.css'), /html\.eye-boot \.splash\.boot\.out \{ background: transparent; opacity: 1;/);
-  assert.match(read('app/renderer/halloween-boot.js'), /assets\/h1t-logo-halloween\.png/);
-  // the Halloween boot keeps moving until the tweaker is ready (no freeze at 8 s), then opens onto it with a ring of
-  // light; app.js times the end from the animation's real start
-  const hw = read('app/renderer/halloween-boot.js');
-  assert.match(hw, /splash\.classList\.contains\('out'\)/);
-  assert.match(hw, /window\.H1T_BOOT_START = start/);
-  assert.doesNotMatch(hw, /Math\.min\(DUR, \(now - start\) \/ 1000\)/, 'the boot clock is not clamped at the end of the animation');
-  assert.match(read('app/renderer/boot.css'), /html\.hw-boot \.splash\.boot\.out \{ background: transparent; opacity: 1;/);
+  // Halloween mode was removed (1.0.39): no Halloween files, logo, styles, settings or boot left
+  for (const f of ['halloween.js', 'halloween.css', 'halloween-boot.js', 'halloween-boot-head.js', 'assets/h1t-logo-halloween.png', 'assets/halloween-pumpkin.jpg']) {
+    assert.ok(!fs.existsSync(path.join(__dirname, '..', 'app/renderer', f)), f);
+  }
+  for (const f of ['index.html', 'app.js', 'brand.css', 'ui.css', 'boot.css', 'h1t-account-ui.js', 'eye-boot.js']) {
+    assert.doesNotMatch(read(`app/renderer/${f}`), /halloween|hw-boot/i, f);
+  }
+  assert.match(index, /<script src="boot-head\.js"><\/script>/);
+  assert.match(read('app/renderer/boot-head.js'), /classList\.add\('eye-boot'\)/);
   assert.match(read('app/renderer/app.js'), /window\.H1T_BOOT_START \?\? splashStart/);
   assert.match(read('app/renderer/mono.css'), /\.h1t-dash-hero:after \{ display: none !important; \}/);
   const ico = fs.readFileSync(path.join(__dirname, '..', 'build/icon.ico'));

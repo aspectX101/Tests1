@@ -9,7 +9,7 @@
 //                  the eye sees, first over-exposed, then clear (the canvas cuts the hole, the app shows through).
 //                  If the app needs longer, the line breathes.
 // Everything is drawn in code; the code textures are pre-rendered once into sprites and each frame only composes
-// them. Active only when <html> has .eye-boot (halloween-boot-head.js picks it and sets H1T_BOOT_MS).
+// them. Active only when <html> has .eye-boot (boot-head.js picks it and sets H1T_BOOT_MS).
 (() => {
   if (!document.documentElement.classList.contains('eye-boot')) return;
   const splash = document.getElementById('splash');

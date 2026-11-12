@@ -175,10 +175,4 @@ html body .cfg-featured { border: 1px solid var(--hair-2) !important; border-rad
 .set-card .mono { font-size: 11px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--hair); color: var(--w-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .set-card .seg { align-self: flex-start; }
 @media (max-width: 1100px) { .set-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-body.halloween .acc-hero, body.halloween .acc-card, body.halloween .acc-lic, body.halloween .gt-card, body.halloween .cfg-featured, body.halloween .set-card {
-  background: var(--hw-card) !important; border-color: var(--hw-line) !important; }
-body.halloween .gt-card.is-on, body.halloween .acc-lic.mine { border-color: var(--hw-line-2) !important; }
-body.halloween .gt-toggle.on { background: var(--hw-o) !important; border-color: var(--hw-o) !important; color: #140600 !important; box-shadow: 0 0 16px rgba(255, 122, 24, .4); }
-body.halloween .gt-icon svg, body.halloween .set-card > svg { color: var(--hw-o2) !important; }
-body.halloween .acc-hero { background: radial-gradient(700px 260px at 85% 0%, rgba(255, 122, 24, .16), transparent 60%), rgba(6, 3, 4, .85) !important; }
 html body .dashboard-home .home-row.no-media { grid-template-columns: minmax(0, 1fr) !important; }
