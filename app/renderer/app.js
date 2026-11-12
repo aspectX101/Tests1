@@ -331,7 +331,8 @@ function renderHome() {
       done:'Modifiche applicate',doneSub:'Attualmente attive',available:'Modifiche disponibili',availableSub:'Nel tuo sistema',
       selected:'Sicure e pronte',selectedSub:'Pronte da applicare',stopped:'Servizi ottimizzati',stoppedSub:'Modifiche attive ai servizi',}
   }[state.lang];
-  const metric=(id,val,label,sub,iconName,cls='')=>`<div class="card h1t-metric ${cls}">
+  // Click or Enter opens the list of these tweaks (tweak-list.js).
+  const metric=(id,val,label,sub,iconName,cls='')=>`<div class="card h1t-metric ${cls}" data-tlist="${id}" role="button" tabindex="0" title="${esc(window.TweakList?.hint() || '')}" aria-label="${esc(`${label}: ${val}`)}">
     <div class="h1t-metric-icon">${icon(iconName)}</div>
     <div class="h1t-metric-body"><b class="h1t-metric-value" data-count="${val}">${val}</b>
       <div class="h1t-metric-label">${esc(label)}</div><div class="h1t-metric-note">${esc(sub)}</div></div>
