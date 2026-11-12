@@ -10,7 +10,7 @@ const read = (f) => fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer'
 test('light design: whole UI inverted, real colours turned back, stylesheet loaded last', () => {
   const css = read('theme.css');
   assert.match(css, /html\.light body \{ filter: invert\(1\) hue-rotate\(180deg\) brightness\(\.89\); \}/);
-  assert.match(css, /html\.light body \.brand > \.brand-logo, html\.light \.h1t-gate-brand img \{\r?\n  filter: brightness\(1\.5\) contrast\(1\.6\)/);
+  assert.match(css, /html\.light body \.brand > \.brand-logo, html\.light \.h1t-gate-brand img \{\r?\n  content: url\("assets\/h1t-logo-white\.png"\);/);
   assert.match(css, /html\.light :is\(img, video, \.h1t-flag, \.risk-dot/);
   const html = read('index.html');
   const links = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
@@ -32,4 +32,10 @@ test('sun button and Settings > Design switch and remember it, texts in three la
   assert.match(app, /card\('design', s\.design/);
   const texts = app.slice(app.indexOf('const SET_TEXT = {'), app.indexOf('const SET_ICONS'));
   for (const k of ['design', 'designDesc', 'dark', 'light', 'toLight', 'toDark']) assert.equal((texts.match(new RegExp(`\\b${k}: '`, 'g')) || []).length, 3, k);
+});
+
+test('the white logo has the same canvas as the dark one, so switching never moves or resizes it', () => {
+  const size = (f) => { const b = fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer', 'assets', f)); assert.equal(b.subarray(1, 4).toString(), 'PNG'); return [b.readUInt32BE(16), b.readUInt32BE(20), b[25]]; };
+  assert.deepEqual(size('h1t-logo-white.png'), size('h1t-logo-main.png'));
+  assert.equal(size('h1t-logo-white.png')[2], 6, 'RGBA with a transparent background');
 });

@@ -8,7 +8,9 @@ html.light body { filter: invert(1) hue-rotate(180deg) brightness(.89); }
 html.light :is(img, video, .h1t-flag, .risk-dot, .twl-item .risk-dot) { filter: invert(1) hue-rotate(180deg); }
 /* the risk lights' glow is drawn for a black background; on white a plain dot reads better */
 html.light .risk-dot { box-shadow: none !important; }
-/* the H1T mark and sign-in logo stay turned: a dark chrome mark. Brighter and harder before the turn, with a light
-   halo that the turn makes a dark glow, the counterpart of the white glow in the dark design. */
+/* The H1T mark: its own white edition for the light design (h1t-logo-white.png). Same element, same 756x362 canvas
+   with the mark in the same place as h1t-logo-main.png, so switching the design changes only the colours, never
+   size or position. Turned back to its real colours; the light halo becomes a soft dark shadow after the turn. */
 html.light body .brand > .brand-logo, html.light .h1t-gate-brand img {
-  filter: brightness(1.5) contrast(1.6) drop-shadow(0 0 1px rgba(255, 255, 255, 1)) drop-shadow(0 6px 18px rgba(255, 255, 255, .45)); }
+  content: url("assets/h1t-logo-white.png");
+  filter: invert(1) hue-rotate(180deg) drop-shadow(0 4px 12px rgba(255, 255, 255, .28)); }
