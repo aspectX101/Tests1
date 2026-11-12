@@ -33,8 +33,9 @@ try {
         return @()
     }
     function Same($a,$b) {
-        if ($a -is [int] -or $b -is [int] -or $a -is [string]) { return "$a" -eq "$b" }
-        return Test-OptimizationValueEqual $a $b
+        if ($null -eq $a -or $null -eq $b) { return ($null -eq $a) -and ($null -eq $b) }
+        if ($a -is [ValueType] -or $a -is [string] -or $b -is [ValueType] -or $b -is [string]) { return "$a" -eq "$b" }
+        return (ConvertTo-Json $a -Compress -Depth 4) -eq (ConvertTo-Json $b -Compress -Depth 4)
     }
     $before=@{}
     foreach ($id in $ids) { try { $before[$id]=Read-State $id } catch { $before[$id]=$null } }
@@ -63,11 +64,14 @@ try {
     # 4. every value back to exactly what it was
     $wrong=@()
     foreach ($id in $applied) {
-        $now=Read-State $id
-        foreach ($b in $before[$id]) {
-            $n=@($now | Where-Object field -eq $b.field)[0]
-            if (-not (Same $b.value $n.value)) { $wrong+=('{0}/{1}: before {2} now {3}' -f $id,$b.field,($b.value | ConvertTo-Json -Compress),($n.value | ConvertTo-Json -Compress)) }
-        }
+        try {
+            $now=@(Read-State $id)
+            foreach ($b in @($before[$id])) {
+                $n=@($now | Where-Object { $_.field -eq $b.field })
+                $nv=if ($n.Count) { $n[0].value } else { $null }
+                if (-not (Same $b.value $nv)) { $wrong+=('{0}/{1}: before {2} now {3}' -f $id,$b.field,(ConvertTo-Json $b.value -Compress -Depth 4),(ConvertTo-Json $nv -Compress -Depth 4)) }
+            }
+        } catch { $wrong+=('{0}: compare failed: {1} (line {2})' -f $id,$_.Exception.Message,$_.InvocationInfo.ScriptLineNumber) }
     }
     foreach ($w in $wrong) { Write-Host ('FAIL value ' + $w) }
     Assert ($failed.Count -eq 0 -and $all.ok) ('restore all reported problems: ' + $failed.Count)
@@ -78,6 +82,7 @@ try {
     Assert ($again.ok) 'a second restore all is a clean no-op'
     Write-Host ('PASS restore all: {0} tweaks applied and every value restored exactly ({1:n1} s)' -f $applied.Count,$seconds)
 } $temp
+} catch { Write-Host ('FAIL error: {0} (line {1})' -f $_.Exception.Message,$_.InvocationInfo.ScriptLineNumber); throw
 } finally {
     if ($temp.StartsWith([IO.Path]::GetTempPath()) -and (Test-Path -LiteralPath $temp)) { Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue }
 }
