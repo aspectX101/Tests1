@@ -10,7 +10,7 @@ const read = (f) => fs.readFileSync(path.join(__dirname, '..', 'app', 'renderer'
 test('light design: whole UI inverted, real colours turned back, stylesheet loaded last', () => {
   const css = read('theme.css');
   assert.match(css, /html\.light body \{ filter: invert\(1\) hue-rotate\(180deg\) brightness\(\.89\); \}/);
-  assert.match(css, /html\.light body \.brand > \.brand-logo, html\.light \.h1t-gate-brand img \{\n  filter: brightness\(1\.5\) contrast\(1\.6\)/);
+  assert.match(css, /html\.light body \.brand > \.brand-logo, html\.light \.h1t-gate-brand img \{\r?\n  filter: brightness\(1\.5\) contrast\(1\.6\)/);
   assert.match(css, /html\.light :is\(img, video, \.h1t-flag, \.risk-dot/);
   const html = read('index.html');
   const links = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
