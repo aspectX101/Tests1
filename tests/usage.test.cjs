@@ -9,7 +9,7 @@ test('GPU usage is read like Task Manager: raw counters, per engine (all engine 
   assert.match(s, /Win32_PerfRawData_GPUPerformanceCounters_GPUEngine/);
   assert.doesNotMatch(s, /PerfFormattedData|engtype_3D/, 'not only the 3D engine, not the stale formatted class');
   assert.match(s, /\(\$now\[\$k\]\[0\] - \$prev\[\$k\]\[0\]\) \/ \$dt \* 100/, 'busy time over elapsed time');
-  assert.match(s, /luid_\(0x\[0-9A-Fa-f\]\+_0x\[0-9A-Fa-f\]\+\)_phys_\(\\d\+\)_eng_\(\\d\+\)/, 'grouped per GPU engine, processes summed');
+  assert.ok(s.includes("'luid_(0x[0-9A-Fa-f]+_0x[0-9A-Fa-f]+)_phys_(\\d+)_eng_(\\d+)'"), 'grouped per GPU engine, processes summed');
   assert.match(s, /Measure-Object -Maximum/, 'the busiest engine is shown');
 });
 

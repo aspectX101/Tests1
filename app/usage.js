@@ -20,7 +20,7 @@ while (${iterations} -eq 0 -or $n -lt ${iterations}) {
     }
     $engines = @{}
     foreach ($k in $now.Keys) {
-      if (-not $prev.ContainsKey($k) -or $k -notmatch 'luid_(0x[0-9A-Fa-f]+_0x[0-9A-Fa-f]+)_phys_(\d+)_eng_(\d+)') { continue }
+      if (-not $prev.ContainsKey($k) -or $k -notmatch 'luid_(0x[0-9A-Fa-f]+_0x[0-9A-Fa-f]+)_phys_(\\d+)_eng_(\\d+)') { continue }
       $dt = $now[$k][1] - $prev[$k][1]
       if ($dt -le 0) { continue }
       $u = [math]::Max(0, ($now[$k][0] - $prev[$k][0]) / $dt * 100)
