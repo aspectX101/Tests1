@@ -1,0 +1,25 @@
+/* Light design, silver scheme of the H1T logo: FINAL colours as they appear on screen.
+   Run `node build/make-light-theme.cjs`: it converts every #rrggbb / rgba(#rrggbb, a) for the page-wide
+   invert(1) hue-rotate(180deg) filter and writes the result into app/renderer/theme.css (between the markers). */
+html.light body {
+  --k: #e4e6ea; --k-card: #f1f2f4; --k-raise: #e9ebee; --bg: #e4e6ea;
+  --w: #1b1e23; --accent: #1b1e23; --accent-text: #1b1e23; --text: #1b1e23;
+}
+html.light body .sidebar { background: linear-gradient(180deg, #f6f7f9 0%, #eaecef 55%, #e1e4e8 100%) !important; border-right-color: #c4c8cf !important; }
+html.light body .card {
+  background: linear-gradient(165deg, #fdfdfe 0%, #f0f1f3 55%, #e5e7eb 100%) !important; border-color: #c6cad1 !important;
+  box-shadow: inset 0 1px 0 rgba(#ffffff, 1), 0 1px 2px rgba(#30343b, .08), 0 10px 26px rgba(#30343b, .07) !important; }
+html.light body .card:hover { border-color: #a4a9b2 !important; }
+html.light body :is(.pill.light, .opt-v2 #opt-start:not(:disabled), .opt-v2 .opt-go:not(:disabled), .db-v2 #db-start:not(:disabled), #color-save, .h1t-restart-pill, .seg button.active, .spotify-card .media-play) {
+  background: linear-gradient(180deg, #ffffff 0%, #eceef1 38%, #c6cad0 78%, #b0b5bd 100%) !important; color: #1b1e23 !important;
+  border: 1px solid #8e949e !important; box-shadow: inset 0 1px 0 rgba(#ffffff, 1), inset 0 -1px 0 rgba(#6e727b, .35), 0 2px 8px rgba(#30343b, .18) !important; }
+html.light body .pill.light:hover:not(:disabled) { background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 40%, #d3d6db 80%, #bfc3ca 100%) !important; }
+html.light body .pill.dark { background: linear-gradient(180deg, #fdfdfe 0%, #eaecef 100%) !important; border-color: #bcc1c8 !important; color: #1b1e23 !important; }
+html.light body .pill.dark:hover:not(:disabled) { border-color: #8e949e !important; }
+html.light body .seg { background: #e2e5e9 !important; border-color: #c2c6cd !important; }
+html.light body .switch span { background: #e2e5e9 !important; border-color: #a7acb5 !important; }
+html.light body .switch span::after { background: #80858e !important; }
+html.light body .switch input:checked + span { background: linear-gradient(180deg, #8c919a 0%, #4c5159 100%) !important; border-color: #4c5159 !important; }
+html.light body .switch input:checked + span::after { background: #ffffff !important; box-shadow: 0 1px 3px rgba(#1b1e23, .35); }
+html.light body { --accent-ink: #1b1e23; }
+html.light body :is(.pill.light, .opt-go, .tier-go.light) svg { color: #1b1e23 !important; }

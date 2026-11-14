@@ -1,0 +1,34 @@
+/* Dashboard tiles: clickable, opening the list of their tweaks (tweak-list.js). */
+html body .h1t-metric[data-tlist] { cursor: pointer; transition: border-color .18s ease, transform .18s ease, background-color .18s ease; }
+html body .h1t-metric[data-tlist]:hover { border-color: var(--hair-3) !important; transform: translateY(-1px); }
+html body .h1t-metric[data-tlist]:focus-visible { outline: 2px solid var(--hair-3); outline-offset: 2px; }
+
+.twl-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .78); backdrop-filter: blur(3px); }
+.twl-backdrop.hidden { display: none; }
+.twl { width: min(640px, 100%); max-height: min(78vh, 760px); display: flex; flex-direction: column; gap: 14px; padding: 22px 22px 16px;
+  background: var(--k, #000); border: 1px solid var(--hair-2, rgba(255, 255, 255, .22)); border-radius: 22px; box-shadow: 0 30px 80px #000; animation: twl-pop .2s ease both; }
+.twl-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.twl-head h2 { margin: 0 0 4px; font-size: 18px; font-weight: 800; }
+.twl-head p { margin: 0; font-size: 12.5px; }
+.twl-close { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; border: 1px solid var(--hair, rgba(255, 255, 255, .12)); background: transparent; color: #f4f4f5; cursor: pointer; }
+.twl-close:hover { border-color: var(--hair-3, rgba(255, 255, 255, .4)); }
+.twl-close svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.twl-search { width: 100%; height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--hair-2, rgba(255, 255, 255, .22)); background: var(--k-raise, #0b0b0b); color: #fff; font: inherit; font-size: 13px; outline: none; }
+.twl-search:focus { border-color: var(--hair-3, rgba(255, 255, 255, .4)); }
+.twl-body { overflow: auto; min-height: 120px; display: flex; flex-direction: column; gap: 14px; padding-right: 4px; }
+.twl-group-head { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 6px; margin-bottom: 4px; border-bottom: 1px solid var(--hair, rgba(255, 255, 255, .12));
+  font-size: 10.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a1a1aa; }
+.twl-group-head b { color: #71717a; font-weight: 700; }
+.twl-item { width: 100%; display: flex; align-items: center; gap: 11px; padding: 9px 10px; border: 0; border-radius: 10px; background: transparent; color: #f4f4f5; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.twl-item:hover, .twl-item:focus-visible { background: var(--k-raise, #0b0b0b); outline: none; }
+.twl-item .risk-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.twl-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.twl-item em { flex: none; font-style: normal; font-size: 10.5px; font-weight: 700; color: #a1a1aa; border: 1px solid var(--hair, rgba(255, 255, 255, .12)); border-radius: 999px; padding: 2px 8px; }
+.twl-empty { margin: 24px 0; text-align: center; font-size: 13px; }
+.twl-foot { margin: 0; font-size: 11.5px; }
+.twl-foot:empty { display: none; }
+@keyframes twl-pop { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .twl { animation: none; }
+  html body .h1t-metric[data-tlist], html body .h1t-metric[data-tlist]:hover { transition: none; transform: none; }
+}

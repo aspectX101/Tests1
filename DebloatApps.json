@@ -1,0 +1,116 @@
+[
+  {
+    "id": "weather",
+    "group": "consumer",
+    "package": "Microsoft.BingWeather",
+    "name": "Microsoft Weather"
+  },
+  {
+    "id": "news",
+    "group": "consumer",
+    "package": "Microsoft.BingNews",
+    "name": "Microsoft News"
+  },
+  {
+    "id": "solitaire",
+    "group": "consumer",
+    "package": "Microsoft.MicrosoftSolitaireCollection",
+    "name": "Microsoft Solitaire Collection"
+  },
+  {
+    "id": "clipchamp",
+    "group": "consumer",
+    "package": "Clipchamp.Clipchamp",
+    "name": "Microsoft Clipchamp"
+  },
+  {
+    "id": "teams",
+    "group": "consumer",
+    "package": "MSTeams",
+    "name": "Microsoft Teams"
+  },
+  {
+    "id": "teams-legacy",
+    "group": "consumer",
+    "package": "MicrosoftTeams",
+    "name": "Microsoft Teams (legacy)"
+  },
+  {
+    "id": "candy-crush",
+    "group": "consumer",
+    "package": "king.com.CandyCrushSaga",
+    "name": "Candy Crush Saga"
+  },
+  {
+    "id": "candy-soda",
+    "group": "consumer",
+    "package": "king.com.CandyCrushSodaSaga",
+    "name": "Candy Crush Soda Saga"
+  },
+  {
+    "id": "gamebar",
+    "group": "xbox",
+    "package": "Microsoft.XboxGamingOverlay",
+    "name": "Xbox Game Bar"
+  },
+  {
+    "id": "xbox",
+    "group": "xbox",
+    "package": "Microsoft.GamingApp",
+    "name": "Xbox"
+  },
+  {
+    "id": "xbox-legacy",
+    "group": "xbox",
+    "package": "Microsoft.XboxApp",
+    "name": "Xbox Console Companion"
+  },
+  {
+    "id": "mail",
+    "group": "mail-camera",
+    "package": "microsoft.windowscommunicationsapps",
+    "name": "Mail and Calendar"
+  },
+  {
+    "id": "camera",
+    "group": "mail-camera",
+    "package": "Microsoft.WindowsCamera",
+    "name": "Windows Camera"
+  },
+  {
+    "id": "onenote",
+    "group": "mail-camera",
+    "package": "Microsoft.Office.OneNote",
+    "name": "OneNote for Windows 10"
+  },
+  {
+    "id": "paint3d",
+    "group": "mail-camera",
+    "package": "Microsoft.MSPaint",
+    "name": "Paint 3D"
+  },
+  {
+    "id": "copilot",
+    "group": "ai",
+    "package": "Microsoft.Copilot",
+    "name": "Microsoft Copilot"
+  },
+  {
+    "id": "pcmanager",
+    "group": "tools",
+    "package": "Microsoft.MicrosoftPCManager",
+    "name": "Microsoft PC Manager"
+  },
+  {
+    "id": "gameassist",
+    "group": "tools",
+    "package": "Microsoft.Edge.GameAssist",
+    "name": "Microsoft Edge Game Assist"
+  },
+  {
+    "id": "onedrive",
+    "group": "onedrive",
+    "package": "",
+    "name": "Microsoft OneDrive"
+  }
+]
